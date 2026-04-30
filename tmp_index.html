@@ -1,0 +1,2173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parliament Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #060912;
+    --bg-deeper: #03060d;
+    --bg-panel: #101725;
+    --bg-panel-alt: #161f33;
+    --bg-input: #0a1120;
+    --line: #2c3e63;
+    --line-soft: #1d2942;
+    --line-strong: #3e5588;
+
+    --accent: #d4a14a;
+    --accent-hot: #ffce6b;
+    --accent-deep: #8a6a2c;
+    --cyan: #5fd8ff;
+    --cyan-soft: #2b9bc4;
+    --cyan-deep: #1a5d7d;
+
+    --text: #d8e2f2;
+    --text-dim: #8a9bb8;
+    --text-mute: #5d6f8d;
+    --danger: #ff5b6e;
+    --good: #7ce39a;
+    --neutral: #6b7e9e;
+
+    --grid-line: rgba(95,216,255,0.025);
+    --grid-glow-1: rgba(95,216,255,0.10);
+    --grid-glow-2: rgba(212,161,74,0.10);
+    --halo: rgba(212,161,74,0.45);
+    --halo-cyan: rgba(95,216,255,0.30);
+  }
+
+  /* ============= THEME: SCI-FI GREEN ============= */
+  body[data-theme="green"] {
+    --bg-deep: #050c08;
+    --bg-deeper: #03070a;
+    --bg-panel: #0d1a14;
+    --bg-panel-alt: #142420;
+    --bg-input: #08110d;
+    --line: #2c5a3a;
+    --line-soft: #1d3a26;
+    --line-strong: #3e7755;
+
+    --accent: #5dee7b;
+    --accent-hot: #b1ffba;
+    --accent-deep: #2c6a39;
+    --cyan: #50e3a4;
+    --cyan-soft: #2c8a55;
+    --cyan-deep: #1a4d2d;
+
+    --grid-line: rgba(93,238,123,0.030);
+    --grid-glow-1: rgba(93,238,123,0.12);
+    --grid-glow-2: rgba(80,227,164,0.08);
+    --halo: rgba(93,238,123,0.45);
+    --halo-cyan: rgba(80,227,164,0.32);
+  }
+
+  /* ============= THEME: HOLO BLUE ============= */
+  body[data-theme="cyan"] {
+    --bg-deep: #060c14;
+    --bg-deeper: #030710;
+    --bg-panel: #0d1726;
+    --bg-panel-alt: #151f33;
+    --bg-input: #08111e;
+    --line: #2c4a73;
+    --line-soft: #1d3052;
+    --line-strong: #3e6688;
+
+    --accent: #5fc8ff;
+    --accent-hot: #aee5ff;
+    --accent-deep: #1a5d8d;
+    --cyan: #d4a14a;
+    --cyan-soft: #b8862e;
+    --cyan-deep: #6a4a18;
+
+    --grid-line: rgba(95,200,255,0.03);
+    --grid-glow-1: rgba(95,200,255,0.14);
+    --grid-glow-2: rgba(212,161,74,0.06);
+    --halo: rgba(95,200,255,0.45);
+    --halo-cyan: rgba(212,161,74,0.25);
+  }
+
+  /* ============= THEME: CRIMSON ============= */
+  body[data-theme="crimson"] {
+    --bg-deep: #0c0506;
+    --bg-deeper: #070303;
+    --bg-panel: #1a0d10;
+    --bg-panel-alt: #271516;
+    --bg-input: #110808;
+    --line: #5a2c2c;
+    --line-soft: #421d1d;
+    --line-strong: #8a3e3e;
+
+    --accent: #ff5b5b;
+    --accent-hot: #ffaaaa;
+    --accent-deep: #6a1f1f;
+    --cyan: #ffae6e;
+    --cyan-soft: #c47a3a;
+    --cyan-deep: #6a3e18;
+
+    --grid-line: rgba(255,91,91,0.03);
+    --grid-glow-1: rgba(255,91,91,0.14);
+    --grid-glow-2: rgba(255,176,119,0.08);
+    --halo: rgba(255,91,91,0.50);
+    --halo-cyan: rgba(255,176,119,0.32);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    color: var(--text);
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    min-height: 100vh;
+    font-size: 15px;
+    background-color: var(--bg-deep);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      radial-gradient(ellipse 80% 60% at 20% -10%, var(--grid-glow-1), transparent 65%),
+      radial-gradient(ellipse 80% 60% at 80% 110%, var(--grid-glow-2), transparent 60%);
+    background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+    background-attachment: fixed;
+    transition: background-color 0.3s;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: linear-gradient(transparent 0%, transparent 49.5%, var(--grid-line) 50%, transparent 50.5%);
+    background-size: 100% 4px;
+    pointer-events: none; z-index: 1;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none; z-index: 1;
+  }
+
+  .app {
+    position: relative; z-index: 2;
+    max-width: 1700px;
+    margin: 0 auto;
+    padding: 18px 22px 60px;
+  }
+
+  /* ==== HEADER ==== */
+  header.app-header {
+    display: flex; align-items: stretch; gap: 12px;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, var(--grid-glow-1), rgba(0,0,0,0) 60%),
+      linear-gradient(180deg, var(--grid-glow-2), rgba(0,0,0,0)),
+      var(--bg-panel);
+    padding: 12px 22px;
+    margin-bottom: 14px;
+    position: relative;
+    box-shadow: 0 0 28px rgba(0,0,0,0.5), inset 0 0 1px var(--halo);
+    flex-wrap: wrap;
+  }
+  header.app-header::before {
+    content: ''; position: absolute; inset: 4px;
+    border: 1px solid var(--line-soft);
+    pointer-events: none;
+  }
+  header.app-header .crest {
+    position: absolute; top: -1px; left: 50%;
+    transform: translateX(-50%);
+    width: 80px; height: 16px;
+    background: var(--bg-deep);
+    border: 1px solid var(--accent);
+    border-top: none;
+    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+    display: flex; justify-content: center; align-items: center;
+  }
+  header.app-header .crest::after {
+    content: '◈ ◈ ◈';
+    font-size: 8px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    margin-top: -2px;
+  }
+  .title-block { display: flex; flex-direction: column; justify-content: center; }
+  .title-block h1 {
+    margin: 0;
+    font-family: 'Cinzel', serif;
+    font-weight: 600; letter-spacing: 5px;
+    font-size: 22px; line-height: 1;
+    color: var(--accent);
+    text-transform: uppercase;
+    text-shadow: 0 0 18px var(--halo);
+  }
+  .title-block .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--cyan); margin-top: 4px; opacity: 0.85;
+  }
+  .header-spacer { flex: 1; }
+
+  .control-group {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 12px;
+    border: 1px solid var(--line);
+    background: var(--bg-input);
+    position: relative;
+  }
+  .control-group::before, .control-group::after {
+    content: ''; position: absolute;
+    width: 6px; height: 6px;
+    border-color: var(--accent); border-style: solid;
+  }
+  .control-group::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+  .control-group::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+  .control-group label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .control-group input[type=number] {
+    width: 70px; background: transparent; border: none;
+    color: var(--accent-hot);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 600; text-align: center; outline: none;
+  }
+
+  /* ==== TOGGLE ==== */
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .toggle input { display: none; }
+  .toggle .switch {
+    width: 30px; height: 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--line-strong);
+    position: relative; transition: all 0.2s;
+  }
+  .toggle .switch::after {
+    content: ''; position: absolute;
+    width: 8px; height: 8px;
+    top: 2px; left: 2px;
+    background: var(--text-mute); transition: all 0.2s;
+  }
+  .toggle input:checked + .switch {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--halo), inset 0 0 6px var(--halo);
+  }
+  .toggle input:checked + .switch::after {
+    left: 18px; background: var(--accent-hot);
+    box-shadow: 0 0 6px var(--accent-hot);
+  }
+  .toggle input:checked ~ .toggle-label { color: var(--accent-hot); }
+
+  /* ==== THEME SWITCH ==== */
+  .theme-switch {
+    display: flex; gap: 0; padding: 3px;
+    border: 1px solid var(--line);
+    background: var(--bg-input);
+    position: relative;
+  }
+  .theme-switch::before, .theme-switch::after {
+    content: ''; position: absolute;
+    width: 5px; height: 5px;
+    border-color: var(--accent); border-style: solid;
+  }
+  .theme-switch::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+  .theme-switch::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+  .theme-switch button {
+    width: 24px; height: 24px;
+    padding: 0; min-width: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: 0;
+  }
+  .theme-switch button:hover { background: rgba(255,255,255,0.04); }
+  .theme-switch button.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 6px var(--halo);
+  }
+  .theme-switch button .swatch {
+    width: 14px; height: 14px;
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 5px currentColor;
+    transition: all 0.15s;
+  }
+  .theme-switch button:hover .swatch { box-shadow: 0 0 8px currentColor; transform: scale(1.1); }
+
+  /* ==== BUTTONS ==== */
+  button, .btn {
+    background: linear-gradient(180deg, var(--grid-glow-1), rgba(95,216,255,0.02));
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    padding: 8px 18px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600; font-size: 13px;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s ease;
+    position: relative;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:hover:not(:disabled), .btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 14px var(--halo-cyan), inset 0 0 12px var(--halo-cyan);
+  }
+  button.primary {
+    background: linear-gradient(180deg, var(--grid-glow-2), rgba(0,0,0,0.05));
+    border-color: var(--accent);
+    color: var(--accent-hot);
+    text-shadow: 0 0 8px var(--halo);
+  }
+  button.primary:hover:not(:disabled) {
+    border-color: var(--accent-hot); color: #fff;
+    box-shadow: 0 0 24px var(--halo), inset 0 0 14px var(--halo);
+  }
+  button.danger {
+    color: var(--danger);
+    border-color: rgba(255,91,110,0.4);
+    padding: 4px 8px;
+    font-size: 11px; letter-spacing: 1px;
+  }
+  button.danger:hover:not(:disabled) {
+    color: #fff; background: rgba(255,91,110,0.20);
+    border-color: var(--danger);
+    box-shadow: 0 0 12px rgba(255,91,110,0.35);
+  }
+  button.small { padding: 4px 10px; font-size: 11px; letter-spacing: 1px; }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--text-dim); }
+
+  /* ==== TABS ==== */
+  .tab-bar {
+    display: flex; gap: 0; margin-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .tab-bar::before, .tab-bar::after {
+    content: ''; position: absolute; bottom: -1px;
+    width: 30px; height: 1px; background: var(--accent);
+  }
+  .tab-bar::before { left: 0; }
+  .tab-bar::after { right: 0; }
+  .tab {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    color: var(--text-dim);
+    padding: 10px 28px;
+    font-family: 'Cinzel', serif;
+    font-size: 13px; letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer; position: relative;
+    margin-right: -1px;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  }
+  .tab:hover { color: var(--cyan); }
+  .tab.active {
+    background: linear-gradient(180deg, var(--grid-glow-2), rgba(0,0,0,0.05));
+    color: var(--accent-hot);
+    border-color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--bg-panel);
+  }
+  .tab .badge {
+    display: inline-block; margin-left: 8px;
+    padding: 1px 6px;
+    background: var(--bg-deep);
+    border: 1px solid currentColor;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ==== GRID ==== */
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 360px;
+    gap: 16px;
+  }
+  @media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ==== PANELS ==== */
+  .panel {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    position: relative;
+    box-shadow: 0 0 24px rgba(0,0,0,0.4);
+  }
+  .panel > .corner {
+    content: ''; position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--accent); border-style: solid;
+    pointer-events: none;
+  }
+  .panel > .corner.tl { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+  .panel > .corner.tr { top: -1px; right: -1px; border-width: 1px 1px 0 0; }
+  .panel > .corner.bl { bottom: -1px; left: -1px; border-width: 0 0 1px 1px; }
+  .panel > .corner.br { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+  .panel-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line-soft);
+    background:
+      linear-gradient(180deg, var(--grid-glow-2), transparent),
+      linear-gradient(90deg, var(--grid-glow-1), transparent 30%);
+    position: relative;
+  }
+  .panel-header::after {
+    content: ''; position: absolute;
+    bottom: -1px; left: 12px; right: 12px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent) 50%, transparent);
+    opacity: 0.4;
+  }
+  .panel-header h2 {
+    margin: 0;
+    font-family: 'Cinzel', serif;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 4px;
+    color: var(--cyan); text-transform: uppercase;
+    flex: 1;
+  }
+  .panel-header h2::before {
+    content: '◆';
+    color: var(--accent); margin-right: 8px;
+    font-size: 9px; vertical-align: middle;
+  }
+  .panel-body {
+    padding: 14px;
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+  }
+  .panel-body.no-scroll { max-height: none; overflow-y: visible; }
+  .panel-body::-webkit-scrollbar { width: 6px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--line); }
+  .panel-body::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* ==== ITEM CARDS ==== */
+  .item {
+    border: 1px solid var(--line-soft);
+    background: var(--bg-panel-alt);
+    padding: 8px 10px 10px;
+    margin-bottom: 8px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .item:hover { border-color: var(--line-strong); }
+  .item::before {
+    content: ''; position: absolute;
+    top: -1px; left: -1px;
+    width: 6px; height: 6px;
+    border-top: 1px solid var(--accent);
+    border-left: 1px solid var(--accent);
+  }
+  .item::after {
+    content: ''; position: absolute;
+    bottom: -1px; right: -1px;
+    width: 6px; height: 6px;
+    border-bottom: 1px solid var(--accent);
+    border-right: 1px solid var(--accent);
+  }
+
+  .item-head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .item-head .swatch {
+    width: 16px; height: 16px;
+    border: 1px solid rgba(255,255,255,0.25);
+    flex-shrink: 0; cursor: pointer; position: relative;
+    box-shadow: 0 0 6px rgba(0,0,0,0.4), inset 0 0 1px rgba(255,255,255,0.3);
+  }
+  .item-head .swatch input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  .item-head input.name {
+    flex: 1;
+    background: transparent; border: none;
+    border-bottom: 1px dashed var(--line);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px; font-weight: 600; letter-spacing: 1px;
+    padding: 2px 4px; outline: none;
+  }
+  .item-head input.name:focus { border-bottom-color: var(--cyan); color: var(--accent-hot); }
+
+  /* ===== STRATUM CARD (compact) ===== */
+  .stratum-card .stratum-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 7px;
+  }
+  .stratum-card .field {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line);
+    background: var(--bg-input);
+    padding: 2px 8px;
+  }
+  .stratum-card .field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+  .stratum-card .field input {
+    flex: 1; min-width: 0; width: 100%;
+    background: transparent; border: none;
+    color: var(--accent-hot);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; text-align: right; outline: none;
+    padding: 2px 0;
+  }
+  .stratum-card .field input:focus + .focus-ind, .stratum-card .field input:focus { color: var(--cyan); }
+
+  .stratum-support-bar {
+    display: flex; height: 8px;
+    margin-top: 8px;
+    background: var(--bg-deeper);
+    border: 1px solid var(--line-soft);
+    overflow: hidden;
+    position: relative;
+  }
+  .stratum-support-bar.over {
+    border-color: var(--danger);
+    box-shadow: 0 0 6px rgba(255,91,110,0.35);
+  }
+  .stratum-support-bar .seg {
+    height: 100%;
+    transition: width 0.2s;
+    border-right: 1px solid rgba(0,0,0,0.35);
+    box-shadow: inset 0 0 4px rgba(255,255,255,0.12);
+  }
+  .stratum-support-bar .seg:last-child { border-right: none; }
+  .stratum-support-bar .seg-unaligned {
+    background-color: var(--text-mute);
+    background-image: repeating-linear-gradient(45deg,
+      transparent 0, transparent 3px,
+      rgba(0,0,0,0.4) 3px, rgba(0,0,0,0.4) 5px);
+  }
+
+  .stratum-support-legend {
+    display: flex; flex-wrap: wrap;
+    gap: 2px 8px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.5px;
+    line-height: 1.5;
+  }
+  .stratum-support-legend .l {
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .stratum-support-legend .l .d {
+    width: 5px; height: 5px;
+    background: currentColor; flex-shrink: 0;
+    box-shadow: 0 0 3px currentColor;
+  }
+  .stratum-support-legend .l-unaligned { color: var(--text-mute); }
+  .stratum-support-legend .l-unaligned .d {
+    background-image: repeating-linear-gradient(45deg, transparent 0 1px, rgba(255,255,255,0.4) 1px 2px);
+  }
+  .stratum-support-legend .empty-leg { color: var(--text-mute); font-style: italic; }
+  .stratum-support-legend .over-warn {
+    color: var(--danger);
+    margin-left: auto;
+    font-weight: 600;
+    text-shadow: 0 0 4px rgba(255,91,110,0.5);
+  }
+
+  /* ===== FACTION CARD ===== */
+  .item-body {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line-soft);
+  }
+  .stratum-support-row {
+    display: grid;
+    grid-template-columns: 1fr 92px;
+    gap: 8px; align-items: center;
+    margin-bottom: 5px;
+  }
+  .stratum-support-row label {
+    font-size: 12px; color: var(--text-dim);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  .stratum-support-row label::before {
+    content: ''; display: inline-block;
+    width: 4px; height: 4px; background: var(--accent-deep);
+    flex-shrink: 0; align-self: center;
+  }
+  .stratum-support-row label .popinfo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-mute);
+    margin-left: auto;
+  }
+  .stratum-support-row input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; text-align: right;
+    padding: 3px 6px; outline: none;
+  }
+  .stratum-support-row input:focus { border-color: var(--cyan); color: var(--accent-hot); }
+  .stratum-support-row.over input {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .item-actions {
+    display: flex; gap: 6px;
+    margin-top: 8px; flex-wrap: wrap;
+  }
+  .expand-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    cursor: pointer; text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .expand-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+  .expand-btn .arrow { display: inline-block; transition: transform 0.2s; }
+  .expand-btn.open .arrow { transform: rotate(90deg); }
+
+  .add-btn {
+    width: 100%; padding: 12px;
+    border-style: dashed;
+    color: var(--text-dim);
+    margin-top: 4px; background: transparent;
+  }
+  .add-btn:hover { color: var(--accent-hot); border-color: var(--accent); }
+
+  /* ==== CHART ==== */
+  .chart-wrap {
+    background:
+      radial-gradient(ellipse at center 80%, var(--grid-glow-2), transparent 70%),
+      var(--bg-panel);
+    border: 1px solid var(--line);
+    padding: 22px 22px 18px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 24px rgba(0,0,0,0.4);
+  }
+  .chart-wrap::before {
+    content: ''; position: absolute; inset: 8px;
+    border: 1px solid var(--line-soft);
+    pointer-events: none;
+  }
+  .chart-wrap::after {
+    content: '✦';
+    position: absolute; bottom: 10px; left: 50%;
+    transform: translateX(-50%);
+    color: var(--accent); font-size: 10px; opacity: 0.5;
+  }
+  .chart-svg {
+    width: 100%; height: auto; display: block;
+    max-height: 480px;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+  }
+  .chart-meta {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 2.5px;
+    color: var(--text-dim); text-transform: uppercase;
+    margin-bottom: 6px; padding-bottom: 6px;
+    border-bottom: 1px dashed var(--line-soft);
+  }
+  .chart-meta .total {
+    color: var(--accent-hot);
+    font-size: 22px; display: block;
+    font-weight: 600; letter-spacing: 5px;
+    margin-top: 2px;
+    text-shadow: 0 0 12px var(--halo);
+  }
+  .chart-meta .meta-line {
+    display: flex; justify-content: space-around;
+    margin-top: 6px;
+    font-size: 9px; letter-spacing: 1px;
+  }
+  .chart-meta .meta-line span b { color: var(--cyan); font-weight: 600; }
+
+  .seat {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.12s ease, filter 0.12s ease;
+    cursor: pointer;
+  }
+  .seat:hover {
+    transform: scale(1.55);
+    filter: brightness(1.4) drop-shadow(0 0 3px currentColor);
+  }
+
+  /* ==== RESULTS ==== */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px;
+  }
+  .result {
+    border: 1px solid var(--line-soft);
+    background: var(--bg-panel-alt);
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 10px;
+    align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .result .swatch {
+    width: 14px; height: 14px;
+    border: 1px solid rgba(255,255,255,0.18);
+    flex-shrink: 0; box-shadow: 0 0 8px currentColor;
+  }
+  .result .name {
+    font-weight: 600; font-size: 13px; letter-spacing: 1px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result .right { text-align: right; }
+  .result .seats {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-hot); font-weight: 600;
+    font-size: 16px; line-height: 1;
+  }
+  .result .pct {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-mute); font-size: 10px;
+    line-height: 1; margin-top: 2px;
+  }
+  .result .bar {
+    grid-column: 1 / -1;
+    height: 3px; background: var(--bg-input);
+    margin-top: 8px; position: relative;
+  }
+  .result .bar > span {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: currentColor; box-shadow: 0 0 6px currentColor;
+  }
+
+  /* ==== MATRIX ==== */
+  .matrix-wrap { overflow-x: auto; }
+  table.matrix {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.matrix th, table.matrix td {
+    border: 1px solid var(--line-soft);
+    padding: 6px 8px; text-align: center;
+  }
+  table.matrix th {
+    background: var(--bg-panel-alt);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px;
+    color: var(--text-dim); text-transform: uppercase;
+    font-weight: 500;
+  }
+  table.matrix th.faction-col { text-align: left; padding-left: 10px; }
+  table.matrix th .swatch-inline {
+    display: inline-block;
+    width: 10px; height: 10px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 4px currentColor;
+  }
+  table.matrix td.cell-support {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    position: relative;
+    padding: 2px 4px;
+    height: 28px;
+    min-width: 70px;
+    cursor: help;
+  }
+  table.matrix td.cell-support .cell-bar {
+    position: absolute;
+    left: 0; bottom: 0;
+    height: 3px;
+    background: currentColor;
+    box-shadow: 0 0 4px currentColor;
+    opacity: 0.85;
+  }
+  table.matrix td.cell-support .cell-val { position: relative; z-index: 1; }
+  table.matrix td.cell-power {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-hot); font-weight: 600;
+  }
+  table.matrix tr.totals td {
+    background: var(--grid-glow-1);
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    font-size: 11px; letter-spacing: 1px;
+  }
+
+  .empty {
+    color: var(--text-mute); font-style: italic;
+    padding: 16px; text-align: center;
+    font-size: 12px; letter-spacing: 1px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ==== HISTORY ==== */
+  .history-list { display: flex; flex-direction: column; gap: 12px; }
+  .history-item {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    position: relative;
+    box-shadow: 0 0 16px rgba(0,0,0,0.3);
+  }
+  .history-item .h-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 16px;
+    background: linear-gradient(90deg, var(--grid-glow-2), transparent);
+    border-bottom: 1px solid var(--line-soft);
+    cursor: pointer;
+  }
+  .history-item .h-head .stamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--cyan); letter-spacing: 1.5px;
+  }
+  .history-item .h-head .seq {
+    font-family: 'Cinzel', serif;
+    color: var(--accent); font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .history-item .h-head .h-summary {
+    flex: 1; display: flex; gap: 6px;
+    flex-wrap: wrap; overflow: hidden;
+  }
+  .history-item .h-head .h-summary .pill {
+    border: 1px solid currentColor;
+    padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(0,0,0,0.3);
+  }
+  .history-item .h-head .h-summary .pill .dot {
+    width: 8px; height: 8px;
+    background: currentColor; box-shadow: 0 0 4px currentColor;
+  }
+  .history-item .h-actions { display: flex; gap: 6px; }
+  .history-item .h-body {
+    padding: 16px;
+    display: none;
+    border-top: 1px solid var(--line-soft);
+    background: var(--bg-deeper);
+  }
+  .history-item.open .h-body {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+  }
+  .history-item .h-body svg { width: 100%; height: auto; max-height: 360px; }
+  .history-item .h-meta { display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+  .history-item .h-meta .h-faction {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 8px; align-items: center;
+    padding: 4px 8px;
+    border: 1px solid var(--line-soft);
+    background: var(--bg-panel-alt);
+  }
+  .history-item .h-meta .h-faction .swatch {
+    width: 10px; height: 10px;
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 4px currentColor;
+  }
+  .history-item .h-meta .h-faction .nm { font-weight: 600; letter-spacing: 1px; }
+  .history-item .h-meta .h-faction .v {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan); font-size: 11px;
+  }
+  .history-item .h-meta .h-faction .s {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-hot); font-weight: 600;
+    min-width: 28px; text-align: right;
+  }
+  .history-item .h-meta .h-faction .p {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-mute); font-size: 10px;
+    min-width: 38px; text-align: right;
+  }
+
+  /* ==== TRASH ==== */
+  .trash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .trash-grid { grid-template-columns: 1fr; } }
+  .trash-item {
+    border: 1px solid var(--line-soft);
+    background: var(--bg-panel-alt);
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0.85;
+  }
+  .trash-item .swatch {
+    width: 12px; height: 12px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .trash-item .name { flex: 1; font-weight: 600; }
+  .trash-item .stamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-mute);
+  }
+
+  #toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    background: var(--bg-panel);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    padding: 10px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    box-shadow: 0 0 24px var(--halo-cyan);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { color: var(--danger); border-color: var(--danger); box-shadow: 0 0 24px rgba(255,91,110,0.45); }
+  #toast.good  { color: var(--good); border-color: var(--good); box-shadow: 0 0 24px rgba(124,227,154,0.4); }
+
+  .save-indicator {
+    position: fixed; bottom: 12px; right: 16px;
+    z-index: 100;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-mute); text-transform: uppercase;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  .save-indicator.show { opacity: 1; }
+  .save-indicator::before {
+    content: '●';
+    color: var(--good);
+    margin-right: 6px;
+    text-shadow: 0 0 4px var(--good);
+  }
+
+  .deco-divider {
+    text-align: center;
+    color: var(--accent); font-size: 9px;
+    letter-spacing: 6px;
+    margin: 14px 0 8px;
+    opacity: 0.6;
+  }
+  .deco-divider::before, .deco-divider::after {
+    content: '';
+    display: inline-block; vertical-align: middle;
+    width: 40px; height: 1px;
+    background: var(--accent);
+    margin: 0 8px; opacity: 0.5;
+  }
+</style>
+</head>
+<body data-theme="gold">
+<div class="app">
+  <header class="app-header">
+    <span class="crest"></span>
+    <div class="title-block">
+      <h1>Parliament Simulator</h1>
+      <span class="sub">// LEGISLATIVE PROJECTION SYSTEM &middot; v3.0 //</span>
+    </div>
+    <div class="header-spacer"></div>
+
+    <div class="theme-switch" id="themeSwitch" title="Theme">
+      <button data-theme="gold"    title="Imperial Gold"><span class="swatch" style="background:#d4a14a; color:#d4a14a"></span></button>
+      <button data-theme="green"   title="Sci-Fi Green"><span class="swatch" style="background:#5dee7b; color:#5dee7b"></span></button>
+      <button data-theme="cyan"    title="Holo Blue"><span class="swatch" style="background:#5fc8ff; color:#5fc8ff"></span></button>
+      <button data-theme="crimson" title="Crimson"><span class="swatch" style="background:#ff5b5b; color:#ff5b5b"></span></button>
+    </div>
+
+    <label class="toggle" title="If checked, unallocated stratum population yields independent (gray) seats. If unchecked, defined factions absorb the gap proportionally.">
+      <input type="checkbox" id="unalignedToggle">
+      <span class="switch"></span>
+      <span class="toggle-label">Unaligned Seats</span>
+    </label>
+
+    <div class="control-group">
+      <label>Total Seats</label>
+      <input type="number" id="totalSeats" min="10" max="2000" step="1" />
+    </div>
+    <button id="electionBtn" class="primary">⚙ Hold Election</button>
+    <button id="exportBtn">Export</button>
+    <button id="importBtn">Import</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </header>
+
+  <nav class="tab-bar">
+    <button class="tab active" data-tab="sim">Simulator</button>
+    <button class="tab" data-tab="hist">History <span class="badge" id="histBadge">0</span></button>
+    <button class="tab" data-tab="trash">Recycle Bin <span class="badge" id="trashBadge">0</span></button>
+  </nav>
+
+  <section class="tab-panel active" data-panel="sim">
+    <div class="grid">
+      <div class="panel">
+        <span class="corner tl"></span><span class="corner tr"></span>
+        <span class="corner bl"></span><span class="corner br"></span>
+        <div class="panel-header"><h2>Social Strata</h2></div>
+        <div class="panel-body" id="strataList"></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="chart-wrap">
+          <div class="chart-meta">
+            Projected Composition
+            <span class="total" id="chartTotal">— SEATS —</span>
+            <div class="meta-line">
+              <span>Strata <b id="metaStrata">0</b></span>
+              <span>Factions <b id="metaFactions">0</b></span>
+              <span>Mode <b id="metaMode">Proportional</b></span>
+            </div>
+          </div>
+          <svg id="chart" class="chart-svg" viewBox="-110 -110 220 115" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+
+        <div class="panel">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <div class="panel-header"><h2>Live Projection</h2></div>
+          <div class="panel-body no-scroll">
+            <div class="results-grid" id="resultsGrid"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <div class="panel-header"><h2>Support Matrix &mdash; Read Only</h2></div>
+          <div class="panel-body matrix-wrap no-scroll" id="matrixWrap"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <span class="corner tl"></span><span class="corner tr"></span>
+        <span class="corner bl"></span><span class="corner br"></span>
+        <div class="panel-header"><h2>Political Factions</h2></div>
+        <div class="panel-body" id="factionList"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="hist">
+    <div class="panel">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <div class="panel-header">
+        <h2>Election Archive</h2>
+        <button id="clearHistBtn" class="ghost small">Clear All</button>
+      </div>
+      <div class="panel-body no-scroll" id="historyWrap"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="trash">
+    <div class="panel">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <div class="panel-header">
+        <h2>Recycle Bin</h2>
+        <button id="emptyTrashBtn" class="ghost small">Empty Bin</button>
+      </div>
+      <div class="panel-body no-scroll">
+        <div class="trash-grid">
+          <div>
+            <div class="deco-divider">DELETED STRATA</div>
+            <div id="trashStrata"></div>
+          </div>
+          <div>
+            <div class="deco-divider">DELETED FACTIONS</div>
+            <div id="trashFactions"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+<div class="save-indicator" id="saveInd">SAVED</div>
+
+<script>
+'use strict';
+
+/* ============================================================ STATE */
+const STORAGE_KEY = 'parliamentState_v3';
+const SCHEMA_VERSION = 3;
+const UNALIGNED_COLOR = '#6b7e9e';
+
+const DEFAULT_FACTION_COLORS = [
+  '#7a2030','#2c6fb1','#d4a14a','#c44a2a','#5fa863',
+  '#8a4cb1','#3aa39e','#b8862e','#aa5f8e','#4a8a3e'
+];
+
+const THEMES = ['gold','green','cyan','crimson'];
+
+function defaultState() {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    totalSeats: 200,
+    unalignedMode: false,
+    strata: [
+      { id: 's1', name: 'Aristocracy',    population: 500000,   power: 4.0 },
+      { id: 's2', name: 'Bourgeoisie',    population: 1500000,  power: 2.0 },
+      { id: 's3', name: 'Intelligentsia', population: 1000000,  power: 1.6 },
+      { id: 's4', name: 'Workers',        population: 4000000,  power: 0.8 },
+      { id: 's5', name: 'Peasantry',      population: 3000000,  power: 0.5 }
+    ],
+    factions: [
+      { id: 'f1', name: 'Reactionaries', color: '#7a2030',
+        support: { s1: 350000, s2: 225000, s3: 50000,   s4: 200000,  s5: 750000 } },
+      { id: 'f2', name: 'Liberals',      color: '#2c6fb1',
+        support: { s1: 100000, s2: 825000, s3: 350000,  s4: 600000,  s5: 450000 } },
+      { id: 'f3', name: 'Progressives',  color: '#d4a14a',
+        support: { s1: 25000,  s2: 300000, s3: 450000,  s4: 800000,  s5: 450000 } },
+      { id: 'f4', name: 'Socialists',    color: '#c44a2a',
+        support: { s1: 25000,  s2: 150000, s3: 150000,  s4: 2400000, s5: 1350000 } }
+    ],
+    history: [],
+    trash: { strata: [], factions: [] },
+    ui: { tab: 'sim', theme: 'gold', factionExpanded: {} }
+  };
+}
+
+let state = defaultState();
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function uid(prefix) { return prefix + Math.random().toString(36).slice(2, 9); }
+function $(sel, root=document) { return root.querySelector(sel); }
+function $$(sel, root=document) { return Array.from(root.querySelectorAll(sel)); }
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function fmtCount(n) {
+  if (!isFinite(n)) return '0';
+  const abs = Math.abs(n);
+  const fix = (x) => x.toFixed(abs >= 100 ? 0 : abs >= 10 ? 1 : 2).replace(/\.?0+$/,'');
+  if (abs >= 1e9) return fix(n/1e9) + 'B';
+  if (abs >= 1e6) return fix(n/1e6) + 'M';
+  if (abs >= 1e3) return fix(n/1e3) + 'K';
+  return String(Math.round(n));
+}
+
+function fmtFull(n) {
+  return Math.round(n).toLocaleString();
+}
+
+/* ============================================================ STORAGE */
+let saveTimer = null;
+function persist() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const ind = $('#saveInd');
+      ind.classList.add('show');
+      clearTimeout(ind._t);
+      ind._t = setTimeout(() => ind.classList.remove('show'), 800);
+    } catch (e) {
+      console.error('Persist failed:', e);
+    }
+  }, 250);
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = normalizeState(parsed);
+      return true;
+    }
+    // try v2 fallback for migration
+    const v2 = localStorage.getItem('parliamentState_v2');
+    if (v2) {
+      const parsed = JSON.parse(v2);
+      state = normalizeState(parsed);
+      return true;
+    }
+  } catch (e) {
+    console.error('Load failed:', e);
+  }
+  return false;
+}
+
+function normalizeState(p) {
+  const d = defaultState();
+  const oldFormat = !p.schemaVersion || p.schemaVersion < 3;
+  const s = {
+    schemaVersion: SCHEMA_VERSION,
+    totalSeats: typeof p.totalSeats === 'number' ? p.totalSeats : d.totalSeats,
+    unalignedMode: !!p.unalignedMode,
+    strata: Array.isArray(p.strata) ? p.strata.map(x => ({
+      id: x.id || uid('s'),
+      name: String(x.name || 'Stratum'),
+      population: +x.population || 0,
+      power: +x.power || 0
+    })) : d.strata,
+    factions: Array.isArray(p.factions) ? p.factions.map(x => ({
+      id: x.id || uid('f'),
+      name: String(x.name || 'Faction'),
+      color: x.color || '#888',
+      support: x.support && typeof x.support === 'object' ? {...x.support} : {}
+    })) : d.factions,
+    history: Array.isArray(p.history) ? p.history : [],
+    trash: {
+      strata: p.trash && Array.isArray(p.trash.strata) ? p.trash.strata : [],
+      factions: p.trash && Array.isArray(p.trash.factions) ? p.trash.factions : []
+    },
+    ui: {
+      tab: (p.ui && p.ui.tab) || 'sim',
+      theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
+      factionExpanded: (p.ui && p.ui.factionExpanded) || {}
+    }
+  };
+  // Migrate v2 percentage support → raw counts
+  if (oldFormat) {
+    s.factions.forEach(f => {
+      const newSup = {};
+      s.strata.forEach(st => {
+        const pct = f.support[st.id];
+        newSup[st.id] = (typeof pct === 'number')
+          ? Math.round((pct / 100) * (st.population || 0))
+          : 0;
+      });
+      f.support = newSup;
+    });
+  } else {
+    // ensure each faction has every stratum entry
+    s.factions.forEach(f => {
+      s.strata.forEach(st => {
+        if (typeof f.support[st.id] !== 'number') f.support[st.id] = 0;
+      });
+    });
+  }
+  return s;
+}
+
+/* ============================================================ COMPUTE */
+function factionPower(f) {
+  let p = 0;
+  for (const s of state.strata) {
+    p += (f.support[s.id] || 0) * s.power;
+  }
+  return p;
+}
+
+function stratumTotalSupport(s) {
+  return state.factions.reduce((a, f) => a + (f.support[s.id] || 0), 0);
+}
+
+function computeProjection() {
+  const totalSeats = state.totalSeats;
+  const factionPowers = state.factions.map(f => factionPower(f));
+
+  let unalignedPower = 0;
+  if (state.unalignedMode) {
+    state.strata.forEach(s => {
+      const totalSup = stratumTotalSupport(s);
+      const gap = Math.max(0, s.population - totalSup);
+      if (gap > 0) unalignedPower += gap * s.power;
+    });
+  }
+
+  const allEntries = state.factions.map((f, i) => ({
+    faction: f, power: factionPowers[i]
+  }));
+  if (state.unalignedMode && unalignedPower > 0) {
+    allEntries.push({
+      faction: { id: '__unaligned__', name: 'Unaligned', color: UNALIGNED_COLOR },
+      power: unalignedPower,
+      isUnaligned: true
+    });
+  }
+
+  const total = allEntries.reduce((a, e) => a + e.power, 0);
+  if (total <= 0 || totalSeats <= 0) {
+    return { entries: allEntries.map(e => ({...e, seats: 0, share: 0})), total };
+  }
+
+  const exact = allEntries.map(e => e.power / total * totalSeats);
+  const floor = exact.map(Math.floor);
+  let remaining = totalSeats - floor.reduce((a, b) => a + b, 0);
+  const order = exact.map((e, i) => ({ rem: e - floor[i], i }))
+                     .sort((a, b) => b.rem - a.rem);
+  for (let k = 0; k < remaining && k < order.length; k++) floor[order[k].i]++;
+
+  return {
+    entries: allEntries.map((e, i) => ({
+      ...e,
+      seats: floor[i],
+      share: total > 0 ? e.power / total : 0
+    })),
+    total
+  };
+}
+
+/* ============================================================ SEAT GEOMETRY */
+function arrangeSeats(N) {
+  if (N <= 0) return [];
+  let rows = Math.max(2, Math.round(Math.sqrt(N / 4) + 0.5));
+  if (N <= 30) rows = Math.max(2, Math.round(N / 12));
+  if (N >= 600) rows = Math.max(rows, 12);
+
+  const seatR = 1.2;
+  const ringGap = 0.6;
+  const innerR = rows * (seatR * 2 + ringGap) * 0.55 + 4;
+
+  const radii = [];
+  for (let i = 0; i < rows; i++) radii.push(innerR + i * (seatR * 2 + ringGap));
+  const minSpacing = seatR * 2 + 0.25;
+  const capacities = radii.map(r => Math.max(1, Math.floor(Math.PI * r / minSpacing)));
+  const totalCap = capacities.reduce((a, b) => a + b, 0);
+  const seatsPerRow = capacities.map(c => Math.floor(c / totalCap * N));
+  let diff = N - seatsPerRow.reduce((a, b) => a + b, 0);
+  let i = seatsPerRow.length - 1;
+  while (diff > 0) {
+    if (seatsPerRow[i] < capacities[i]) { seatsPerRow[i]++; diff--; }
+    i--; if (i < 0) i = seatsPerRow.length - 1;
+  }
+  i = 0;
+  while (diff < 0) {
+    if (seatsPerRow[i] > 0) { seatsPerRow[i]--; diff++; }
+    i++; if (i >= seatsPerRow.length) i = 0;
+  }
+
+  const positions = [];
+  for (let row = 0; row < rows; row++) {
+    const r = radii[row];
+    const n = seatsPerRow[row];
+    if (n <= 0) continue;
+    for (let s = 0; s < n; s++) {
+      const t = n === 1 ? 0.5 : s / (n - 1);
+      const angle = Math.PI - t * Math.PI;
+      positions.push({
+        x: Math.cos(angle) * r,
+        y: -Math.sin(angle) * r,
+        r: seatR, angle, ring: row
+      });
+    }
+  }
+  positions.sort((a, b) => (b.angle - a.angle) || (b.ring - a.ring));
+  return positions;
+}
+
+/* ============================================================ RENDER */
+function render() {
+  renderStrata();
+  renderFactions();
+  renderMatrix();
+  renderChart();
+  renderHistory();
+  renderTrash();
+  updateBadges();
+  updateMetaLine();
+  $('#unalignedToggle').checked = state.unalignedMode;
+  $('#totalSeats').value = state.totalSeats;
+}
+
+function updateBadges() {
+  $('#histBadge').textContent = state.history.length;
+  $('#trashBadge').textContent = state.trash.strata.length + state.trash.factions.length;
+}
+
+function updateMetaLine() {
+  $('#metaStrata').textContent = state.strata.length;
+  $('#metaFactions').textContent = state.factions.length;
+  $('#metaMode').textContent = state.unalignedMode ? 'Unaligned' : 'Proportional';
+}
+
+/* ---------- STRATA (compact + support bar) ---------- */
+function buildStratumSupportInner(s) {
+  const totalSup = stratumTotalSupport(s);
+  const denom = Math.max(s.population, totalSup, 1);
+  const overAllocated = totalSup > s.population;
+  let segs = '';
+  let legend = '';
+  state.factions.forEach(f => {
+    const v = f.support[s.id] || 0;
+    if (v > 0) {
+      const segPct = (v / denom) * 100;
+      const popPct = s.population > 0 ? (v / s.population) * 100 : 0;
+      segs += `<span class="seg" style="background:${f.color}; color:${f.color}; width:${segPct.toFixed(2)}%" title="${escapeHtml(f.name)}: ${fmtFull(v)} (${popPct.toFixed(1)}% of ${fmtCount(s.population)})"></span>`;
+      legend += `<span class="l" style="color:${f.color}"><span class="d"></span>${escapeHtml(f.name)} ${popPct.toFixed(0)}%</span>`;
+    }
+  });
+  if (!overAllocated) {
+    const unaligned = Math.max(0, s.population - totalSup);
+    if (unaligned > 0) {
+      const segPct = (unaligned / denom) * 100;
+      const popPct = s.population > 0 ? (unaligned / s.population) * 100 : 0;
+      segs += `<span class="seg seg-unaligned" style="width:${segPct.toFixed(2)}%" title="Unaligned: ${fmtFull(unaligned)} (${popPct.toFixed(1)}%)"></span>`;
+      legend += `<span class="l l-unaligned"><span class="d"></span>Unaligned ${popPct.toFixed(0)}%</span>`;
+    }
+  }
+  if (overAllocated) {
+    legend += `<span class="over-warn" title="Sum of supporters exceeds population">⚠ over by ${fmtCount(totalSup - s.population)}</span>`;
+  } else if (legend === '') {
+    legend = '<span class="empty-leg">No support assigned</span>';
+  }
+  return { segs, legend, overAllocated };
+}
+
+function renderStrata() {
+  const root = $('#strataList');
+  root.innerHTML = '';
+  if (state.strata.length === 0) {
+    root.innerHTML = '<div class="empty">No strata defined.</div>';
+  }
+  state.strata.forEach((s, idx) => {
+    const card = document.createElement('div');
+    card.className = 'item stratum-card';
+    card.dataset.sid = s.id;
+    const inner = buildStratumSupportInner(s);
+    card.innerHTML = `
+      <div class="item-head">
+        <input class="name" data-idx="${idx}" data-field="name" value="${escapeHtml(s.name)}" />
+        <button class="danger" data-action="del-stratum">DEL</button>
+      </div>
+      <div class="stratum-fields">
+        <div class="field">
+          <label>POP</label>
+          <input type="number" min="0" step="1" data-idx="${idx}" data-field="population" value="${s.population}">
+        </div>
+        <div class="field">
+          <label>PWR</label>
+          <input type="number" min="0" step="0.1" data-idx="${idx}" data-field="power" value="${s.power}">
+        </div>
+      </div>
+      <div class="stratum-support-bar ${inner.overAllocated?'over':''}" data-sid="${s.id}">${inner.segs}</div>
+      <div class="stratum-support-legend" data-sid="${s.id}">${inner.legend}</div>
+    `;
+    card.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const i = +e.target.dataset.idx;
+        const f = e.target.dataset.field;
+        if (f === 'name') {
+          state.strata[i].name = e.target.value;
+          updateMatrixHeader(i);
+          $$('.stratum-support-row label[data-sid="'+state.strata[i].id+'"] .lbl-name').forEach(el => {
+            el.textContent = state.strata[i].name;
+          });
+        } else {
+          state.strata[i][f] = parseFloat(e.target.value) || 0;
+          state.factions.forEach((_, fi) => updatePowerCell(fi));
+          updateStratumDisplay(state.strata[i].id);
+          // pop change affects unaligned everywhere — refresh other strata bars are fine
+          renderChart();
+          renderResults();
+          // also update faction expand inputs popinfo if visible
+          $$('.stratum-support-row label[data-sid="'+state.strata[i].id+'"] .popinfo').forEach(el => {
+            el.textContent = '/' + fmtCount(state.strata[i].population);
+          });
+        }
+        persist();
+      });
+    });
+    card.querySelector('[data-action=del-stratum]').addEventListener('click', () => {
+      const stratum = state.strata[idx];
+      state.trash.strata.push({
+        id: stratum.id,
+        deletedAt: Date.now(),
+        data: clone(stratum),
+        supportSnapshot: Object.fromEntries(state.factions.map(f => [f.id, f.support[stratum.id] || 0]))
+      });
+      state.strata.splice(idx, 1);
+      state.factions.forEach(f => delete f.support[stratum.id]);
+      render();
+      persist();
+      toast('Stratum moved to bin');
+    });
+    root.appendChild(card);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-btn';
+  addBtn.textContent = '+ Add Stratum';
+  addBtn.addEventListener('click', () => {
+    const newId = uid('s');
+    state.strata.push({ id: newId, name: 'New Stratum', population: 1000000, power: 1.0 });
+    state.factions.forEach(f => { f.support[newId] = 0; });
+    render();
+    persist();
+  });
+  root.appendChild(addBtn);
+}
+
+function updateStratumDisplay(sid) {
+  const s = state.strata.find(x => x.id === sid);
+  if (!s) return;
+  const bar = $(`.stratum-support-bar[data-sid="${sid}"]`);
+  const legend = $(`.stratum-support-legend[data-sid="${sid}"]`);
+  if (!bar || !legend) return;
+  const inner = buildStratumSupportInner(s);
+  bar.innerHTML = inner.segs;
+  bar.classList.toggle('over', inner.overAllocated);
+  legend.innerHTML = inner.legend;
+}
+
+function updateAllStratumDisplays() {
+  state.strata.forEach(s => updateStratumDisplay(s.id));
+}
+
+/* ---------- FACTIONS (raw count input) ---------- */
+function renderFactions() {
+  const root = $('#factionList');
+  root.innerHTML = '';
+  if (state.factions.length === 0) {
+    root.innerHTML = '<div class="empty">No factions defined.</div>';
+  }
+  state.factions.forEach((f, idx) => {
+    const expanded = !!state.ui.factionExpanded[f.id];
+    const card = document.createElement('div');
+    card.className = 'item';
+    let supRows = '';
+    if (state.strata.length === 0) {
+      supRows = '<div class="empty" style="padding:6px">No strata yet.</div>';
+    } else {
+      supRows = state.strata.map(s => {
+        const v = f.support[s.id] || 0;
+        const over = stratumTotalSupport(s) > s.population;
+        return `
+          <div class="stratum-support-row ${over?'over':''}" data-sid="${s.id}">
+            <label data-sid="${s.id}"><span class="lbl-name">${escapeHtml(s.name)}</span><span class="popinfo">/${fmtCount(s.population)}</span></label>
+            <input type="number" min="0" step="1" data-fid="${f.id}" data-sid="${s.id}" value="${v}" />
+          </div>`;
+      }).join('');
+    }
+    card.innerHTML = `
+      <div class="item-head">
+        <span class="swatch" style="background:${f.color}; color:${f.color}">
+          <input type="color" value="${f.color}" />
+        </span>
+        <input class="name" value="${escapeHtml(f.name)}" />
+        <button class="expand-btn ${expanded ? 'open':''}" title="Edit per-stratum supporter counts">
+          <span class="arrow">▸</span> Support
+        </button>
+        <button class="danger">DEL</button>
+      </div>
+      <div class="item-body" style="display:${expanded?'block':'none'}">
+        ${supRows}
+        <div class="item-actions">
+          <button class="small" data-action="up" ${idx===0?'disabled':''}>← Left</button>
+          <button class="small" data-action="down" ${idx===state.factions.length-1?'disabled':''}>Right →</button>
+          <button class="small ghost" data-action="zero">Reset to 0</button>
+        </div>
+      </div>
+    `;
+    const nameInp = card.querySelector('input.name');
+    nameInp.addEventListener('input', e => {
+      state.factions[idx].name = e.target.value;
+      updateMatrixFactionRow(idx);
+      updateAllStratumDisplays();
+      renderResults();
+      persist();
+    });
+    const colorInp = card.querySelector('input[type=color]');
+    colorInp.addEventListener('input', e => {
+      state.factions[idx].color = e.target.value;
+      const swatch = e.target.parentElement;
+      swatch.style.background = e.target.value;
+      swatch.style.color = e.target.value;
+      updateMatrixFactionRow(idx);
+      updateAllStratumDisplays();
+      renderChart();
+      renderResults();
+      persist();
+    });
+    card.querySelector('button.expand-btn').addEventListener('click', () => {
+      state.ui.factionExpanded[f.id] = !state.ui.factionExpanded[f.id];
+      renderFactions();
+      persist();
+    });
+    card.querySelector('button.danger').addEventListener('click', () => {
+      const fac = state.factions[idx];
+      state.trash.factions.push({
+        id: fac.id, deletedAt: Date.now(), data: clone(fac)
+      });
+      state.factions.splice(idx, 1);
+      delete state.ui.factionExpanded[fac.id];
+      render();
+      persist();
+      toast('Faction moved to bin');
+    });
+    card.querySelectorAll('button[data-action=up], button[data-action=down]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const a = btn.dataset.action;
+        const j = a === 'up' ? idx - 1 : idx + 1;
+        if (j < 0 || j >= state.factions.length) return;
+        [state.factions[idx], state.factions[j]] = [state.factions[j], state.factions[idx]];
+        render();
+        persist();
+      });
+    });
+    card.querySelector('button[data-action=zero]').addEventListener('click', () => {
+      state.strata.forEach(s => state.factions[idx].support[s.id] = 0);
+      renderFactions();
+      renderMatrix();
+      updateAllStratumDisplays();
+      renderChart();
+      renderResults();
+      persist();
+    });
+    card.querySelectorAll('.stratum-support-row input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const sid = e.target.dataset.sid;
+        const fid = e.target.dataset.fid;
+        const fac = state.factions.find(x => x.id === fid);
+        if (!fac) return;
+        let v = parseFloat(e.target.value);
+        if (isNaN(v) || v < 0) v = 0;
+        fac.support[sid] = v;
+        // mark this row over-allocated if needed
+        const stra = state.strata.find(x => x.id === sid);
+        if (stra) {
+          const over = stratumTotalSupport(stra) > stra.population;
+          const row = e.target.closest('.stratum-support-row');
+          if (row) row.classList.toggle('over', over);
+        }
+        updateMatrixCell(fid, sid);
+        const fi = state.factions.indexOf(fac);
+        updatePowerCell(fi);
+        updateStratumDisplay(sid);
+        renderChart();
+        renderResults();
+        persist();
+      });
+    });
+    root.appendChild(card);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-btn';
+  addBtn.textContent = '+ Add Faction';
+  addBtn.addEventListener('click', () => {
+    const used = new Set(state.factions.map(f => f.color));
+    const color = DEFAULT_FACTION_COLORS.find(c => !used.has(c)) || '#888';
+    const support = {};
+    state.strata.forEach(s => support[s.id] = 0);
+    state.factions.push({ id: uid('f'), name: 'New Faction', color, support });
+    render();
+    persist();
+  });
+  root.appendChild(addBtn);
+}
+
+/* ---------- MATRIX ---------- */
+function renderMatrix() {
+  const root = $('#matrixWrap');
+  if (state.factions.length === 0 || state.strata.length === 0) {
+    root.innerHTML = '<div class="empty">Add at least one stratum and one faction to see the support matrix.</div>';
+    return;
+  }
+  let html = '<table class="matrix"><thead><tr>';
+  html += '<th class="faction-col">Faction</th>';
+  state.strata.forEach(s => html += `<th data-sid="${s.id}">${escapeHtml(s.name)}</th>`);
+  html += '<th>Power</th>';
+  html += '</tr></thead><tbody>';
+  state.factions.forEach((f, fi) => {
+    html += `<tr data-fid="${f.id}">`;
+    html += `<th class="faction-col" style="color:${f.color}"><span class="swatch-inline" style="background:${f.color}; color:${f.color}"></span><span class="fname">${escapeHtml(f.name)}</span></th>`;
+    state.strata.forEach(s => {
+      html += matrixCellHtml(f, s);
+    });
+    html += `<td class="cell-power">${fmtCount(factionPower(f))}</td>`;
+    html += '</tr>';
+  });
+  // totals row
+  html += '<tr class="totals">';
+  html += '<td style="text-align:left; padding-left:10px;">Σ Stratum Support</td>';
+  state.strata.forEach(s => {
+    const tot = stratumTotalSupport(s);
+    const pct = s.population > 0 ? (tot / s.population * 100) : 0;
+    const over = tot > s.population;
+    const color = over ? 'var(--danger)' : pct < 50 ? 'var(--text-mute)' : 'var(--cyan)';
+    html += `<td data-totals-sid="${s.id}" style="color:${color}" title="${fmtFull(tot)} of ${fmtFull(s.population)}">${fmtCount(tot)} (${pct.toFixed(0)}%)</td>`;
+  });
+  html += '<td></td></tr>';
+  html += '</tbody></table>';
+  root.innerHTML = html;
+}
+
+function matrixCellHtml(f, s) {
+  const v = f.support[s.id] || 0;
+  const pct = s.population > 0 ? (v / s.population * 100) : 0;
+  const barWidth = Math.min(100, pct);
+  return `<td class="cell-support" data-fid="${f.id}" data-sid="${s.id}" style="color:${f.color}" title="${escapeHtml(f.name)} in ${escapeHtml(s.name)}: ${fmtFull(v)} of ${fmtFull(s.population)} (${pct.toFixed(1)}%)">
+    <span class="cell-bar" style="width:${barWidth.toFixed(2)}%"></span>
+    <span class="cell-val" style="color:${v > 0 ? 'var(--text)' : 'var(--text-mute)'}">${fmtCount(v)}</span>
+  </td>`;
+}
+
+function updateMatrixCell(fid, sid) {
+  const cell = $(`.cell-support[data-fid="${fid}"][data-sid="${sid}"]`);
+  if (!cell) return;
+  const fac = state.factions.find(f => f.id === fid);
+  const stra = state.strata.find(s => s.id === sid);
+  if (!fac || !stra) return;
+  const v = fac.support[sid] || 0;
+  const pct = stra.population > 0 ? (v / stra.population * 100) : 0;
+  cell.querySelector('.cell-bar').style.width = Math.min(100, pct).toFixed(2) + '%';
+  const val = cell.querySelector('.cell-val');
+  val.textContent = fmtCount(v);
+  val.style.color = v > 0 ? 'var(--text)' : 'var(--text-mute)';
+  cell.title = `${fac.name} in ${stra.name}: ${fmtFull(v)} of ${fmtFull(stra.population)} (${pct.toFixed(1)}%)`;
+  // totals
+  const totalsCell = $(`td[data-totals-sid="${sid}"]`);
+  if (totalsCell) {
+    const tot = stratumTotalSupport(stra);
+    const tpct = stra.population > 0 ? (tot / stra.population * 100) : 0;
+    const over = tot > stra.population;
+    totalsCell.textContent = `${fmtCount(tot)} (${tpct.toFixed(0)}%)`;
+    totalsCell.style.color = over ? 'var(--danger)' : tpct < 50 ? 'var(--text-mute)' : 'var(--cyan)';
+    totalsCell.title = `${fmtFull(tot)} of ${fmtFull(stra.population)}`;
+  }
+}
+
+function updatePowerCell(fi) {
+  const row = $$('table.matrix tbody tr')[fi];
+  if (!row || row.classList.contains('totals')) return;
+  const last = row.cells[row.cells.length - 1];
+  if (last) last.textContent = fmtCount(factionPower(state.factions[fi]));
+}
+
+function updateMatrixHeader(stratumIdx) {
+  const headers = $$('table.matrix thead th');
+  if (headers && headers[stratumIdx + 1]) {
+    headers[stratumIdx + 1].textContent = state.strata[stratumIdx].name;
+  }
+}
+
+function updateMatrixFactionRow(fi) {
+  const f = state.factions[fi];
+  const row = $$('table.matrix tbody tr')[fi];
+  if (!row) return;
+  const fnameEl = row.querySelector('.fname');
+  if (fnameEl) fnameEl.textContent = f.name;
+  const swatch = row.querySelector('.swatch-inline');
+  if (swatch) { swatch.style.background = f.color; swatch.style.color = f.color; }
+  row.querySelectorAll('.cell-support').forEach(c => { c.style.color = f.color; });
+  row.cells[0].style.color = f.color;
+}
+
+/* ---------- CHART ---------- */
+function buildSeatColors(entries, total) {
+  const colors = [];
+  entries.forEach(e => {
+    for (let k = 0; k < e.seats; k++) colors.push(e.faction.color);
+  });
+  while (colors.length < total) colors.push('#2a3a5a');
+  if (colors.length > total) colors.length = total;
+  return colors;
+}
+
+function renderChart() {
+  const svg = $('#chart');
+  const N = state.totalSeats;
+  const positions = arrangeSeats(N);
+  let maxR = 0;
+  positions.forEach(p => {
+    const dr = Math.sqrt(p.x*p.x + p.y*p.y) + p.r;
+    if (dr > maxR) maxR = dr;
+  });
+  if (maxR === 0) maxR = 50;
+  const pad = 4;
+  svg.setAttribute('viewBox', `${-maxR-pad} ${-maxR-pad} ${(maxR+pad)*2} ${maxR+pad+pad}`);
+
+  const proj = computeProjection();
+  const colors = buildSeatColors(proj.entries, positions.length);
+
+  let svgContent = '';
+  const arcR = maxR - 1;
+  svgContent += `<path d="M ${-arcR},0 A ${arcR},${arcR} 0 0 1 ${arcR},0" stroke="rgba(95,216,255,0.20)" stroke-width="0.25" fill="none" />`;
+  svgContent += `<path d="M ${-(arcR-2)},0 A ${arcR-2},${arcR-2} 0 0 1 ${arcR-2},0" stroke="rgba(212,161,74,0.14)" stroke-width="0.18" fill="none" stroke-dasharray="0.4 0.6" />`;
+  svgContent += `<line x1="${-(maxR+pad-1)}" y1="0" x2="${maxR+pad-1}" y2="0" stroke="rgba(95,216,255,0.30)" stroke-width="0.3" />`;
+  svgContent += `<line x1="${-arcR}" y1="0" x2="${-arcR}" y2="-1.6" stroke="rgba(212,161,74,0.6)" stroke-width="0.25" />`;
+  svgContent += `<line x1="${arcR}"  y1="0" x2="${arcR}"  y2="-1.6" stroke="rgba(212,161,74,0.6)" stroke-width="0.25" />`;
+  positions.forEach((p, i) => {
+    svgContent += `<circle class="seat" cx="${p.x.toFixed(3)}" cy="${p.y.toFixed(3)}" r="${p.r.toFixed(2)}" fill="${colors[i]}" stroke="rgba(0,0,0,0.4)" stroke-width="0.15"><title>Seat ${i+1}</title></circle>`;
+  });
+  svg.innerHTML = svgContent;
+  $('#chartTotal').textContent = `${N} SEATS`;
+  renderResults(proj);
+}
+
+/* ---------- RESULTS ---------- */
+function renderResults(proj) {
+  const root = $('#resultsGrid');
+  if (state.factions.length === 0) {
+    root.innerHTML = '<div class="empty">No factions to display.</div>';
+    return;
+  }
+  proj = proj || computeProjection();
+  const totalSeats = proj.entries.reduce((a, e) => a + e.seats, 0) || 1;
+  let html = '';
+  proj.entries.forEach(e => {
+    const pct = (e.seats / totalSeats * 100).toFixed(1);
+    html += `
+      <div class="result" style="color:${e.faction.color}" title="Power: ${fmtFull(e.power)}">
+        <div class="swatch" style="background:${e.faction.color}; color:${e.faction.color}"></div>
+        <div class="name" style="color:var(--text)">${escapeHtml(e.faction.name)}</div>
+        <div class="right">
+          <div class="seats">${e.seats}</div>
+          <div class="pct">${pct}%</div>
+        </div>
+        <div class="bar"><span style="width:${pct}%"></span></div>
+      </div>
+    `;
+  });
+  root.innerHTML = html;
+}
+
+/* ---------- HISTORY ---------- */
+function renderHistory() {
+  const root = $('#historyWrap');
+  if (state.history.length === 0) {
+    root.innerHTML = '<div class="empty">No elections held yet. Press &laquo;Hold Election&raquo; to record one.</div>';
+    return;
+  }
+  root.innerHTML = '<div class="history-list" id="historyList"></div>';
+  const list = $('#historyList');
+  [...state.history].reverse().forEach((entry, revIdx) => {
+    const seq = state.history.length - revIdx;
+    const totalPower = entry.results.reduce((a, r) => a + r.power, 0);
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    if (entry._open) item.classList.add('open');
+    const stamp = new Date(entry.timestamp).toLocaleString();
+    let pills = '';
+    entry.results.forEach(r => {
+      pills += `<span class="pill" style="color:${r.color}"><span class="dot"></span>${escapeHtml(r.name)} <b style="color:var(--accent-hot); margin-left:2px">${r.seats}</b></span>`;
+    });
+    item.innerHTML = `
+      <div class="h-head">
+        <span class="seq">№ ${seq}</span>
+        <span class="stamp">${stamp}</span>
+        <div class="h-summary">${pills}</div>
+        <div class="h-actions">
+          <button class="small" data-act="restore">Restore State</button>
+          <button class="danger small" data-act="delete">Delete</button>
+        </div>
+      </div>
+      <div class="h-body"></div>
+    `;
+    item.querySelector('.h-head').addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      const idx = state.history.length - 1 - revIdx;
+      state.history[idx]._open = !state.history[idx]._open;
+      item.classList.toggle('open');
+      if (state.history[idx]._open) renderHistoryDetail(item.querySelector('.h-body'), entry, totalPower);
+      persist();
+    });
+    item.querySelector('button[data-act=restore]').addEventListener('click', e => {
+      e.stopPropagation();
+      if (!confirm('Restore this snapshot as the current state? Current edits will be replaced.')) return;
+      state.totalSeats = entry.totalSeats;
+      state.unalignedMode = !!entry.unalignedMode;
+      state.strata = clone(entry.strata);
+      state.factions = clone(entry.factions);
+      state.ui.tab = 'sim';
+      setTab('sim');
+      render();
+      persist();
+      toast('State restored from history');
+    });
+    item.querySelector('button[data-act=delete]').addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = state.history.length - 1 - revIdx;
+      state.history.splice(idx, 1);
+      renderHistory();
+      updateBadges();
+      persist();
+    });
+    if (entry._open) renderHistoryDetail(item.querySelector('.h-body'), entry, totalPower);
+    list.appendChild(item);
+  });
+}
+
+function renderHistoryDetail(container, entry, totalPower) {
+  const positions = arrangeSeats(entry.totalSeats);
+  let maxR = 0;
+  positions.forEach(p => {
+    const dr = Math.sqrt(p.x*p.x + p.y*p.y) + p.r;
+    if (dr > maxR) maxR = dr;
+  });
+  if (maxR === 0) maxR = 50;
+  const pad = 4;
+  const colors = [];
+  entry.results.forEach(r => {
+    for (let k = 0; k < r.seats; k++) colors.push(r.color);
+  });
+  while (colors.length < positions.length) colors.push('#2a3a5a');
+  let svgInner = '';
+  const arcR = maxR - 1;
+  svgInner += `<path d="M ${-arcR},0 A ${arcR},${arcR} 0 0 1 ${arcR},0" stroke="rgba(95,216,255,0.18)" stroke-width="0.25" fill="none" />`;
+  svgInner += `<line x1="${-(maxR+pad-1)}" y1="0" x2="${maxR+pad-1}" y2="0" stroke="rgba(95,216,255,0.25)" stroke-width="0.3" />`;
+  positions.forEach((p, i) => {
+    svgInner += `<circle class="seat" cx="${p.x.toFixed(3)}" cy="${p.y.toFixed(3)}" r="${p.r.toFixed(2)}" fill="${colors[i]}" stroke="rgba(0,0,0,0.4)" stroke-width="0.15"/>`;
+  });
+  const totalSeats = entry.results.reduce((a, r) => a + r.seats, 0);
+  let metaHtml = `<div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); letter-spacing:1.5px; padding-bottom:8px; border-bottom:1px dashed var(--line-soft); margin-bottom:6px;">
+    <span>Seats <b style="color:var(--accent-hot)">${totalSeats}</b></span>
+    <span>Mode <b style="color:var(--cyan)">${entry.unalignedMode ? 'Unaligned' : 'Proportional'}</b></span>
+    <span>Σ Power <b style="color:var(--cyan)">${fmtCount(totalPower)}</b></span>
+  </div>`;
+  entry.results.forEach(r => {
+    const pct = totalSeats > 0 ? (r.seats / totalSeats * 100).toFixed(1) : '0.0';
+    metaHtml += `
+      <div class="h-faction" style="color:${r.color}" title="Power: ${fmtFull(r.power)}">
+        <span class="swatch" style="background:${r.color}; color:${r.color}"></span>
+        <span class="nm" style="color:var(--text)">${escapeHtml(r.name)}</span>
+        <span class="v">${fmtCount(r.power)}</span>
+        <span class="s">${r.seats}</span>
+        <span class="p">${pct}%</span>
+      </div>`;
+  });
+  container.innerHTML = `
+    <div>
+      <svg viewBox="${-maxR-pad} ${-maxR-pad} ${(maxR+pad)*2} ${maxR+pad+pad}" preserveAspectRatio="xMidYMid meet">${svgInner}</svg>
+    </div>
+    <div class="h-meta">${metaHtml}</div>
+  `;
+}
+
+/* ---------- TRASH ---------- */
+function renderTrash() {
+  const sRoot = $('#trashStrata');
+  const fRoot = $('#trashFactions');
+  if (state.trash.strata.length === 0) {
+    sRoot.innerHTML = '<div class="empty">Empty.</div>';
+  } else {
+    sRoot.innerHTML = '';
+    state.trash.strata.forEach((entry, i) => {
+      const div = document.createElement('div');
+      div.className = 'trash-item';
+      div.innerHTML = `
+        <div class="swatch" style="background:var(--text-mute)"></div>
+        <div class="name">${escapeHtml(entry.data.name)}</div>
+        <div class="stamp">${new Date(entry.deletedAt).toLocaleString()}</div>
+        <button class="small" data-act="restore">Restore</button>
+        <button class="danger small" data-act="purge">Purge</button>
+      `;
+      div.querySelector('button[data-act=restore]').addEventListener('click', () => {
+        const data = clone(entry.data);
+        if (state.strata.find(s => s.id === data.id)) data.id = uid('s');
+        state.strata.push(data);
+        state.factions.forEach(f => {
+          const restoredVal = entry.supportSnapshot && entry.supportSnapshot[f.id] != null
+            ? entry.supportSnapshot[f.id] : 0;
+          f.support[data.id] = restoredVal;
+        });
+        state.trash.strata.splice(i, 1);
+        render();
+        persist();
+        toast('Stratum restored', false, 'good');
+      });
+      div.querySelector('button[data-act=purge]').addEventListener('click', () => {
+        if (!confirm('Permanently delete this stratum?')) return;
+        state.trash.strata.splice(i, 1);
+        renderTrash();
+        updateBadges();
+        persist();
+      });
+      sRoot.appendChild(div);
+    });
+  }
+  if (state.trash.factions.length === 0) {
+    fRoot.innerHTML = '<div class="empty">Empty.</div>';
+  } else {
+    fRoot.innerHTML = '';
+    state.trash.factions.forEach((entry, i) => {
+      const div = document.createElement('div');
+      div.className = 'trash-item';
+      div.innerHTML = `
+        <div class="swatch" style="background:${entry.data.color}"></div>
+        <div class="name">${escapeHtml(entry.data.name)}</div>
+        <div class="stamp">${new Date(entry.deletedAt).toLocaleString()}</div>
+        <button class="small" data-act="restore">Restore</button>
+        <button class="danger small" data-act="purge">Purge</button>
+      `;
+      div.querySelector('button[data-act=restore]').addEventListener('click', () => {
+        const data = clone(entry.data);
+        if (state.factions.find(f => f.id === data.id)) data.id = uid('f');
+        state.strata.forEach(s => {
+          if (typeof data.support[s.id] !== 'number') data.support[s.id] = 0;
+        });
+        state.factions.push(data);
+        state.trash.factions.splice(i, 1);
+        render();
+        persist();
+        toast('Faction restored', false, 'good');
+      });
+      div.querySelector('button[data-act=purge]').addEventListener('click', () => {
+        if (!confirm('Permanently delete this faction?')) return;
+        state.trash.factions.splice(i, 1);
+        renderTrash();
+        updateBadges();
+        persist();
+      });
+      fRoot.appendChild(div);
+    });
+  }
+}
+
+/* ============================================================ THEMES */
+function applyTheme(name) {
+  if (!THEMES.includes(name)) name = 'gold';
+  document.body.dataset.theme = name;
+  state.ui.theme = name;
+  $$('#themeSwitch button').forEach(b => b.classList.toggle('active', b.dataset.theme === name));
+}
+
+$$('#themeSwitch button').forEach(b => {
+  b.addEventListener('click', () => {
+    applyTheme(b.dataset.theme);
+    persist();
+    // re-render charts to refresh colors that come from CSS vars (none for seats, but ok)
+  });
+});
+
+/* ============================================================ TABS */
+function setTab(t) {
+  $$('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === t));
+  $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  state.ui.tab = t;
+  persist();
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+/* ============================================================ EVENTS */
+$('#totalSeats').addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  state.totalSeats = isNaN(v) ? 0 : Math.max(0, v);
+  renderChart();
+  persist();
+});
+
+$('#unalignedToggle').addEventListener('change', e => {
+  state.unalignedMode = e.target.checked;
+  updateMetaLine();
+  renderChart();
+  persist();
+});
+
+$('#electionBtn').addEventListener('click', () => {
+  if (state.factions.length === 0) { toast('No factions to elect', true); return; }
+  if (state.strata.length === 0) { toast('No strata defined', true); return; }
+  const proj = computeProjection();
+  const entry = {
+    id: uid('e'),
+    timestamp: Date.now(),
+    totalSeats: state.totalSeats,
+    unalignedMode: state.unalignedMode,
+    strata: clone(state.strata),
+    factions: clone(state.factions),
+    results: proj.entries.map(e => ({
+      factionId: e.faction.id,
+      name: e.faction.name,
+      color: e.faction.color,
+      power: e.power,
+      seats: e.seats,
+      share: e.share,
+      isUnaligned: !!e.isUnaligned
+    })),
+    _open: true
+  };
+  state.history.forEach(h => h._open = false);
+  state.history.push(entry);
+  renderHistory();
+  updateBadges();
+  persist();
+  toast('Election recorded', false, 'good');
+});
+
+$('#exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `parliament-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('State exported', false, 'good');
+});
+
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (!parsed || !Array.isArray(parsed.strata) || !Array.isArray(parsed.factions)) {
+        throw new Error('Invalid format');
+      }
+      state = normalizeState(parsed);
+      applyTheme(state.ui.theme || 'gold');
+      setTab(state.ui.tab || 'sim');
+      render();
+      persist();
+      toast('State imported', false, 'good');
+    } catch (err) {
+      toast('Import failed: ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+$('#clearHistBtn').addEventListener('click', () => {
+  if (state.history.length === 0) return;
+  if (!confirm('Clear all election history?')) return;
+  state.history = [];
+  renderHistory();
+  updateBadges();
+  persist();
+});
+
+$('#emptyTrashBtn').addEventListener('click', () => {
+  if (state.trash.strata.length === 0 && state.trash.factions.length === 0) return;
+  if (!confirm('Permanently empty the recycle bin?')) return;
+  state.trash.strata = [];
+  state.trash.factions = [];
+  renderTrash();
+  updateBadges();
+  persist();
+});
+
+/* ============================================================ TOAST */
+function toast(msg, isError=false, kind='') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = '';
+  if (isError) t.classList.add('error');
+  else if (kind) t.classList.add(kind);
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ============================================================ INIT */
+loadFromStorage();
+applyTheme(state.ui.theme || 'gold');
+setTab(state.ui.tab || 'sim');
+render();
+</script>
+</body>
+</html>
