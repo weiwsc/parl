@@ -477,7 +477,9 @@
   }
 
   .sidebar-foot {
-    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
     text-align: center;
     border-top: 1px solid var(--line-soft);
   }
@@ -1350,12 +1352,14 @@
   [data-readonly] select:not([data-ro-allow]),
   [data-readonly] textarea:not([data-ro-allow]) {
     pointer-events: none !important;
-    opacity: 0.38 !important;
+  }
+  /* Color pickers sit under swatches at opacity:0 — keep them invisible */
+  [data-readonly] input[type="color"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
   [data-readonly] button:not([data-ro-allow]) {
-    pointer-events: none !important;
-    opacity: 0.35 !important;
-    cursor: not-allowed !important;
+    display: none !important;
   }
   [data-readonly] .add-btn { display: none; }
 

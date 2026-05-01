@@ -111,7 +111,7 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
 
         <span className="fr-seats" style={{ color: faction.color }}>{seats > 0 ? seats : '·'}</span>
         <span className="fr-pct">{pct > 0 ? pct.toFixed(1) + '%' : '·'}</span>
-        <button className={`fr-toggle${editOpen ? ' fr-toggle--open' : ''}`} onClick={() => setEditOpen(v => !v)}>▾</button>
+        <button data-ro-allow className={`fr-toggle${editOpen ? ' fr-toggle--open' : ''}`} onClick={() => setEditOpen(v => !v)}>▾</button>
       </div>
       {editOpen && (
         <div className="fr-detail">
@@ -232,7 +232,7 @@ function AllianceBlock({ alliance, isFirst, isLast, projection }: AllianceBlockP
   </span>
         <span className="ag-seats" style={{ color: alliance.color }}>{totalSeats > 0 ? totalSeats : '·'}</span>
         <span className="ag-pct">{totalShare > 0 ? (totalShare * 100).toFixed(1) + '%' : '·'}</span>
-        <button className={`fr-toggle${editOpen ? ' fr-toggle--open' : ''}`} onClick={() => setEditOpen(v => !v)}>⋯</button>
+        <button data-ro-allow className={`fr-toggle${editOpen ? ' fr-toggle--open' : ''}`} onClick={() => setEditOpen(v => !v)}>⋯</button>
       </div>
 
       {editOpen && (
