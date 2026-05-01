@@ -374,10 +374,125 @@
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
+  /* ==== APP BODY (sidebar + main) ==== */
+  .app-body {
+    display: flex;
+    gap: 0;
+    align-items: flex-start;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 54px;
+    flex-shrink: 0;
+    background: var(--bg-deeper);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    /* gradient right-border mimics the panel accent lines */
+    box-shadow: inset -1px 0 0 var(--line-soft);
+  }
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 10%; bottom: 10%; right: -1px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, var(--accent) 50%, transparent);
+    opacity: 0.25;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
+  }
+
+  .sidebar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 12px 4px;
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.13s, border-color 0.13s;
+    letter-spacing: 0;
+  }
+  .sidebar-item:hover {
+    background: rgba(255,255,255,0.035);
+    border-left-color: var(--line-strong);
+  }
+  .sidebar-item.active {
+    background: linear-gradient(90deg, rgba(212,161,74,0.09), transparent);
+    border-left-color: var(--accent);
+  }
+  /* theme-aware active tint — override for non-gold themes */
+  body[data-theme="green"]   .sidebar-item.active { background: linear-gradient(90deg, rgba(93,238,123,0.09), transparent); }
+  body[data-theme="cyan"]    .sidebar-item.active { background: linear-gradient(90deg, rgba(95,200,255,0.09), transparent); }
+  body[data-theme="crimson"] .sidebar-item.active { background: linear-gradient(90deg, rgba(255,91,91,0.09), transparent); }
+
+  .sidebar-icon {
+    font-size: 16px;
+    line-height: 1;
+    color: var(--text-mute);
+    transition: color 0.13s;
+  }
+  .sidebar-item.active .sidebar-icon,
+  .sidebar-item:hover .sidebar-icon { color: var(--accent); }
+
+  .sidebar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5px;
+    letter-spacing: 1.5px;
+    color: var(--text-mute);
+    text-transform: uppercase;
+    transition: color 0.13s;
+  }
+  .sidebar-item.active .sidebar-label { color: var(--accent); }
+
+  .sidebar-badge {
+    position: absolute;
+    top: 7px; right: 5px;
+    background: var(--accent-hot);
+    color: var(--bg-deep);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; font-weight: 700;
+    padding: 1px 3px;
+    line-height: 1.3;
+    min-width: 13px;
+    text-align: center;
+  }
+
+  .sidebar-foot {
+    padding: 10px 0;
+    text-align: center;
+    border-top: 1px solid var(--line-soft);
+  }
+  .sidebar-ver {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 1px;
+    color: var(--text-mute);
+    opacity: 0.5;
+    text-transform: uppercase;
+  }
+
+  .app-main {
+    flex: 1;
+    min-width: 0;
+    padding-left: 14px;
+  }
+
   /* ==== GRID ==== */
   .grid {
     display: grid;
-    grid-template-columns: 320px 1fr 360px;
+    grid-template-columns: 320px 1fr 460px;
     gap: 16px;
   }
   @media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } }
@@ -430,7 +545,7 @@
   }
   .panel-body {
     padding: 14px;
-    max-height: calc(100vh - 280px);
+    max-height: 100%;
     overflow-y: auto;
   }
   .panel-body.no-scroll { max-height: none; overflow-y: visible; }
@@ -640,8 +755,8 @@
   /* ==== CHART ==== */
   .chart-wrap {
     background:
-      radial-gradient(ellipse at center 80%, var(--grid-glow-2), transparent 70%),
-      var(--bg-panel);
+      radial-gradient(ellipse at center 80%, var(--grid-glow-2), transparent 80%),
+      rgb(16 18 17);
     border: 1px solid var(--line);
     padding: 22px 22px 18px;
     position: relative; overflow: hidden;
@@ -945,6 +1060,270 @@
     text-shadow: 0 0 4px var(--good);
   }
 
+  /* ==== CHART LEGEND ==== */
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    justify-content: center;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line-soft);
+  }
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .chart-legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chart-legend-name { color: var(--text-dim); }
+  .chart-legend-seats {
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  /* ==== FACTIONS REGISTER ==== */
+  .factions-register {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* — Faction row — */
+  .fr-wrap { position: relative; }
+
+  .fr {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 6px;
+    border: 1px solid transparent;
+    cursor: grab;
+    transition: border-color 0.12s, background 0.12s;
+    min-height: 30px;
+  }
+  .fr:hover { border-color: var(--line-soft); background: rgba(255,255,255,0.015); }
+  .fr-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;          /* Takes up all available middle space */
+    gap: 2px;         /* Tight gap between name and bar */
+    overflow: hidden;
+  }
+  .fr-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .fr-swatch {
+    width: 13px; height: 13px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.18);
+    cursor: pointer; position: relative;
+  }
+  .fr-swatch input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .fr-name {
+    width: 100%;      /* Fill the container */
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 1px 2px;
+    outline: none;
+    transition: border-color 0.12s;
+    /* Removed flex: 0 1 130px and min-width: 55px */
+  }
+  .fr-name:hover { border-bottom-color: var(--line); }
+  .fr-name:focus { border-bottom-color: var(--cyan); color: var(--accent-hot); }
+
+  .fr-bar-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+    /* Removed flex: 1 since the parent (.fr-info) handles the growth */
+  }
+
+  /* Keep these from shrinking so the numbers stay aligned */
+  .fr-seats, .fr-pct, .fr-toggle {
+    flex-shrink: 0;
+  }
+  .fr-bar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    transition: width 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .fr-seats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 700;
+    min-width: 22px; text-align: right; flex-shrink: 0;
+  }
+  .fr-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-dim);
+    min-width: 38px; text-align: right; flex-shrink: 0;
+  }
+
+  .fr-toggle {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-mute); padding: 2px 3px; font-size: 10px;
+    flex-shrink: 0; letter-spacing: 0;
+    opacity: 0.4; transition: opacity 0.12s, color 0.12s, transform 0.15s;
+  }
+  .fr:hover .fr-toggle, .fr-toggle--open { opacity: 1; }
+  .fr-toggle--open { transform: rotate(180deg); color: var(--cyan); }
+  .fr-toggle:hover { color: var(--cyan); }
+
+  /* Faction detail / edit panel */
+  .fr-detail {
+    padding: 8px 10px 10px 24px;
+    background: var(--bg-deeper);
+    border: 1px solid var(--line-soft);
+    border-top: none;
+    margin-bottom: 3px;
+  }
+  .fr-detail-actions {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 8px; padding-bottom: 7px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* — Alliance block — */
+  .ag {
+    border: 1px solid rgba(255,255,255,0.07);
+    border-left: 2px solid;
+    background: rgba(0,0,0,0.08);
+    margin-bottom: 6px;
+  }
+  .ag-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;    /* This pushes everything after it to the right */
+    gap: 2px;        /* Small gap between name and bar */
+    overflow: hidden;
+  }
+  .ag-head {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 6px 6px 8px;
+    border-bottom: 1px solid;
+    min-height: 34px;
+  }
+
+  .ag-collapse {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-mute); font-size: 8px; padding: 0 2px;
+    flex-shrink: 0; letter-spacing: 0; line-height: 1;
+    transition: color 0.12s;
+  }
+  .ag-collapse:hover { color: var(--cyan); }
+
+  .ag-diamond {
+    width: 9px; height: 9px; flex-shrink: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .ag-swatch {
+    width: 13px; height: 13px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer; position: relative;
+  }
+  .ag-swatch input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .ag-name {
+    flex: 1;         /* Allow name to fill the ag-info width */
+    width: 100%;     /* Ensure it spans the full width of ag-info */
+    background: transparent; border: none;
+    border-bottom: 1px dashed transparent;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    padding: 1px 2px; outline: none;
+    transition: border-color 0.12s;
+    /* Removed: margin: auto and flex: 0 1 120px */
+  }
+  .ag-name:hover { border-bottom-color: rgba(255,255,255,0.15); }
+  .ag-name:focus { border-bottom-color: var(--cyan); }
+
+  .ag-bar-track {
+    width: 100%;     /* Span the full width under the name */
+    height: 4px;     /* Slightly thinner looks better under text */
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative; overflow: hidden;
+  }
+
+  /* 4. Ensure right-side elements don't shrink */
+  .ag-seats, .ag-pct, .ag-swatch, .fr-toggle {
+    flex-shrink: 0;
+  }
+  .ag-bar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    transition: width 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .ag-seats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    min-width: 22px; text-align: right; flex-shrink: 0;
+  }
+  .ag-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-dim);
+    min-width: 38px; text-align: right; flex-shrink: 0;
+  }
+
+  .ag-edit-row {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 5px 8px;
+    background: rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .ag-body { padding: 4px 0 6px 16px; }
+
+  .ag-drop-hint {
+    padding: 10px; margin: 4px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    color: var(--text-mute); text-align: center;
+    border: 1px dashed var(--line-soft);
+    font-style: italic;
+  }
+
+  /* Unallied label & add row */
+  .register-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--text-mute);
+    padding: 9px 6px 5px;
+    border-top: 1px solid var(--line-soft);
+    margin-top: 2px;
+  }
+  .register-section-label::before { content: '◆ '; color: var(--accent-deep); font-size: 7px; }
+
+  .factions-add-row {
+    display: flex; gap: 8px;
+    padding-top: 4px;
+  }
+  .factions-add-row .add-btn { flex: 1; }
+
   .deco-divider {
     text-align: center;
     color: var(--accent); font-size: 9px;
@@ -958,4 +1337,94 @@
     width: 40px; height: 1px;
     background: var(--accent);
     margin: 0 8px; opacity: 0.5;
+  }
+
+  /* ==== READ-ONLY MODE ==== */
+  [data-readonly] input:not([data-ro-allow]),
+  [data-readonly] select:not([data-ro-allow]),
+  [data-readonly] textarea:not([data-ro-allow]) {
+    pointer-events: none !important;
+    opacity: 0.38 !important;
+  }
+  [data-readonly] button:not([data-ro-allow]) {
+    pointer-events: none !important;
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+  }
+  [data-readonly] .add-btn { display: none; }
+
+  /* ==== AUTH BADGE ==== */
+  .auth-badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    border: 1px solid currentColor;
+  }
+  .auth-badge--admin { color: var(--accent-hot); border-color: var(--accent); }
+  .auth-badge--guest { color: var(--text-mute); border-color: var(--line); }
+
+  /* ==== SETTINGS PANEL ==== */
+  .settings-panel { max-width: 560px; }
+  .settings-section {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .settings-section:last-child { border-bottom: none; }
+  .settings-section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent-deep);
+    margin-bottom: 12px;
+  }
+  .settings-section-title::before { content: '◆ '; }
+  .settings-row {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 10px;
+  }
+  .settings-row--buttons { flex-wrap: wrap; }
+  .settings-row--buttons button { min-width: 120px; }
+  .settings-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-dim);
+    min-width: 80px; flex-shrink: 0;
+  }
+
+  /* Language selector */
+  .lang-selector { display: flex; gap: 4px; }
+  .lang-btn {
+    padding: 5px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    cursor: pointer; transition: all 0.13s;
+  }
+  .lang-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .lang-btn.active {
+    border-color: var(--accent); color: var(--accent-hot);
+    background: linear-gradient(180deg, var(--grid-glow-2), transparent);
+  }
+
+  /* Login form */
+  .login-form {
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 280px;
+  }
+  .login-form input {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px; outline: none;
+    transition: border-color 0.13s;
+  }
+  .login-form input:focus { border-color: var(--cyan); }
+  .login-error {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    color: var(--danger);
   }

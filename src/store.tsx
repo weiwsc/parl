@@ -1,4 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
+import type { AppState } from './models/types';
 
 export const STORAGE_KEY = 'parliamentState_v3';
 export const SCHEMA_VERSION = 3;
@@ -6,10 +8,15 @@ export const UNALIGNED_COLOR = '#6b7e9e';
 
 export const THEMES = ['gold', 'green', 'cyan', 'crimson'];
 
-export function uid(prefix) { return prefix + Math.random().toString(36).slice(2, 9); }
-export function clone(o) { return JSON.parse(JSON.stringify(o)); }
+export function uid(prefix: string): string { 
+  return prefix + Math.random().toString(36).slice(2, 9); 
+}
 
-export function defaultState() {
+export function clone<T>(o: T): T { 
+  return JSON.parse(JSON.stringify(o)); 
+}
+
+export function defaultState(): AppState {
   return {
     schemaVersion: SCHEMA_VERSION,
     totalSeats: 200,
@@ -32,38 +39,47 @@ export function defaultState() {
         support: { s1: 25000,  s2: 150000, s3: 150000,  s4: 2400000, s5: 1350000 } }
     ],
     history: [],
-    trash: { strata: [], factions: [] },
-    ui: { tab: 'sim', theme: 'gold', factionExpanded: {} }
+    alliances: [],
+    trash: { strata: [], factions: [], alliances: [] },
+    ui: { tab: 'sim', language : 'cn', theme: 'gold', factionExpanded: {} }
   };
 }
 
-export function normalizeState(p) {
+export function normalizeState(p: any): AppState {
   const d = defaultState();
   if (!p) return d;
   const oldFormat = !p.schemaVersion || p.schemaVersion < 3;
-  const s = {
+  const s: AppState = {
     schemaVersion: SCHEMA_VERSION,
     totalSeats: typeof p.totalSeats === 'number' ? p.totalSeats : d.totalSeats,
     unalignedMode: !!p.unalignedMode,
-    strata: Array.isArray(p.strata) ? p.strata.map(x => ({
+    strata: Array.isArray(p.strata) ? p.strata.map((x: any) => ({
       id: x.id || uid('s'),
       name: String(x.name || 'Stratum'),
       population: +x.population || 0,
       power: +x.power || 0
     })) : d.strata,
-    factions: Array.isArray(p.factions) ? p.factions.map(x => ({
+    factions: Array.isArray(p.factions) ? p.factions.map((x: any) => ({
       id: x.id || uid('f'),
       name: String(x.name || 'Faction'),
       color: x.color || '#888',
       support: x.support && typeof x.support === 'object' ? {...x.support} : {}
     })) : d.factions,
     history: Array.isArray(p.history) ? p.history : [],
+    alliances: Array.isArray(p.alliances) ? p.alliances.map((x: any) => ({
+      id: x.id || uid('a'),
+      name: String(x.name || 'Alliance'),
+      color: x.color || '#888',
+      factionIds: Array.isArray(x.factionIds) ? x.factionIds : []
+    })) : d.alliances,
     trash: {
       strata: p.trash && Array.isArray(p.trash.strata) ? p.trash.strata : [],
-      factions: p.trash && Array.isArray(p.trash.factions) ? p.trash.factions : []
+      factions: p.trash && Array.isArray(p.trash.factions) ? p.trash.factions : [],
+      alliances: p.trash && Array.isArray(p.trash.alliances) ? p.trash.alliances : []
     },
     ui: {
       tab: (p.ui && p.ui.tab) || 'sim',
+      language: (p.language && p.language || 'en'),
       theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
       factionExpanded: (p.ui && p.ui.factionExpanded) || {}
     }
@@ -71,7 +87,7 @@ export function normalizeState(p) {
   
   if (oldFormat) {
     s.factions.forEach(f => {
-      const newSup = {};
+      const newSup: Record<string, number> = {};
       s.strata.forEach(st => {
         const pct = f.support[st.id];
         newSup[st.id] = (typeof pct === 'number')
@@ -90,7 +106,7 @@ export function normalizeState(p) {
   return s;
 }
 
-export function loadFromStorage() {
+export function loadFromStorage(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return normalizeState(JSON.parse(raw));
@@ -102,11 +118,25 @@ export function loadFromStorage() {
   return defaultState();
 }
 
-const AppContext = createContext();
+interface ToastMessage {
+  message: string;
+  type: string;
+  id: number;
+}
 
-export function AppProvider({ children }) {
-  const [state, setState] = useState(loadFromStorage());
-  const [toastMessage, setToastMessage] = useState(null);
+interface AppContextType {
+  state: AppState;
+  updateState: (updater: Partial<AppState> | ((prev: AppState) => AppState)) => void;
+  toastMessage: ToastMessage | null;
+  savedStatus: boolean;
+  showToast: (message: string, type?: string) => void;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<AppState>(loadFromStorage());
+  const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
   const [savedStatus, setSavedStatus] = useState(false);
 
   useEffect(() => {
@@ -126,14 +156,14 @@ export function AppProvider({ children }) {
     document.body.setAttribute('data-theme', state.ui.theme);
   }, [state.ui.theme]);
 
-  const updateState = (updater) => {
+  const updateState = (updater: Partial<AppState> | ((prev: AppState) => AppState)) => {
     setState((prev) => {
       const next = typeof updater === 'function' ? updater(clone(prev)) : { ...prev, ...updater };
       return next;
     });
   };
 
-  const showToast = (message, type = 'good') => {
+  const showToast = (message: string, type = 'good') => {
     setToastMessage({ message, type, id: Date.now() });
     setTimeout(() => setToastMessage(null), 3000);
   };
@@ -145,6 +175,8 @@ export function AppProvider({ children }) {
   );
 }
 
-export function useAppContext() {
-  return useContext(AppContext);
+export function useAppContext(): AppContextType {
+  const context = useContext(AppContext);
+  if (!context) throw new Error("useAppContext must be used within AppProvider");
+  return context;
 }

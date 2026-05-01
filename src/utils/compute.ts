@@ -1,6 +1,7 @@
 import { UNALIGNED_COLOR } from '../store';
+import type { AppState, Faction, Stratum, ProjectionResult, ProjectionEntry } from '../models/types';
 
-export function factionPower(state, f) {
+export function factionPower(state: AppState, f: Faction): number {
   let p = 0;
   for (const s of state.strata) {
     p += (f.support[s.id] || 0) * s.power;
@@ -8,11 +9,11 @@ export function factionPower(state, f) {
   return p;
 }
 
-export function stratumTotalSupport(state, s) {
+export function stratumTotalSupport(state: AppState, s: Stratum): number {
   return state.factions.reduce((a, f) => a + (f.support[s.id] || 0), 0);
 }
 
-export function computeProjection(state) {
+export function computeProjection(state: AppState): ProjectionResult {
   const totalSeats = state.totalSeats;
   const factionPowers = state.factions.map(f => factionPower(state, f));
 
@@ -25,14 +26,19 @@ export function computeProjection(state) {
     });
   }
 
-  const allEntries = state.factions.map((f, i) => ({
-    faction: f, power: factionPowers[i]
-  }));
+  const allEntries: ProjectionEntry[] = state.factions.map((f, i) => {
+    const alliance = state.alliances?.find(a => a.factionIds.includes(f.id));
+    return {
+      faction: f, power: factionPowers[i], seats: 0, share: 0, alliance
+    };
+  });
   if (state.unalignedMode && unalignedPower > 0) {
     allEntries.push({
       faction: { id: '__unaligned__', name: 'Unaligned', color: UNALIGNED_COLOR },
       power: unalignedPower,
-      isUnaligned: true
+      isUnaligned: true,
+      seats: 0,
+      share: 0
     });
   }
 
@@ -48,17 +54,33 @@ export function computeProjection(state) {
                      .sort((a, b) => b.rem - a.rem);
   for (let k = 0; k < remaining && k < order.length; k++) floor[order[k].i]++;
 
+  const finalEntries = allEntries.map((e, i) => ({
+    ...e,
+    seats: floor[i],
+    share: total > 0 ? e.power / total : 0
+  })).sort((a, b) => {
+    if (a.isUnaligned) return 1;
+    if (b.isUnaligned) return -1;
+    const getOrder = (e: ProjectionEntry) => {
+      if (e.alliance) {
+        const aIdx = state.alliances.findIndex(al => al.id === e.alliance!.id);
+        const fIdx = e.alliance.factionIds.indexOf(e.faction.id);
+        return aIdx * 1000 + (fIdx >= 0 ? fIdx : 999);
+      } else {
+        const fIdx = state.factions.findIndex(f => f.id === e.faction.id);
+        return 1000000 + fIdx;
+      }
+    };
+    return getOrder(a) - getOrder(b);
+  });
+
   return {
-    entries: allEntries.map((e, i) => ({
-      ...e,
-      seats: floor[i],
-      share: total > 0 ? e.power / total : 0
-    })),
+    entries: finalEntries,
     total
   };
 }
 
-export function arrangeSeats(N) {
+export function arrangeSeats(N: number): Array<{x: number, y: number, r: number, angle: number, ring: number}> {
   if (N <= 0) return [];
   let rows = Math.max(2, Math.round(Math.sqrt(N / 4) + 0.5));
   if (N <= 30) rows = Math.max(2, Math.round(N / 12));
@@ -105,22 +127,24 @@ export function arrangeSeats(N) {
   return positions;
 }
 
-export function escapeHtml(s) {
+export function escapeHtml(s: string): string {
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+  }[c as keyof typeof map] || c));
 }
 
-export function fmtCount(n) {
+const map = { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' };
+
+export function fmtCount(n: number): string {
   if (!isFinite(n)) return '0';
   const abs = Math.abs(n);
-  const fix = (x) => x.toFixed(abs >= 100 ? 0 : abs >= 10 ? 1 : 2).replace(/\.?0+$/,'');
+  const fix = (x: number) => x.toFixed(abs >= 100 ? 0 : abs >= 10 ? 1 : 2).replace(/\.?0+$/, '');
   if (abs >= 1e9) return fix(n/1e9) + 'B';
   if (abs >= 1e6) return fix(n/1e6) + 'M';
   if (abs >= 1e3) return fix(n/1e3) + 'K';
   return String(Math.round(n));
 }
 
-export function fmtFull(n) {
+export function fmtFull(n: number): string {
   return Math.round(n).toLocaleString();
 }

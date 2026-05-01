@@ -1,18 +1,30 @@
-# Logs
+# ── Node ──────────────────────────────────────────────
+node_modules
+dist
+dist-ssr
+*.local
+
+# ── Logs ──────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ── .NET build artifacts ───────────────────────────────
+backend/bin/
+backend/obj/
 
-# Editor directories and files
+# ── Runtime data (Docker volume mount in dev) ──────────
+data/
+
+# ── Secrets — never commit these ──────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Editor ────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -20,5 +32,4 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?

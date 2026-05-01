@@ -1,19 +1,41 @@
 import { useAppContext, uid } from '../store';
-import { escapeHtml, fmtCount, fmtFull, stratumTotalSupport } from '../utils/compute';
+import { fmtCount, fmtFull, stratumTotalSupport } from '../utils/compute';
+import type { Stratum } from '../models/types';
+import { useLang } from '../utils/localization';
 
-function StratumCard({ stratum }) {
+interface StratumCardProps {
+  stratum: Stratum;
+}
+
+interface Segment {
+  color?: string;
+  name?: string;
+  width: number;
+  pct: number;
+  v: number;
+  isUnaligned?: boolean;
+}
+
+interface Legend {
+  color?: string;
+  name?: string;
+  pct: number;
+  isUnaligned?: boolean;
+}
+
+function StratumCard({ stratum }: StratumCardProps) {
   const { state, updateState, showToast } = useAppContext();
 
   const totalSup = stratumTotalSupport(state, stratum);
   const denom = Math.max(stratum.population, totalSup, 1);
   const overAllocated = totalSup > stratum.population;
 
-  const updateStratum = (field, value) => {
+  const updateStratum = (field: keyof Stratum, value: string) => {
     updateState((s) => {
       const idx = s.strata.findIndex(x => x.id === stratum.id);
       if (idx !== -1) {
         if (field === 'name') s.strata[idx][field] = value;
-        else s.strata[idx][field] = parseFloat(value) || 0;
+        else (s.strata[idx] as any)[field] = parseFloat(value) || 0;
       }
       return s;
     });
@@ -39,8 +61,8 @@ function StratumCard({ stratum }) {
   };
 
   const unaligned = Math.max(0, stratum.population - totalSup);
-  const segments = [];
-  const legends = [];
+  const segments: Segment[] = [];
+  const legends: Legend[] = [];
 
   state.factions.forEach(f => {
     const v = f.support[stratum.id] || 0;
@@ -132,6 +154,7 @@ function StratumCard({ stratum }) {
 
 export function StrataList() {
   const { state, updateState } = useAppContext();
+  const t = useLang();
 
   const addStratum = () => {
     updateState((s) => {
@@ -146,14 +169,14 @@ export function StrataList() {
     <div className="panel">
       <span className="corner tl"></span><span className="corner tr"></span>
       <span className="corner bl"></span><span className="corner br"></span>
-      <div className="panel-header"><h2>Social Strata</h2></div>
+      <div className="panel-header"><h2>{t("social_strata")}</h2></div>
       <div className="panel-body">
         {state.strata.length === 0 ? (
           <div className="empty">No strata defined.</div>
         ) : (
           state.strata.map(s => <StratumCard key={s.id} stratum={s} />)
         )}
-        <button className="add-btn" onClick={addStratum}>+ Add Stratum</button>
+        <button className="add-btn" onClick={addStratum}>+ {t("add_strata")}</button>
       </div>
     </div>
   );

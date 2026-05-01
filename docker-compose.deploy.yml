@@ -1,0 +1,21 @@
+services:
+  parliament:
+    build:
+      # Docker clones the repo and runs the Dockerfile — no local checkout needed.
+      # Replace with your actual GitHub repo URL.
+      context: https://github.com/YOUR_USERNAME/YOUR_REPO.git#main
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASS: ${ADMIN_PASS:?ADMIN_PASS must be set in .env}
+      JWT_KEY: ${JWT_KEY:?JWT_KEY must be set in .env}
+      DATA_PATH: /data/state.json
+      ASPNETCORE_ENVIRONMENT: Production
+    volumes:
+      - parliament-data:/data
+    restart: unless-stopped
+
+volumes:
+  parliament-data:

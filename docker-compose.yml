@@ -1,0 +1,19 @@
+services:
+  parliament:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASS: ${ADMIN_PASS:-change_me_before_deploy}
+      JWT_KEY: ${JWT_KEY:-change_this_to_a_secure_random_key_32c}
+      DATA_PATH: /data/state.json
+      ASPNETCORE_ENVIRONMENT: Production
+    volumes:
+      - parliament-data:/data
+    restart: unless-stopped
+
+volumes:
+  parliament-data:
