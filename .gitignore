@@ -24,6 +24,9 @@ data/
 .env.local
 .env.*.local
 
+# ── Cloudflare / Wrangler ──────────────────────────────
+.wrangler/
+
 # ── Editor ────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json

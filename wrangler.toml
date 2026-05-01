@@ -1,0 +1,10 @@
+name = "parliament"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+# Replace both IDs with yours from the Cloudflare dashboard:
+# Workers & Pages → KV → your namespace → copy the ID
+binding     = "STATE_KV"
+id          = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+preview_id  = "REPLACE_WITH_YOUR_PREVIEW_KV_NAMESPACE_ID"
