@@ -41,7 +41,10 @@ export function defaultState(): AppState {
     history: [],
     alliances: [],
     trash: { strata: [], factions: [], alliances: [] },
-    ui: { tab: 'sim', language : 'cn', theme: 'gold', factionExpanded: {} }
+    ui: { tab: 'sim', language : 'cn', theme: 'gold', factionExpanded: {} },
+    map: { regions: [] },
+    laws: [],
+    lawHistory: []
   };
 }
 
@@ -82,6 +85,20 @@ export function normalizeState(p: any): AppState {
       language: (p.language && p.language || 'en'),
       theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
       factionExpanded: (p.ui && p.ui.factionExpanded) || {}
+    },
+    laws: Array.isArray(p.laws) ? p.laws : [],
+    lawHistory: Array.isArray(p.lawHistory) ? p.lawHistory : [],
+    map: {
+      regions: (p.map && Array.isArray(p.map.regions))
+        ? p.map.regions.map((r: any) => ({
+            id: r.id || uid('r'),
+            name: String(r.name || 'Region'),
+            name2: r.name2 || undefined,
+            description: String(r.description || ''),
+            vertices: Array.isArray(r.vertices) ? r.vertices : [],
+            factionControl: Array.isArray(r.factionControl) ? r.factionControl : [],
+          }))
+        : []
     }
   };
   

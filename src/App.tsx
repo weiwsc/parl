@@ -8,6 +8,8 @@ import { ProjectionChart, SupportMatrix } from './components/Projection';
 import { HistoryPanel } from './components/History';
 import { TrashPanel } from './components/Trash';
 import { SettingsPanel } from './components/Settings';
+import { MapPage } from './components/MapPage';
+import { LawPage } from './components/LawPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { APP_MODE, API_BASE } from './config';
 import './App.css';
@@ -88,9 +90,9 @@ function AppContent() {
       <div className="app-body">
         <Sidebar />
 
-        <main className="app-main">
-          <Header onElection={handleElection} />
-          {tab !== 'settings' && <Tabs />}
+        <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}`}>
+          {tab !== 'map' && tab !== 'law' && <Header onElection={handleElection} />}
+          {tab !== 'settings' && tab !== 'map' && tab !== 'law' && <Tabs />}
 
           {tab === 'sim' && (
             <div className="grid">
@@ -105,6 +107,8 @@ function AppContent() {
           {tab === 'hist'     && <HistoryPanel />}
           {tab === 'trash'    && <TrashPanel />}
           {tab === 'settings' && <SettingsPanel />}
+          {tab === 'map'      && <MapPage />}
+          {tab === 'law'      && <LawPage />}
         </main>
       </div>
 

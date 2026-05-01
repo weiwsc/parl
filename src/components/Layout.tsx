@@ -77,17 +77,21 @@ export function Tabs() {
 // ─── Sidebar (app-level navigation) ──────────────────────────────────────────
 
 const TOP_ITEMS = [
-  { id: 'parliament', icon: '◈', label: 'PARL',  title: 'Parliament' },
-  { id: 'map',        icon: '◎', label: 'MAP',   title: 'Map (coming soon)',        disabled: true },
-  { id: 'economy',    icon: '◆', label: 'ECON',  title: 'Economy (coming soon)',    disabled: true },
-  { id: 'intel',      icon: '◌', label: 'INTEL', title: 'Intelligence (coming soon)', disabled: true },
+  { id: 'parliament', icon: '◈', label: 'PARL', title: 'Parliament' },
+  { id: 'map',        icon: '◎', label: 'MAP',  title: 'Map' },
+  { id: 'law',        icon: '⚖', label: 'LAW',  title: 'Senate Floor' },
+  { id: 'economy',    icon: '◆', label: 'ECON', title: 'Economy (coming soon)',       disabled: true },
+  { id: 'intel',      icon: '◌', label: 'INTEL',title: 'Intelligence (coming soon)', disabled: true },
 ] as const;
 
 export function Sidebar() {
   const { state, updateState } = useAppContext();
   const { tab } = state.ui;
 
-  const isParliamentActive = tab !== 'settings';
+  const PARL_TABS = new Set(['sim', 'hist', 'trash', 'alliances']);
+  const isParliamentActive = PARL_TABS.has(tab);
+  const isMapActive = tab === 'map';
+  const isLawActive = tab === 'law';
   const setModule = (id: string) =>
     updateState(s => { s.ui.tab = id === 'parliament' ? 'sim' : id; return s; });
 
@@ -96,7 +100,7 @@ export function Sidebar() {
       <nav className="sidebar-nav">
         {TOP_ITEMS.map(item => (
           <button key={item.id} data-ro-allow
-            className={`sidebar-item${item.id === 'parliament' ? (isParliamentActive ? ' active' : '') : ''}`}
+            className={`sidebar-item${item.id === 'parliament' ? (isParliamentActive ? ' active' : '') : item.id === 'map' ? (isMapActive ? ' active' : '') : item.id === 'law' ? (isLawActive ? ' active' : '') : ''}`}
             title={item.title}
             disabled={'disabled' in item && item.disabled}
             onClick={() => setModule(item.id)}

@@ -65,6 +65,56 @@ export interface TrashItem<T> {
   data: T;
   supportSnapshot?: Record<string, number>;
 }
+export interface MapVertex { x: number; y: number; }
+
+export interface FactionControlEntry {
+  factionId: string;
+  percentage: number; // 0–100
+}
+
+export interface MapRegion {
+  id: string;
+  name: string;
+  name2?: string;
+  description: string;
+  vertices: MapVertex[];
+  factionControl: FactionControlEntry[];
+}
+
+export type LawStatus = 'draft' | 'effect' | 'abolished' | 'failed';
+export type FactionStance = 'support' | 'abstain' | 'against';
+
+export interface LawClause {
+  id: string;
+  text: string;
+  level: number; // 0–3 indentation depth
+}
+
+export interface Law {
+  id: string;
+  name: string;
+  subtitle?: string;
+  description: string;
+  clauses: LawClause[];
+  status: LawStatus;
+  isConstitution?: boolean;
+  factionStances: Record<string, FactionStance>;
+  createdAt: number;
+  votedAt?: number;
+}
+
+export interface LawVoteRecord {
+  id: string;
+  timestamp: number;
+  lawSnapshot: Law;
+  factionResults: { factionId: string; name: string; color: string; seats: number; stance: FactionStance }[];
+  supportSeats: number;
+  abstainSeats: number;
+  againstSeats: number;
+  totalSeats: number;
+  outcome: 'passed' | 'failed';
+}
+
 export type Language = 'en' | 'cn';
 export interface AppState {
   schemaVersion: number;
@@ -85,4 +135,7 @@ export interface AppState {
     theme: string;
     factionExpanded: Record<string, boolean>;
   };
+  map: { regions: MapRegion[] };
+  laws: Law[];
+  lawHistory: LawVoteRecord[];
 }
