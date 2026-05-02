@@ -1,6 +1,7 @@
 export interface Stratum {
   id: string;
   name: string;
+  color: string;
   population: number;
   power: number;
 }
@@ -40,6 +41,7 @@ export interface ProjectionResult {
 
 export interface HistoryEntry {
   id: string;
+  name?: string;
   timestamp: number;
   totalSeats: number;
   unalignedMode: boolean;
@@ -79,9 +81,11 @@ export interface MapRegion {
   description: string;
   vertices: MapVertex[];
   factionControl: FactionControlEntry[];
+  seatings: number;
+  strataWeights: Record<string, number>;
 }
 
-export type LawStatus = 'draft' | 'effect' | 'abolished' | 'failed';
+export type LawStatus = 'draft' | 'voting' | 'effect' | 'abolished' | 'failed';
 export type FactionStance = 'support' | 'abstain' | 'against';
 
 export interface LawClause {
@@ -99,6 +103,7 @@ export interface Law {
   status: LawStatus;
   isConstitution?: boolean;
   factionStances: Record<string, FactionStance>;
+  senateFactionStances: Record<string, FactionStance>;
   createdAt: number;
   votedAt?: number;
 }
@@ -113,9 +118,62 @@ export interface LawVoteRecord {
   againstSeats: number;
   totalSeats: number;
   outcome: 'passed' | 'failed';
+  chamber?: 'parliament' | 'senate';
+}
+
+export interface SenateHistoryEntry {
+  id: string;
+  name?: string;
+  timestamp: number;
+  totalSeats: number;
+  autoAssign: boolean;
+  factions: { id: string; name: string; color: string }[];
+  alliances: Alliance[];
+  projection: ProjectionResult;
+}
+
+export interface SenateState {
+  autoAssign: boolean;
+  strataAssign: boolean;
+  factionSeats: Record<string, number>;
+  history: SenateHistoryEntry[];
 }
 
 export type Language = 'en' | 'cn';
+
+// ── Node / Type Editor ────────────────────────────────────────────────────────
+
+export type SchemaValueType = 'number' | 'string';
+
+export interface SchemaPrimitive {
+  kind: 'primitive';
+  id: string;
+  name: string;
+  description?: string;
+  valueType: SchemaValueType;
+  defaultValue?: number | string;
+  computed: boolean;
+}
+
+export interface SchemaSection {
+  kind: 'section';
+  id: string;
+  name: string;
+  description?: string;
+  children: SchemaChild[];
+}
+
+export type SchemaChild = SchemaSection | SchemaPrimitive;
+
+export interface EntityType {
+  id: string;
+  name: string;
+  description?: string;
+  builtIn: boolean;
+  entityClass?: string;
+  children: SchemaChild[];
+}
+
 export interface AppState {
   schemaVersion: number;
   totalSeats: number;
@@ -138,4 +196,6 @@ export interface AppState {
   map: { regions: MapRegion[] };
   laws: Law[];
   lawHistory: LawVoteRecord[];
+  nodes: { types: EntityType[] };
+  senate: SenateState;
 }

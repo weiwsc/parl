@@ -37,7 +37,7 @@ function StratumCard({ stratum }: StratumCardProps) {
     updateState((s) => {
       const idx = s.strata.findIndex(x => x.id === stratum.id);
       if (idx !== -1) {
-        if (field === 'name') s.strata[idx][field] = value;
+        if (field === 'name' || field === 'color') (s.strata[idx] as any)[field] = value;
         else (s.strata[idx] as any)[field] = parseFloat(value) || 0;
       }
       return s;
@@ -87,6 +87,9 @@ function StratumCard({ stratum }: StratumCardProps) {
   return (
     <div className="item stratum-card">
       <div className="item-head">
+        <span className="stratum-color-swatch" style={{ background: stratum.color || '#888888' }}>
+          <input type="color" value={stratum.color || '#888888'} onChange={e => updateStratum('color', e.target.value)} />
+        </span>
         <input
           className="name"
           value={stratum.name}
@@ -162,7 +165,8 @@ export function StrataList() {
   const addStratum = () => {
     updateState((s) => {
       const newId = uid('s');
-      s.strata.push({ id: newId, name: 'New Stratum', population: 1000000, power: 1.0 });
+      const palette = ['#d4a14a','#2c6fb1','#8a4cb1','#c44a2a','#5fa863','#3aa39e','#b8862e','#aa5f8e'];
+      s.strata.push({ id: newId, name: 'New Stratum', color: palette[s.strata.length % palette.length], population: 1000000, power: 1.0 });
       s.factions.forEach(f => { f.support[newId] = 0; });
       return s;
     });

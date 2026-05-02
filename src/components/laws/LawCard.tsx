@@ -6,7 +6,7 @@ const ROMAN = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X',
   'XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
 
 export const STATUS_LABELS: Record<LawStatus, string> = {
-  draft: 'Draft', effect: 'In Effect', abolished: 'Abolished', failed: 'Failed'
+  draft: 'Draft', voting: 'Voting', effect: 'In Effect', abolished: 'Abolished', failed: 'Failed'
 };
 
 interface LawCardProps {
@@ -45,6 +45,7 @@ export function LawCard({ law, articleNum, isConstitution, canEdit, onEdit, onTo
                 <select className="law-status-select" value={law.status}
                   onChange={event => onStatusChange(event.target.value as LawStatus)}>
                   <option value="draft">◫ DRAFT</option>
+                  <option value="voting">⊡ VOTING</option>
                   <option value="effect">◈ IN EFFECT</option>
                   <option value="failed">✗ FAILED</option>
                   <option value="abolished">— ABOLISHED</option>

@@ -97,6 +97,25 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
       alliances: mergeById(base.trash.alliances, local.trash.alliances, remote.trash.alliances),
     },
     map: { regions: mergeById(base.map.regions, local.map.regions, remote.map.regions) },
+    nodes: { types: mergeById(
+      base.nodes?.types  ?? [],
+      local.nodes?.types ?? [],
+      remote.nodes?.types ?? [],
+    ) },
+    senate: {
+      autoAssign:    sc(local.senate?.autoAssign,    base.senate?.autoAssign,    remote.senate?.autoAssign)    as boolean,
+      strataAssign:  sc(local.senate?.strataAssign,  base.senate?.strataAssign,  remote.senate?.strataAssign)  as boolean,
+      factionSeats: mergeRecord(
+        (base.senate?.factionSeats  ?? {}) as Rec,
+        (local.senate?.factionSeats ?? {}) as Rec,
+        (remote.senate?.factionSeats ?? {}) as Rec,
+      ) as Record<string, number>,
+      history: mergeById(
+        base.senate?.history  ?? [],
+        local.senate?.history ?? [],
+        remote.senate?.history ?? [],
+      ),
+    },
     ui: local.ui,
   };
 }

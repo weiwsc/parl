@@ -12,6 +12,8 @@ import { TrashPanel } from './components/Trash';
 import { SettingsPanel } from './components/Settings';
 import { MapPage } from './components/MapPage';
 import { LawPage } from './components/LawPage';
+import { NodeEditorPage } from './components/nodes/NodeEditorPage';
+import { SenatePage } from './components/SenatePage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { APP_MODE, API_BASE } from './config';
 import './App.css';
@@ -200,8 +202,8 @@ function AppContent() {
         <Sidebar />
 
         <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}`}>
-          {tab !== 'map' && tab !== 'law' && <Header onElection={handleElection} />}
-          {tab !== 'settings' && tab !== 'map' && tab !== 'law' && <Tabs />}
+          {tab !== 'map' && tab !== 'law' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
+          {tab !== 'settings' && tab !== 'map' && tab !== 'law' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
 
           {tab === 'sim' && (
             <div className="grid">
@@ -218,6 +220,8 @@ function AppContent() {
           {tab === 'settings' && <SettingsPanel />}
           {tab === 'map'      && <MapPage />}
           {tab === 'law'      && <LawPage />}
+          {tab === 'senate'   && <SenatePage />}
+          {tab === 'nodes'    && <NodeEditorPage />}
         </main>
       </div>
 

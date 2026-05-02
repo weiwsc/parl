@@ -122,6 +122,7 @@ function RegionCard({ region, factions, selected, onSelect }: RegionCardProps) {
         </div>
         <div className="map-region-card-meta">
           <span>{totalControl.toFixed(0)}%</span>
+          {region.seatings > 0 && <span className="map-region-seats">{region.seatings}⬡</span>}
           <small>{dominant ? dominant.label : 'No control'}</small>
         </div>
       </div>

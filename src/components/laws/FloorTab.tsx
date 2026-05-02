@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { computeVoteBreakdown } from '../../game/laws/voting';
-import type { FactionStance, Law, ProjectionEntry } from '../../models/types';
+import type { FactionStance, Law, LawStatus, ProjectionEntry } from '../../models/types';
 import { LawDetailPanel } from './LawDetailPanel';
 import { LawListPanel } from './LawListPanel';
 import { StancePanel } from './StancePanel';
@@ -12,16 +12,26 @@ interface FloorTabProps {
   entries: ProjectionEntry[];
   totalSeats: number;
   canEdit: boolean;
+  chamber: 'parliament' | 'senate';
   onActivate: (id: string) => void;
-  onConclude: () => void;
+  onConclude: (status: LawStatus) => void;
   onUpdateStance: (factionId: string, stance: FactionStance) => void;
   onEditLaw: (law: Law) => void;
 }
 
-export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, onActivate, onConclude, onUpdateStance, onEditLaw }: FloorTabProps) {
+export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, chamber, onActivate, onConclude, onUpdateStance, onEditLaw }: FloorTabProps) {
+  // Create a view of the law with the correct chamber's stances
+  const effectiveLaw = useMemo(() => {
+    if (!activeLaw) return null;
+    const stances = chamber === 'senate'
+      ? (activeLaw.senateFactionStances ?? {})
+      : activeLaw.factionStances;
+    return { ...activeLaw, factionStances: stances };
+  }, [activeLaw, chamber]);
+
   const breakdown = useMemo(
-    () => computeVoteBreakdown(activeLaw, entries, totalSeats),
-    [activeLaw, entries, totalSeats]
+    () => computeVoteBreakdown(effectiveLaw, entries, totalSeats),
+    [effectiveLaw, entries, totalSeats]
   );
 
   return (
@@ -36,10 +46,10 @@ export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, onActi
       />
 
       <div className="law-center-col">
-        {activeLaw
+        {effectiveLaw
           ? <>
               <VoteChart breakdown={breakdown} totalSeats={totalSeats} />
-              <StancePanel law={activeLaw} entries={entries} onUpdateStance={onUpdateStance} canEdit={canEdit} />
+              <StancePanel law={effectiveLaw} entries={entries} onUpdateStance={onUpdateStance} canEdit={canEdit} />
             </>
           : <div className="law-no-floor">
               <span className="law-no-floor-icon">⚖</span>
@@ -50,7 +60,7 @@ export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, onActi
       </div>
 
       <LawDetailPanel
-        law={activeLaw}
+        law={effectiveLaw}
         breakdown={breakdown}
         onConclude={onConclude}
         onEdit={() => activeLaw && onEditLaw(activeLaw)}

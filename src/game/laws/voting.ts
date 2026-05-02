@@ -38,6 +38,7 @@ export interface LawVoteEvaluation {
 export interface LawVoteRecordInput {
   id: string;
   timestamp?: number;
+  chamber?: 'parliament' | 'senate';
 }
 
 export interface FloorLawEntry {
@@ -66,13 +67,14 @@ export class LawVotingSession {
     return evaluateLawVote(this.breakdown(), this.rules);
   }
 
-  createRecord({ id, timestamp = Date.now() }: LawVoteRecordInput): LawVoteRecord {
+  createRecord({ id, timestamp = Date.now(), chamber }: LawVoteRecordInput): LawVoteRecord {
     const breakdown = this.breakdown();
     const evaluation = evaluateLawVote(breakdown, this.rules);
 
     return {
       id,
       timestamp,
+      chamber,
       lawSnapshot: cloneLaw(this.law),
       factionResults: this.entries
         .filter(entry => !entry.isUnaligned)
@@ -169,7 +171,7 @@ export function computeLawNetSupport(law: Law, entries: ProjectionEntry[]): numb
 
 export function getFloorLawEntries(laws: Law[], entries: ProjectionEntry[]): FloorLawEntry[] {
   return [...laws]
-    .filter(law => (law.status === 'draft' || law.status === 'failed') && !law.isConstitution)
+    .filter(law => (law.status === 'draft' || law.status === 'voting' || law.status === 'failed') && !law.isConstitution)
     .map(law => ({ law, net: computeLawNetSupport(law, entries) }))
     .sort((a, b) => b.net - a.net);
 }

@@ -24,10 +24,14 @@ export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivat
       )}
       {floorLaws.map(({ law, net }) => {
         const breakdown = computeVoteBreakdown(law, entries, totalSeats);
-        const isActive = law.id === activeLawId;
+        const isActive  = law.id === activeLawId;
 
         return (
-          <div key={law.id} className={`law-list-item${isActive ? ' active' : ''}`}>
+          <div
+            key={law.id}
+            className={`law-list-item${isActive ? ' active' : ''}`}
+            onClick={() => onActivate(law.id)}
+          >
             <div className="law-item-top">
               <div className="law-item-names">
                 <span className="law-item-name">{law.name}</span>
@@ -38,14 +42,9 @@ export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivat
               </div>
             </div>
             <LawSupportBar sup={breakdown.supportSeats} abs={breakdown.abstainSeats} ag={breakdown.againstSeats} total={totalSeats} />
-            {canEdit && (
-              <button
-                className={`law-floor-btn${isActive ? ' active' : ''}`}
-                onClick={() => onActivate(law.id)}
-              >
-                {isActive ? '▶ ON FLOOR' : '⊳ BRING TO FLOOR'}
-              </button>
-            )}
+            <div className={`law-floor-btn${isActive ? ' active' : ''}`}>
+              {isActive ? '▶ ON FLOOR' : '⊳ BRING TO FLOOR'}
+            </div>
           </div>
         );
       })}

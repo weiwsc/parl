@@ -35,6 +35,9 @@ export function HistoryTab({ history }: { history: LawVoteRecord[] }) {
             <div className="hist-item-hd" onClick={() => toggle(record.id)}>
               <div className="hist-item-left">
                 <span className={`law-outcome-badge ${record.outcome}`}>{record.outcome === 'passed' ? '✓ PASSED' : '✗ FAILED'}</span>
+                <span className={`law-chamber-badge law-chamber-${record.chamber ?? 'parliament'}`}>
+                  {record.chamber === 'senate' ? 'SEN' : 'PARL'}
+                </span>
                 <span className="hist-item-title">{record.lawSnapshot.name}</span>
                 {record.lawSnapshot.subtitle && <span className="hist-item-sub">{record.lawSnapshot.subtitle}</span>}
               </div>

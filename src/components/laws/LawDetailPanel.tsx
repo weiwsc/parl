@@ -1,19 +1,23 @@
 import { useState } from 'react';
 import { evaluateLawVote, type VoteBreakdown } from '../../game/laws/voting';
-import type { Law } from '../../models/types';
+import type { Law, LawStatus } from '../../models/types';
 import { Panel, PanelCorners } from '../ui/Panel';
 import { renderMarkdown } from './markdown';
+
+const ALL_STATUSES: LawStatus[] = ['draft', 'voting', 'effect', 'abolished', 'failed'];
 
 interface LawDetailPanelProps {
   law: Law | null;
   breakdown: VoteBreakdown;
-  onConclude: () => void;
+  onConclude: (status: LawStatus) => void;
   onEdit: () => void;
   canEdit: boolean;
 }
 
 export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: LawDetailPanelProps) {
   const [clausesExpanded, setClausesExpanded] = useState(false);
+  const [concludeOpen, setConcludeOpen] = useState(false);
+  const [pickedStatus, setPickedStatus] = useState<LawStatus | null>(null);
 
   if (!law) {
     return (
@@ -31,6 +35,19 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
   const { supportSeats, abstainSeats, againstSeats } = breakdown;
   const evaluation = evaluateLawVote(breakdown);
   const net = evaluation.netSeats;
+  const defaultStatus: LawStatus = evaluation.outcome === 'passed' ? 'effect' : 'failed';
+  const selectedStatus = pickedStatus ?? defaultStatus;
+
+  const handleApply = () => {
+    onConclude(selectedStatus);
+    setConcludeOpen(false);
+    setPickedStatus(null);
+  };
+
+  const openDropdown = () => {
+    setPickedStatus(defaultStatus);
+    setConcludeOpen(true);
+  };
 
   return (
     <Panel
@@ -56,7 +73,7 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
 
       {law.clauses.length > 0 && (
         <div className="law-detail-section">
-          <div className="law-detail-sec-hd law-detail-sec-hd--toggle" onClick={() => setClausesExpanded(current => !current)}>
+          <div className="law-detail-sec-hd law-detail-sec-hd--toggle" onClick={() => setClausesExpanded(v => !v)}>
             CLAUSES <span>{clausesExpanded ? '▲' : '▼'}</span>
           </div>
           {clausesExpanded && (
@@ -74,18 +91,44 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
       {canEdit && (
         <div className="law-conclude-area">
           <div className="law-conclude-info">
-            <span style={{color:'var(--good)'}}>{supportSeats}✓</span>
+            <span style={{ color: 'var(--good)' }}>{supportSeats}✓</span>
             {' vs '}
-            <span style={{color:'var(--danger)'}}>{againstSeats}✗</span>
+            <span style={{ color: 'var(--danger)' }}>{againstSeats}✗</span>
             {' · '}
-            <span style={{color:'var(--neutral)'}}>{abstainSeats} abstain</span>
+            <span style={{ color: 'var(--neutral)' }}>{abstainSeats} abstain</span>
           </div>
-          <button
-            className={`law-conclude-btn ${evaluation.outcome === 'passed' ? 'pass' : 'fail'}`}
-            onClick={onConclude}
-          >
-            ⊟ CONCLUDE VOTING — {evaluation.conclusionLabel}
-          </button>
+
+          {!concludeOpen ? (
+            <button
+              className={`law-conclude-btn ${evaluation.outcome === 'passed' ? 'pass' : 'fail'}`}
+              onClick={openDropdown}
+            >
+              ⊟ CONCLUDE VOTING — {evaluation.conclusionLabel}
+            </button>
+          ) : (
+            <div className="law-conclude-dropdown">
+              <div className="law-conclude-dropdown-label">SET FINAL STATUS</div>
+              <div className="law-conclude-status-grid">
+                {ALL_STATUSES.map(s => (
+                  <button
+                    key={s}
+                    className={`law-status-pick-btn law-status-${s}${selectedStatus === s ? ' selected' : ''}`}
+                    onClick={() => setPickedStatus(s)}
+                  >
+                    {s.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div className="law-conclude-row">
+                <button className="ghost small" onClick={() => { setConcludeOpen(false); setPickedStatus(null); }}>
+                  Cancel
+                </button>
+                <button className="primary small" onClick={handleApply}>
+                  Apply →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Panel>

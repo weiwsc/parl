@@ -74,6 +74,8 @@ export function MapPage() {
       description: '',
       vertices: [...drawVerts],
       factionControl: [],
+      seatings: 0,
+      strataWeights: {},
     };
 
     updateRegions(prev => [...prev, newRegion]);
@@ -481,7 +483,8 @@ export function MapPage() {
           region={selectedRegion}
           factions={state.factions}
           alliances={state.alliances}
-          canEdit={canEdit && editorMode}
+          strata={state.strata}
+          canEdit={canEdit}
           onUpdateRegion={handleUpdateRegion}
           onDeleteRegion={handleDeleteRegion}
           onCopyRegionJson={handleCopyRegionJson}

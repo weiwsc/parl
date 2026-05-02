@@ -17,11 +17,12 @@ export function HistoryPanel() {
 
   const deleteItem = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    updateState(s => {
-      s.history.splice(idx, 1);
-      return s;
-    });
+    updateState(s => { s.history.splice(idx, 1); return s; });
     showToast('Record deleted');
+  };
+
+  const setName = (idx: number, name: string) => {
+    updateState(s => { s.history[idx].name = name; return s; });
   };
 
   const clearAll = () => {
@@ -85,7 +86,7 @@ export function HistoryPanel() {
                 <div key={h.timestamp} className={`history-item ${openItems[i] ? 'open' : ''}`}>
                   <div className="h-head" onClick={() => toggleItem(i)}>
                     <span className="stamp">{new Date(h.timestamp).toLocaleTimeString()}</span>
-                    <span className="seq">SEQ-{h.timestamp.toString().slice(-4)}</span>
+                    <span className="seq">{h.name ? h.name : `SEQ-${h.timestamp.toString().slice(-4)}`}</span>
                     <div className="h-summary">
                       {sortedGroups.filter(g => g.seats > 0).slice(0, 4).map((g, j) => (
                         <span key={j} className="pill" style={{ color: g.color }}>
@@ -99,6 +100,15 @@ export function HistoryPanel() {
                     </div>
                   </div>
                   <div className="h-body" style={{ display: openItems[i] ? 'grid' : 'none' }}>
+                    <div className="history-name-row">
+                      <input
+                        className="history-name-input"
+                        value={h.name ?? ''}
+                        onChange={e => setName(i, e.target.value)}
+                        placeholder="Name this election…"
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
                     {h.projection && <ProjectionChart projection={h.projection} />}
                     <div className="h-meta">
                       {sortedGroups.map((g, j) => (

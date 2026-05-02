@@ -22,11 +22,11 @@ export function defaultState(): AppState {
     totalSeats: 200,
     unalignedMode: false,
     strata: [
-      { id: 's1', name: 'Aristocracy',    population: 500000,   power: 4.0 },
-      { id: 's2', name: 'Bourgeoisie',    population: 1500000,  power: 2.0 },
-      { id: 's3', name: 'Intelligentsia', population: 1000000,  power: 1.6 },
-      { id: 's4', name: 'Workers',        population: 4000000,  power: 0.8 },
-      { id: 's5', name: 'Peasantry',      population: 3000000,  power: 0.5 }
+      { id: 's1', name: 'Aristocracy',    color: '#d4a14a', population: 500000,   power: 4.0 },
+      { id: 's2', name: 'Bourgeoisie',    color: '#2c6fb1', population: 1500000,  power: 2.0 },
+      { id: 's3', name: 'Intelligentsia', color: '#8a4cb1', population: 1000000,  power: 1.6 },
+      { id: 's4', name: 'Workers',        color: '#c44a2a', population: 4000000,  power: 0.8 },
+      { id: 's5', name: 'Peasantry',      color: '#5fa863', population: 3000000,  power: 0.5 }
     ],
     factions: [
       { id: 'f1', name: 'Reactionaries', color: '#7a2030',
@@ -44,7 +44,14 @@ export function defaultState(): AppState {
     ui: { tab: 'sim', language : 'cn', theme: 'gold', factionExpanded: {} },
     map: { regions: [] },
     laws: [],
-    lawHistory: []
+    lawHistory: [],
+    nodes: {
+      types: [
+        { id: 'builtin-faction', name: 'Faction', builtIn: true, entityClass: 'faction', children: [] },
+        { id: 'builtin-region',  name: 'Region',  builtIn: true, entityClass: 'region',  children: [] },
+      ],
+    },
+    senate: { autoAssign: false, strataAssign: false, factionSeats: {}, history: [] },
   };
 }
 
@@ -59,6 +66,7 @@ export function normalizeState(p: any): AppState {
     strata: Array.isArray(p.strata) ? p.strata.map((x: any) => ({
       id: x.id || uid('s'),
       name: String(x.name || 'Stratum'),
+      color: x.color || '#888888',
       population: +x.population || 0,
       power: +x.power || 0
     })) : d.strata,
@@ -86,7 +94,11 @@ export function normalizeState(p: any): AppState {
       theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
       factionExpanded: (p.ui && p.ui.factionExpanded) || {}
     },
-    laws: Array.isArray(p.laws) ? p.laws : [],
+    laws: Array.isArray(p.laws) ? p.laws.map((x: any) => ({
+      ...x,
+      factionStances:       (x.factionStances       && typeof x.factionStances       === 'object') ? x.factionStances       : {},
+      senateFactionStances: (x.senateFactionStances && typeof x.senateFactionStances === 'object') ? x.senateFactionStances : {},
+    })) : [],
     lawHistory: Array.isArray(p.lawHistory) ? p.lawHistory : [],
     map: {
       regions: (p.map && Array.isArray(p.map.regions))
@@ -97,9 +109,26 @@ export function normalizeState(p: any): AppState {
             description: String(r.description || ''),
             vertices: Array.isArray(r.vertices) ? r.vertices : [],
             factionControl: Array.isArray(r.factionControl) ? r.factionControl : [],
+            seatings: typeof r.seatings === 'number' ? r.seatings : 0,
+            strataWeights: (r.strataWeights && typeof r.strataWeights === 'object') ? r.strataWeights : {},
           }))
         : []
-    }
+    },
+    nodes: {
+      types: (p.nodes && Array.isArray(p.nodes.types))
+        ? p.nodes.types
+        : d.nodes.types,
+    },
+    senate: {
+      autoAssign: !!(p.senate && p.senate.autoAssign),
+      strataAssign: !!(p.senate && p.senate.strataAssign),
+      factionSeats: (p.senate && typeof p.senate.factionSeats === 'object')
+        ? p.senate.factionSeats
+        : {},
+      history: (p.senate && Array.isArray(p.senate.history))
+        ? p.senate.history
+        : [],
+    },
   };
   
   if (oldFormat) {
