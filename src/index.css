@@ -1662,6 +1662,226 @@
   }
   .map-empty-hint strong { color: var(--accent); }
 
+  .map-region-list-panel {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.12), transparent 160px),
+      rgba(3,8,16,0.72);
+  }
+
+  .map-region-list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .map-region-list-title {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .map-region-list-kicker {
+    color: var(--text-mute);
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+  .map-region-list-title strong {
+    color: var(--accent-hot);
+    font-size: 16px;
+    text-shadow: 0 0 10px var(--halo);
+  }
+
+  .map-region-sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .map-region-sort-controls label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .map-region-sort-controls select,
+  .map-region-sort-dir {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    min-height: 28px;
+  }
+  .map-region-sort-controls select {
+    padding: 4px 28px 4px 8px;
+    outline: none;
+  }
+  .map-region-sort-controls select:focus {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+  .map-region-sort-dir {
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .map-region-sort-dir:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .map-region-card-grid {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    align-content: start;
+    gap: 10px;
+    padding-right: 4px;
+  }
+  .map-region-card-grid::-webkit-scrollbar { width: 6px; }
+  .map-region-card-grid::-webkit-scrollbar-track { background: transparent; }
+  .map-region-card-grid::-webkit-scrollbar-thumb { background: var(--line); }
+
+  .map-region-card {
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    background:
+      linear-gradient(180deg, var(--grid-glow-1), transparent 120px),
+      var(--bg-panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.13s, box-shadow 0.13s, transform 0.13s;
+  }
+  .map-region-card:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(95,216,255,0.12);
+  }
+  .map-region-card:focus-visible {
+    outline: 1px solid var(--cyan);
+    outline-offset: 2px;
+  }
+  .map-region-card.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent), 0 0 18px var(--halo);
+    transform: translateY(-1px);
+  }
+
+  .map-region-card-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+  }
+  .map-region-card-title {
+    min-width: 0;
+  }
+  .map-region-card-title h2 {
+    margin: 0;
+    color: var(--accent);
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    overflow-wrap: anywhere;
+  }
+  .map-region-card-title p {
+    margin: 3px 0 0;
+    color: var(--cyan);
+    opacity: 0.78;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    overflow-wrap: anywhere;
+  }
+  .map-region-card-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 72px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .map-region-card-meta span {
+    color: var(--accent-hot);
+    font-size: 16px;
+    line-height: 1;
+  }
+  .map-region-card-meta small {
+    color: var(--text-mute);
+    font-size: 9px;
+    letter-spacing: 0.7px;
+    max-width: 120px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dominance-bar {
+    margin-top: 0;
+    height: 9px;
+  }
+  .map-region-dominance {
+    flex-shrink: 0;
+  }
+
+  .map-region-faction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .map-region-faction-row {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+  .map-region-faction-name {
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .map-region-faction-pct {
+    color: var(--accent);
+    min-width: 36px;
+    text-align: right;
+  }
+  .map-region-faction-empty,
+  .map-region-list-empty {
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+  .map-region-list-empty {
+    margin: auto;
+    text-align: center;
+  }
+
   /* ── Inspector ───────────────────────────────────────────────────────────── */
   .map-inspector {
     width: 300px;
@@ -1770,6 +1990,31 @@
   }
   .insp-name2-input:focus { border-bottom-color: var(--cyan); }
   .insp-name2-input::placeholder { color: var(--text-mute); font-style: italic; }
+
+  .insp-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .insp-copy-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    min-width: 38px;
+    height: 24px;
+    cursor: pointer;
+    transition: all 0.13s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .insp-copy-btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
 
   .insp-delete-btn {
     flex-shrink: 0;

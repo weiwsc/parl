@@ -1,6 +1,6 @@
 import type { MapVertex } from '../../models/types';
 
-export type ViewMode = 'plain' | 'faction' | 'alliance';
+export type ViewMode = 'plain' | 'faction' | 'alliance' | 'regions';
 export type EditorTool = 'select' | 'add';
 
 export interface DragState {

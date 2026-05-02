@@ -44,6 +44,7 @@ export function MapToolbar({
 }: MapToolbarProps) {
   const importRef = useRef<HTMLInputElement>(null);
   const isDrawing = tool === 'add' && drawVerts.length > 0;
+  const isRegionList = viewMode === 'regions';
 
   return (
     <div className="map-toolbar">
@@ -55,26 +56,34 @@ export function MapToolbar({
 
       <div className="map-tb-center">
         <div className="map-mode-group">
-          {(['plain', 'faction', 'alliance'] as ViewMode[]).map(mode => (
+          {(['plain', 'faction', 'alliance', 'regions'] as ViewMode[]).map(mode => (
             <button
               key={mode}
               data-ro-allow
               className={`map-mode-btn ${viewMode === mode ? 'active' : ''}`}
               onClick={() => onViewMode(mode)}
             >
-              {mode === 'plain' ? '◌ PLAIN' : mode === 'faction' ? '◈ FACTION' : '◆ ALLIANCE'}
+              {mode === 'plain'
+                ? '◌ PLAIN'
+                : mode === 'faction'
+                  ? '◈ FACTION'
+                  : mode === 'alliance'
+                    ? '◆ ALLIANCE'
+                    : '▤ REGIONS'}
             </button>
           ))}
         </div>
-        <div className="map-tool-group" style={{ marginLeft: '12px' }}>
-          <button className="map-tool-btn" onClick={onZoomOut} title="Zoom Out">−</button>
-          <button className="map-tool-btn" onClick={onCenterMap} title="Center Map">⌖</button>
-          <button className="map-tool-btn" onClick={onZoomIn} title="Zoom In">+</button>
-        </div>
+        {!isRegionList && (
+          <div className="map-tool-group" style={{ marginLeft: '12px' }}>
+            <button className="map-tool-btn" onClick={onZoomOut} title="Zoom Out">−</button>
+            <button className="map-tool-btn" onClick={onCenterMap} title="Center Map">⌖</button>
+            <button className="map-tool-btn" onClick={onZoomIn} title="Zoom In">+</button>
+          </div>
+        )}
       </div>
 
       <div className="map-tb-right">
-        {canEdit && !isDrawing && (
+        {canEdit && !isDrawing && !isRegionList && (
           <button
             className={`map-edit-btn ${editorMode ? 'active' : ''}`}
             onClick={() => onEditorMode(!editorMode)}
@@ -83,7 +92,7 @@ export function MapToolbar({
           </button>
         )}
 
-        {editorMode && !isDrawing && (
+        {editorMode && !isDrawing && !isRegionList && (
           <div className="map-tool-group">
             <button
               className={`map-tool-btn ${snapToGrid ? 'active' : ''}`}

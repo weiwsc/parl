@@ -26,7 +26,7 @@ export function getControlEntries(
   mode: ViewMode
 ): ControlEntry[] {
   if (mode === 'plain') return [];
-  if (mode === 'faction') return getFactionControlEntries(region, factions);
+  if (mode === 'faction' || mode === 'regions') return getFactionControlEntries(region, factions);
   return getAllianceControlEntries(region, factions, alliances);
 }
 
@@ -83,7 +83,7 @@ export function getRegionFill(
   alliances: Alliance[],
   mode: ViewMode
 ): string {
-  if (mode === 'plain') return 'none';
+  if (mode === 'plain' || mode === 'regions') return 'none';
 
   const entries = getControlEntries(region, factions, alliances, mode);
   if (!entries.length) return 'none';
@@ -97,7 +97,7 @@ export function getMapLegendItems(
   alliances: Alliance[],
   viewMode: ViewMode
 ): MapLegendItem[] {
-  if (viewMode === 'plain') return [];
+  if (viewMode === 'plain' || viewMode === 'regions') return [];
 
   const legendMap = new Map<string, MapLegendItem>();
 

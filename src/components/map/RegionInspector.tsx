@@ -17,6 +17,7 @@ interface RegionInspectorProps {
   canEdit: boolean;
   onUpdateRegion: (region: MapRegion) => void;
   onDeleteRegion: (id: string) => void;
+  onCopyRegionJson: (region: MapRegion) => void;
 }
 
 export function RegionInspector({
@@ -26,6 +27,7 @@ export function RegionInspector({
   canEdit,
   onUpdateRegion,
   onDeleteRegion,
+  onCopyRegionJson,
 }: RegionInspectorProps) {
   const [descExpanded, setDescExpanded] = useState(false);
 
@@ -84,9 +86,12 @@ export function RegionInspector({
             region.name2 && <p className="insp-name2">{region.name2}</p>
           )}
         </div>
-        {canEdit && (
-          <button className="insp-delete-btn" title="Delete region" onClick={() => onDeleteRegion(region.id)}>✕</button>
-        )}
+        <div className="insp-actions">
+          <button className="insp-copy-btn" title="Copy region JSON" onClick={() => onCopyRegionJson(region)}>JSON</button>
+          {canEdit && (
+            <button className="insp-delete-btn" title="Delete region" onClick={() => onDeleteRegion(region.id)}>✕</button>
+          )}
+        </div>
       </div>
 
       <div className="insp-body">

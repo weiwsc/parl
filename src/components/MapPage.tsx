@@ -26,12 +26,13 @@ import { MapCanvas } from './map/MapCanvas';
 import { MapLegend } from './map/MapLegend';
 import { MapToolbar } from './map/MapToolbar';
 import { RegionInspector } from './map/RegionInspector';
+import { RegionCardList } from './map/RegionCardList';
 
 const INITIAL_VIEWPORT: MapViewport = { panX: 0, panY: 0, zoom: 1 };
 const INITIAL_CURSOR: MapVertex = { x: MAP_VIEWBOX_WIDTH / 2, y: MAP_VIEWBOX_HEIGHT / 2 };
 
 export function MapPage() {
-  const { state, updateState } = useAppContext();
+  const { state, updateState, showToast } = useAppContext();
   const { canEdit } = useAuth();
 
   const [viewMode, setViewMode] = useState<ViewMode>('faction');
@@ -130,6 +131,20 @@ export function MapPage() {
 
   const handleZoomIn = useCallback(() => performZoom(1.2), [performZoom]);
   const handleZoomOut = useCallback(() => performZoom(1 / 1.2), [performZoom]);
+
+  const handleViewMode = useCallback((nextMode: ViewMode) => {
+    setViewMode(nextMode);
+    if (nextMode === 'regions') {
+      setEditorMode(false);
+      setTool('select');
+      setDrawVerts([]);
+      setDragging(null);
+      setDragPos(null);
+      setDragRegion(null);
+      setHoverEdge(null);
+      setSnapPos(null);
+    }
+  }, []);
 
   useEffect(() => {
     if (!hasCenteredOnce.current && regions.length > 0) {
@@ -333,6 +348,15 @@ export function MapPage() {
     setSelectedId(null);
   }, [updateRegions]);
 
+  const handleCopyRegionJson = useCallback(async (region: MapRegion) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(region, null, 2));
+      showToast('Region JSON copied');
+    } catch {
+      showToast('Copy failed', 'error');
+    }
+  }, [showToast]);
+
   const handleExport = useCallback(() => {
     const url = URL.createObjectURL(new Blob([serializeMapRegions(regions)], { type: 'application/json' }));
     const link = document.createElement('a');
@@ -377,7 +401,7 @@ export function MapPage() {
         onCenterMap={handleCenterMap}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
-        onViewMode={setViewMode}
+        onViewMode={handleViewMode}
         onEditorMode={on => {
           setEditorMode(on);
           if (!on) {
@@ -398,47 +422,58 @@ export function MapPage() {
 
       <div className="map-workspace">
         <div className="map-canvas-wrap">
-          <MapCanvas
-            regions={regions}
-            factions={state.factions}
-            alliances={state.alliances}
-            viewMode={viewMode}
-            editorMode={editorMode}
-            tool={tool}
-            selectedId={selectedId}
-            drawVerts={drawVerts}
-            dragging={dragging}
-            dragPos={dragPos}
-            dragRegion={dragRegion}
-            hoverEdge={hoverEdge}
-            snapPos={snapPos}
-            cursor={cursor}
-            zoom={viewport.zoom}
-            panX={viewport.panX}
-            panY={viewport.panY}
-            svgRef={svgRef}
-            onPointerMove={handlePointerMove}
-            onSvgPointerDown={handleSvgPointerDown}
-            onPointerUp={handlePointerUp}
-            onSelectRegion={handleSelectRegion}
-            onVertexPointerDown={handleVertexPointerDown}
-            onEdgePointerDown={handleEdgePointerDown}
-            onContextMenuVertex={handleContextMenuVertex}
-            onContextMenuSvg={handleContextMenuSvg}
-            onWheel={handleWheel}
-          />
-          <MapLegend
-            regions={regions}
-            factions={state.factions}
-            alliances={state.alliances}
-            viewMode={viewMode}
-          />
-          {regions.length === 0 && (
-            <div className="map-empty-hint">
-              {canEdit
-                ? <>Enable <strong>EDIT MAP</strong> and use <strong>ADD REGION</strong> to draw polygons</>
-                : 'No regions defined yet.'}
-            </div>
+          {viewMode === 'regions' ? (
+            <RegionCardList
+              regions={regions}
+              factions={state.factions}
+              selectedId={selectedId}
+              onSelectRegion={setSelectedId}
+            />
+          ) : (
+            <>
+              <MapCanvas
+                regions={regions}
+                factions={state.factions}
+                alliances={state.alliances}
+                viewMode={viewMode}
+                editorMode={editorMode}
+                tool={tool}
+                selectedId={selectedId}
+                drawVerts={drawVerts}
+                dragging={dragging}
+                dragPos={dragPos}
+                dragRegion={dragRegion}
+                hoverEdge={hoverEdge}
+                snapPos={snapPos}
+                cursor={cursor}
+                zoom={viewport.zoom}
+                panX={viewport.panX}
+                panY={viewport.panY}
+                svgRef={svgRef}
+                onPointerMove={handlePointerMove}
+                onSvgPointerDown={handleSvgPointerDown}
+                onPointerUp={handlePointerUp}
+                onSelectRegion={handleSelectRegion}
+                onVertexPointerDown={handleVertexPointerDown}
+                onEdgePointerDown={handleEdgePointerDown}
+                onContextMenuVertex={handleContextMenuVertex}
+                onContextMenuSvg={handleContextMenuSvg}
+                onWheel={handleWheel}
+              />
+              <MapLegend
+                regions={regions}
+                factions={state.factions}
+                alliances={state.alliances}
+                viewMode={viewMode}
+              />
+              {regions.length === 0 && (
+                <div className="map-empty-hint">
+                  {canEdit
+                    ? <>Enable <strong>EDIT MAP</strong> and use <strong>ADD REGION</strong> to draw polygons</>
+                    : 'No regions defined yet.'}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -449,6 +484,7 @@ export function MapPage() {
           canEdit={canEdit && editorMode}
           onUpdateRegion={handleUpdateRegion}
           onDeleteRegion={handleDeleteRegion}
+          onCopyRegionJson={handleCopyRegionJson}
         />
       </div>
     </div>
