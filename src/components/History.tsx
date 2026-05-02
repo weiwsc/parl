@@ -9,20 +9,24 @@ import { Panel } from './ui/Panel';
 
 export function HistoryPanel() {
   const { state, updateState, showToast } = useAppContext();
-  const [openItems, setOpenItems] = useState<Record<number, boolean>>({});
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
 
-  const toggleItem = (idx: number) => {
-    setOpenItems(prev => ({ ...prev, [idx]: !prev[idx] }));
+  const toggleItem = (id: string) => {
+    setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const deleteItem = (idx: number, e: React.MouseEvent) => {
+  const deleteItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    updateState(s => { s.history.splice(idx, 1); return s; });
+    updateState(s => { s.history = s.history.filter(record => record.id !== id); return s; });
     showToast('Record deleted');
   };
 
-  const setName = (idx: number, name: string) => {
-    updateState(s => { s.history[idx].name = name; return s; });
+  const setName = (id: string, name: string) => {
+    updateState(s => {
+      const record = s.history.find(item => item.id === id);
+      if (record) record.name = name;
+      return s;
+    });
   };
 
   const clearAll = () => {
@@ -44,7 +48,7 @@ export function HistoryPanel() {
         {state.history.length === 0 ? (
           <EmptyState>No past elections recorded.</EmptyState>
         ) : (
-          state.history.map((h: HistoryEntry, i: number) => {
+          state.history.map((h: HistoryEntry) => {
               // Group and sort logic for history
               const groupsMap = new Map<string, {
                 isAlliance: boolean,
@@ -83,8 +87,8 @@ export function HistoryPanel() {
               const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => b.seats - a.seats);
 
               return (
-                <div key={h.timestamp} className={`history-item ${openItems[i] ? 'open' : ''}`}>
-                  <div className="h-head" onClick={() => toggleItem(i)}>
+                <div key={h.id} className={`history-item ${openItems[h.id] ? 'open' : ''}`}>
+                  <div className="h-head" onClick={() => toggleItem(h.id)}>
                     <span className="stamp">{new Date(h.timestamp).toLocaleTimeString()}</span>
                     <span className="seq">{h.name ? h.name : `SEQ-${h.timestamp.toString().slice(-4)}`}</span>
                     <div className="h-summary">
@@ -96,15 +100,15 @@ export function HistoryPanel() {
                       {sortedGroups.length > 4 && <span className="pill" style={{ color: '#8a9bb8' }}>...</span>}
                     </div>
                     <div className="h-actions">
-                      <button className="danger" onClick={(e) => deleteItem(i, e)}>DEL</button>
+                      <button className="danger" onClick={(e) => deleteItem(h.id, e)}>DEL</button>
                     </div>
                   </div>
-                  <div className="h-body" style={{ display: openItems[i] ? 'grid' : 'none' }}>
+                  <div className="h-body" style={{ display: openItems[h.id] ? 'grid' : 'none' }}>
                     <div className="history-name-row">
                       <input
                         className="history-name-input"
                         value={h.name ?? ''}
-                        onChange={e => setName(i, e.target.value)}
+                        onChange={e => setName(h.id, e.target.value)}
                         placeholder="Name this election…"
                         onClick={e => e.stopPropagation()}
                       />

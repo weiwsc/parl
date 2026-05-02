@@ -26,9 +26,14 @@ import './App.css';
 //     every subsequent change made by any admin.
 //   • Admins debounce-PUT their local changes to /api/state with an If-Match
 //     revision header for optimistic concurrency.  A 409 means another admin
-//     saved first; we accept the server's version and show a toast.
+//     saved first; we rebase local changes onto the server version.
 //   • We track whether a state update originated locally (needs upload) or
 //     from SSE (already on the server, do not echo back).
+
+function parseRevision(value: unknown): number | null {
+  const parsed = Number.parseInt(String(value ?? '').replace(/"/g, ''), 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 function useServerSync() {
   const { state, updateState, showToast } = useAppContext();
@@ -42,6 +47,9 @@ function useServerSync() {
   const needsSaveRef = useRef(false);
   const applyingRef  = useRef(false);  // true while applying an SSE/merge update (skip dirty-track)
   const esRef        = useRef<EventSource | null>(null);
+  const initialLocalStateRef = useRef<AppState | null>(state);
+  const hasSeenStateRef = useRef(false);
+  const saveSeqRef = useRef(0);
   // Last state the server acknowledged — used as the 3-way merge base.
   const baseStateRef = useRef<AppState | null>(null);
   // After the first SSE message we know the server baseline; subsequent messages can be merged.
@@ -62,14 +70,24 @@ function useServerSync() {
         try {
           const { rev, state: remote } = JSON.parse(evt.data) as { rev: number; state: unknown };
           const remoteNorm = normalizeState(remote);
-          revRef.current   = rev;
+          const remoteRev = parseRevision(rev);
+          if (remoteRev === null) return;
+          revRef.current = remoteRev;
 
           if (!initializedRef.current) {
-            // First message: accept server state but keep our own ui.
+            // First message: accept server state but keep our own ui. If the
+            // user managed to edit before the baseline arrived, replay only
+            // those edits on top of the server state.
+            const localBase = initialLocalStateRef.current ?? remoteNorm;
+            const hasLocalChanges = needsSaveRef.current;
             initializedRef.current  = true;
             baseStateRef.current    = remoteNorm;
             applyingRef.current     = true;
-            updateState(local => ({ ...remoteNorm, ui: local.ui }));
+            updateState(local => (
+              hasLocalChanges
+                ? mergeAppState(localBase, local, remoteNorm)
+                : { ...remoteNorm, ui: local.ui }
+            ));
           } else {
             // Subsequent messages: 3-way merge so local unsaved edits are not discarded.
             const base = baseStateRef.current ?? remoteNorm;
@@ -93,6 +111,10 @@ function useServerSync() {
   // ── 2. Dirty tracker — marks only user-originated state changes ──────────
   useEffect(() => {
     if (APP_MODE !== 'hosted') return;
+    if (!hasSeenStateRef.current) {
+      hasSeenStateRef.current = true;
+      return;
+    }
     if (applyingRef.current) {
       applyingRef.current = false;
       return;
@@ -101,8 +123,8 @@ function useServerSync() {
   }, [state]);
 
   // ── 3. Debounced PUT — upload local changes (admins only) ───────────────
-  const save = useCallback(async (body: string, rev: number, tok: string) => {
-    if (!needsSaveRef.current) return;
+  const save = useCallback(async (body: string, rev: number, tok: string, seq: number) => {
+    if (!initializedRef.current || !needsSaveRef.current || seq !== saveSeqRef.current) return;
     needsSaveRef.current = false;
 
     try {
@@ -117,9 +139,13 @@ function useServerSync() {
       });
 
       if (res.ok) {
-        const etag = res.headers.get('ETag');
-        if (etag) revRef.current = parseInt(etag, 10);
-        // Base will be updated when the server's SSE echo arrives.
+        const etagRev = parseRevision(res.headers.get('ETag'));
+        if (etagRev !== null) revRef.current = etagRev;
+        try {
+          baseStateRef.current = normalizeState(JSON.parse(body));
+        } catch {
+          // Base will still be updated when the server's SSE echo arrives.
+        }
 
       } else if (res.status === 409) {
         // Another admin saved first — 3-way merge our changes on top of theirs.
@@ -127,7 +153,8 @@ function useServerSync() {
           { rev: number; state: unknown };
         const remoteNorm = normalizeState(serverState);
         const base       = baseStateRef.current ?? remoteNorm;
-        revRef.current      = serverRev;
+        const parsedServerRev = parseRevision(serverRev);
+        if (parsedServerRev !== null) revRef.current = parsedServerRev;
         baseStateRef.current = remoteNorm;
         // Apply merge without setting applyingRef so the dirty-tracker will mark
         // the merged result for upload on the next debounce cycle.
@@ -137,21 +164,27 @@ function useServerSync() {
       } else {
         console.warn('PUT /api/state', res.status);
         needsSaveRef.current = true;
+        if (seq === saveSeqRef.current) {
+          syncTimer.current = setTimeout(() => save(body, revRef.current, tok, seq), 1_500);
+        }
       }
     } catch (e) {
       console.error('Sync failed:', e);
       needsSaveRef.current = true;
+      if (seq === saveSeqRef.current) {
+        syncTimer.current = setTimeout(() => save(body, revRef.current, tok, seq), 1_500);
+      }
     }
   }, [updateState]);
 
   useEffect(() => {
-    if (APP_MODE !== 'hosted' || !canEdit || !token) return;
+    if (APP_MODE !== 'hosted' || !canEdit || !token || !initializedRef.current || !needsSaveRef.current) return;
     // Strip ui so each client keeps its own tab/theme/expansion state.
     const snapshot = JSON.stringify(stripUi(state));
-    const rev      = revRef.current;
     const tok      = token;
+    const seq      = ++saveSeqRef.current;
     clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(() => save(snapshot, rev, tok), 600);
+    syncTimer.current = setTimeout(() => save(snapshot, revRef.current, tok, seq), 600);
     return () => clearTimeout(syncTimer.current);
   }, [state, canEdit, token, save]); // eslint-disable-line react-hooks/exhaustive-deps
 }

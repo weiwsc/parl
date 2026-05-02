@@ -40,22 +40,23 @@ Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dataPath))!);
 
 var stateLock  = new ReaderWriterLockSlim();
 var sseClients = new ConcurrentDictionary<Guid, Channel<string>>();
-var revision   = 1;   // in-memory revision counter; resets on server restart (that's fine)
+// Start from wall-clock time so clients that were open before a server restart
+// cannot accidentally match a reset revision and overwrite newer disk state.
+var revision   = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 // Thread-safe read — returns (json, currentRevision)
-(string json, int rev) ReadState() {
+(string json, long rev) ReadState() {
     stateLock.EnterReadLock();
     try   { return (File.Exists(dataPath) ? File.ReadAllText(dataPath) : "{}", revision); }
     finally { stateLock.ExitReadLock(); }
 }
 
 // Thread-safe conditional write.
-// clientRev == 0  → bypass optimistic check (first write after server restart)
 // Returns new revision on success, -1 on conflict.
-int TryWrite(string newJson, int clientRev) {
+long TryWrite(string newJson, long clientRev) {
     stateLock.EnterWriteLock();
     try {
-        if (clientRev > 0 && clientRev != revision) return -1;
+        if (clientRev <= 0 || clientRev != revision) return -1;
         File.WriteAllText(dataPath, newJson);
         return ++revision;
     } finally {
@@ -71,7 +72,7 @@ void Broadcast(string payload) {
 
 // SSE envelope: { "rev": N, "state": <raw state JSON> }
 // We inline the raw JSON so it is never double-serialised.
-string Envelope(string stateJson, int rev) => $"{{\"rev\":{rev},\"state\":{stateJson}}}";
+string Envelope(string stateJson, long rev) => $"{{\"rev\":{rev},\"state\":{stateJson}}}";
 
 // Background keep-alive: prevents proxies/load-balancers from closing idle SSE connections.
 _ = Task.Run(async () => {
@@ -97,7 +98,7 @@ app.MapGet("/api/state", async (HttpContext ctx) => {
 // 204 → accepted (ETag = new revision)
 // 409 → conflict; body = current server state envelope so client can rebase
 app.MapPut("/api/state", async (HttpContext ctx) => {
-    int.TryParse(ctx.Request.Headers.IfMatch.ToString(), out int clientRev);
+    long.TryParse(ctx.Request.Headers.IfMatch.ToString().Trim('"'), out long clientRev);
 
     using var sr     = new StreamReader(ctx.Request.Body);
     var       newJson = await sr.ReadToEndAsync();

@@ -9,13 +9,13 @@ import { Panel } from '../ui/Panel';
 export function SenateHistoryPanel() {
   const { state, updateState, showToast } = useAppContext();
   const history: SenateHistoryEntry[] = state.senate.history;
-  const [openItems, setOpenItems] = useState<Record<number, boolean>>({});
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
 
-  const toggle = (i: number) => setOpenItems(p => ({ ...p, [i]: !p[i] }));
+  const toggle = (id: string) => setOpenItems(p => ({ ...p, [id]: !p[id] }));
 
-  const deleteItem = (i: number, e: React.MouseEvent) => {
+  const deleteItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    updateState(s => { s.senate.history.splice(i, 1); return s; });
+    updateState(s => { s.senate.history = s.senate.history.filter(record => record.id !== id); return s; });
     showToast('Record deleted');
   };
 
@@ -25,8 +25,12 @@ export function SenateHistoryPanel() {
     showToast('History cleared');
   };
 
-  const setName = (i: number, name: string) => {
-    updateState(s => { s.senate.history[i].name = name; return s; });
+  const setName = (id: string, name: string) => {
+    updateState(s => {
+      const record = s.senate.history.find(item => item.id === id);
+      if (record) record.name = name;
+      return s;
+    });
   };
 
   return (
@@ -38,7 +42,7 @@ export function SenateHistoryPanel() {
       <ListSurface className="history-list">
         {history.length === 0 ? (
           <EmptyState>No senate elections recorded.</EmptyState>
-        ) : history.map((h, i) => {
+        ) : history.map((h) => {
           const groupsMap = new Map<string, { id: string; name: string; color: string; seats: number; share: number }>();
           h.projection.entries.forEach(e => {
             const key = e.alliance ? `a_${e.alliance.id}` : `f_${e.faction.id}`;
@@ -52,8 +56,8 @@ export function SenateHistoryPanel() {
           const groups = Array.from(groupsMap.values()).sort((a, b) => b.seats - a.seats);
 
           return (
-            <div key={h.timestamp} className={`history-item ${openItems[i] ? 'open' : ''}`}>
-              <div className="h-head" onClick={() => toggle(i)}>
+            <div key={h.id} className={`history-item ${openItems[h.id] ? 'open' : ''}`}>
+              <div className="h-head" onClick={() => toggle(h.id)}>
                 <span className="stamp">{new Date(h.timestamp).toLocaleTimeString()}</span>
                 <span className="seq">SEQ-{h.timestamp.toString().slice(-4)}</span>
                 <div className="h-summary">
@@ -65,15 +69,15 @@ export function SenateHistoryPanel() {
                   {groups.length > 4 && <span className="pill" style={{ color: '#8a9bb8' }}>...</span>}
                 </div>
                 <div className="h-actions">
-                  <button className="danger" onClick={(e) => deleteItem(i, e)}>DEL</button>
+                  <button className="danger" onClick={(e) => deleteItem(h.id, e)}>DEL</button>
                 </div>
               </div>
-              <div className="h-body" style={{ display: openItems[i] ? 'grid' : 'none' }}>
+              <div className="h-body" style={{ display: openItems[h.id] ? 'grid' : 'none' }}>
                 <div className="history-name-row">
                   <input
                     className="history-name-input"
                     value={h.name ?? ''}
-                    onChange={e => setName(i, e.target.value)}
+                    onChange={e => setName(h.id, e.target.value)}
                     placeholder="Name this election…"
                     onClick={e => e.stopPropagation()}
                   />

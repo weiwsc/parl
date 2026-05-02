@@ -44,9 +44,10 @@ function byId<T extends { id: string }>(arr: T[]): Map<string, T> {
 }
 
 // Array merge by id.
-// Item only in remote (local deleted it) → skip (local deletion wins)
-// Item only in local (locally added)     → keep
-// Item in both → mergeEntity
+// Item added only on remote              → keep
+// Item deleted locally but kept remotely → skip (local deletion wins)
+// Item added only locally                → keep
+// Item in both                           → mergeEntity
 function mergeById<T extends { id: string }>(base: T[], local: T[], remote: T[]): T[] {
   const bMap = byId(base); const lMap = byId(local); const rMap = byId(remote);
   const result: T[] = [];
@@ -55,8 +56,12 @@ function mergeById<T extends { id: string }>(base: T[], local: T[], remote: T[])
   for (const [id, r] of rMap) {
     seen.add(id);
     const b = bMap.get(id); const l = lMap.get(id);
-    if (!l) continue;                          // deleted locally
-    if (!b) { result.push(r); continue; }      // new on remote
+    if (!l) {
+      if (b) continue;                         // deleted locally
+      result.push(r);                          // new on remote
+      continue;
+    }
+    if (!b) { result.push(r); continue; }      // new on both sides; remote wins on id collision
     result.push(mergeEntity(b as Rec, l as Rec, r as Rec) as T);
   }
 
