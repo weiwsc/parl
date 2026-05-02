@@ -3,6 +3,9 @@ import { useAppContext } from '../store';
 import { ProjectionChart } from './Projection';
 import { fmtFull } from '../utils/compute';
 import type { HistoryEntry } from '../models/types';
+import { EmptyState } from './ui/EmptyState';
+import { ListSurface } from './ui/ListSurface';
+import { Panel } from './ui/Panel';
 
 export function HistoryPanel() {
   const { state, updateState, showToast } = useAppContext();
@@ -31,19 +34,16 @@ export function HistoryPanel() {
   };
 
   return (
-    <div className="panel">
-      <span className="corner tl"></span><span className="corner tr"></span>
-      <span className="corner bl"></span><span className="corner br"></span>
-      <div className="panel-header">
-        <h2>Election Archive</h2>
-        <button className="ghost small" onClick={clearAll}>Clear All</button>
-      </div>
-      <div className="panel-body no-scroll">
-        <div className="history-list">
-          {state.history.length === 0 ? (
-            <div className="empty">No past elections recorded.</div>
-          ) : (
-            state.history.map((h: HistoryEntry, i: number) => {
+    <Panel
+      title="Election Archive"
+      bodyClassName="no-scroll"
+      actions={<button className="ghost small" onClick={clearAll}>Clear All</button>}
+    >
+      <ListSurface className="history-list">
+        {state.history.length === 0 ? (
+          <EmptyState>No past elections recorded.</EmptyState>
+        ) : (
+          state.history.map((h: HistoryEntry, i: number) => {
               // Group and sort logic for history
               const groupsMap = new Map<string, {
                 isAlliance: boolean,
@@ -125,10 +125,9 @@ export function HistoryPanel() {
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
-      </div>
-    </div>
+          })
+        )}
+      </ListSurface>
+    </Panel>
   );
 }

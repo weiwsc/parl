@@ -1,13 +1,13 @@
 import { useAppContext } from '../store';
-import type { ChangeEvent } from 'react';
 import { useLang } from '../utils/localization';
 import { useAuth } from '../context/AuthContext';
+import { APP_NAV_ITEMS, SETTINGS_NAV_ITEM, isNavItemActive } from '../navigation';
+import { AppHeader } from './ui/AppHeader';
+import { TabBar, type TabItem } from './ui/TabBar';
 //import { APP_MODE } from '../config';
 
 interface HeaderProps {
   onElection: () => void;
-  onImport: (e: ChangeEvent<HTMLInputElement>) => void;
-  onExport: () => void;
 }
 
 export function Header({ onElection }: Pick<HeaderProps, 'onElection'>) {
@@ -16,14 +16,7 @@ export function Header({ onElection }: Pick<HeaderProps, 'onElection'>) {
   const t = useLang();
 
   return (
-    <header className="app-header">
-      <span className="crest"></span>
-      <div className="title-block">
-        <h1>{t("parliament")}</h1>
-        <span className="sub">// LEGISLATIVE PROJECTION SYSTEM &middot; v3.0 //</span>
-      </div>
-      <div className="header-spacer"></div>
-
+    <AppHeader title={t("parliament")} subtitle="// LEGISLATIVE PROJECTION SYSTEM · v3.0 //">
       {mode === 'hosted' && (
         <span className={`auth-badge auth-badge--${isAdmin ? 'admin' : 'guest'}`}>
           {isAdmin ? `◈ ${t("admin")}` : `◌ ${t("guest")}`}
@@ -44,7 +37,7 @@ export function Header({ onElection }: Pick<HeaderProps, 'onElection'>) {
       </div>
 
       <button className="primary" onClick={onElection}>⚙ {t("hold_election")}</button>
-    </header>
+    </AppHeader>
   );
 }
 
@@ -57,53 +50,33 @@ export function Tabs() {
   const histCount  = state.history.length;
   const trashCount = state.trash.strata.length + state.trash.factions.length;
 
-  const setTab = (t: string) => updateState(s => { s.ui.tab = t; return s; });
+  type ParliamentTab = 'sim' | 'hist' | 'trash';
+  const setTab = (nextTab: ParliamentTab) => updateState(s => { s.ui.tab = nextTab; return s; });
+  const items: TabItem<ParliamentTab>[] = [
+    { id: 'sim', label: t("election") },
+    { id: 'hist', label: t("election_history"), badge: histCount },
+    { id: 'trash', label: 'Recycle Bin', badge: trashCount },
+  ];
 
-  return (
-    <nav className="tab-bar">
-      <button data-ro-allow className={`tab ${tab === 'sim'   ? 'active' : ''}`} onClick={() => setTab('sim')}>
-        {t("election")}
-      </button>
-      <button data-ro-allow className={`tab ${tab === 'hist'  ? 'active' : ''}`} onClick={() => setTab('hist')}>
-        {t("election_history")} <span className="badge">{histCount}</span>
-      </button>
-      <button data-ro-allow className={`tab ${tab === 'trash' ? 'active' : ''}`} onClick={() => setTab('trash')}>
-        Recycle Bin <span className="badge">{trashCount}</span>
-      </button>
-    </nav>
-  );
+  return <TabBar active={tab as ParliamentTab} items={items} onChange={setTab} />;
 }
-
-// ─── Sidebar (app-level navigation) ──────────────────────────────────────────
-
-const TOP_ITEMS = [
-  { id: 'parliament', icon: '◈', label: 'PARL', title: 'Parliament' },
-  { id: 'map',        icon: '◎', label: 'MAP',  title: 'Map' },
-  { id: 'law',        icon: '⚖', label: 'LAW',  title: 'Senate Floor' },
-  { id: 'economy',    icon: '◆', label: 'ECON', title: 'Economy (coming soon)',       disabled: true },
-  { id: 'intel',      icon: '◌', label: 'INTEL',title: 'Intelligence (coming soon)', disabled: true },
-] as const;
 
 export function Sidebar() {
   const { state, updateState } = useAppContext();
   const { tab } = state.ui;
 
-  const PARL_TABS = new Set(['sim', 'hist', 'trash', 'alliances']);
-  const isParliamentActive = PARL_TABS.has(tab);
-  const isMapActive = tab === 'map';
-  const isLawActive = tab === 'law';
   const setModule = (id: string) =>
-    updateState(s => { s.ui.tab = id === 'parliament' ? 'sim' : id; return s; });
+    updateState(s => { s.ui.tab = id; return s; });
 
   return (
     <aside className="sidebar">
       <nav className="sidebar-nav">
-        {TOP_ITEMS.map(item => (
+        {APP_NAV_ITEMS.map(item => (
           <button key={item.id} data-ro-allow
-            className={`sidebar-item${item.id === 'parliament' ? (isParliamentActive ? ' active' : '') : item.id === 'map' ? (isMapActive ? ' active' : '') : item.id === 'law' ? (isLawActive ? ' active' : '') : ''}`}
+            className={`sidebar-item${isNavItemActive(item, tab) ? ' active' : ''}`}
             title={item.title}
-            disabled={'disabled' in item && item.disabled}
-            onClick={() => setModule(item.id)}
+            disabled={item.disabled}
+            onClick={() => setModule(item.tab)}
           >
             <span className="sidebar-icon">{item.icon}</span>
             <span className="sidebar-label">{item.label}</span>
@@ -113,12 +86,12 @@ export function Sidebar() {
 
       <div className="sidebar-foot">
         <button data-ro-allow
-          className={`sidebar-item${tab === 'settings' ? ' active' : ''}`}
-          title="Settings"
-          onClick={() => updateState(s => { s.ui.tab = 'settings'; return s; })}
+          className={`sidebar-item${isNavItemActive(SETTINGS_NAV_ITEM, tab) ? ' active' : ''}`}
+          title={SETTINGS_NAV_ITEM.title}
+          onClick={() => setModule(SETTINGS_NAV_ITEM.tab)}
         >
-          <span className="sidebar-icon">⚙</span>
-          <span className="sidebar-label">CONF</span>
+          <span className="sidebar-icon">{SETTINGS_NAV_ITEM.icon}</span>
+          <span className="sidebar-label">{SETTINGS_NAV_ITEM.label}</span>
         </button>
         <span className="sidebar-ver">v3</span>
       </div>

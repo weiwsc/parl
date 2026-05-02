@@ -3,6 +3,8 @@ import { useAppContext, uid } from '../store';
 import { escapeHtml, fmtCount, stratumTotalSupport } from '../utils/compute';
 import type { Faction, Alliance, ProjectionResult, ProjectionEntry } from '../models/types';
 import { useLang } from '../utils/localization';
+import { EmptyState } from './ui/EmptyState';
+import { Panel } from './ui/Panel';
 interface FactionRowProps {
   faction: Faction;
   entry?: ProjectionEntry;
@@ -128,7 +130,7 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
             <button className="small danger ghost" onClick={deleteFaction}>Delete</button>
           </div>
           {state.strata.length === 0 ? (
-            <div className="empty" style={{ padding: '6px 0' }}>No strata defined.</div>
+            <EmptyState className="compact-empty">No strata defined.</EmptyState>
           ) : state.strata.map(s => {
             const v = faction.support[s.id] || 0;
             const over = stratumTotalSupport(state, s) > s.population;
@@ -294,24 +296,21 @@ export function FactionsList({ projection }: { projection?: ProjectionResult }) 
   const hasAlliances = state.alliances.length > 0;
 
   return (
-    <div className="panel">
-      <span className="corner tl" /><span className="corner tr" />
-      <span className="corner bl" /><span className="corner br" />
-      <div className="panel-header"><h2>{t("political_factions")}</h2></div>
-      <div className="panel-body" onDrop={onDropUnallied} onDragOver={e => e.preventDefault()}>
+    <Panel title={t("political_factions")}>
+      <div onDrop={onDropUnallied} onDragOver={e => e.preventDefault()}>
         {!hasAlliances && unallied.length === 0 ? (
-          <div className="empty">No factions created.</div>
+          <EmptyState>No factions created.</EmptyState>
         ) : (
           <div className="factions-register">
-            {state.alliances.map((a, i) => (
-              <AllianceBlock key={a.id} alliance={a} isFirst={i === 0} isLast={i === state.alliances.length - 1} projection={projection} />
+            {state.alliances.map((alliance, index) => (
+              <AllianceBlock key={alliance.id} alliance={alliance} isFirst={index === 0} isLast={index === state.alliances.length - 1} projection={projection} />
             ))}
             {unallied.length > 0 && (
               <>
                 {hasAlliances && <div className="register-section-label">Unallied</div>}
-                {unallied.map((f, i) => {
-                  const entry = projection?.entries.find(e => e.faction.id === f.id);
-                  return <FactionRow key={f.id} faction={f} entry={entry} allianceId={null} isFirst={i === 0} isLast={i === unallied.length - 1} />;
+                {unallied.map((faction, index) => {
+                  const entry = projection?.entries.find(e => e.faction.id === faction.id);
+                  return <FactionRow key={faction.id} faction={faction} entry={entry} allianceId={null} isFirst={index === 0} isLast={index === unallied.length - 1} />;
                 })}
               </>
             )}
@@ -322,6 +321,6 @@ export function FactionsList({ projection }: { projection?: ProjectionResult }) 
           <button className="add-btn" onClick={createAlliance}>+ {t("add_alliance")}</button>
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -4,6 +4,7 @@ import { useAppContext, THEMES } from '../store';
 import { normalizeState } from '../store';
 import { useAuth } from '../context/AuthContext';
 import { useLang, LANGUAGES } from '../utils/localization';
+import { Panel } from './ui/Panel';
 
 export function SettingsPanel() {
   const { state, updateState, showToast } = useAppContext();
@@ -65,11 +66,7 @@ export function SettingsPanel() {
 
   return (
     <div className="settings-panel">
-      <div className="panel">
-        <span className="corner tl" /><span className="corner tr" />
-        <span className="corner bl" /><span className="corner br" />
-        <div className="panel-header"><h2>{t("settings")}</h2></div>
-        <div className="panel-body no-scroll">
+      <Panel title={t("settings")} bodyClassName="no-scroll">
 
           {/* ── Appearance ─────────────────────────────── */}
           <div className="settings-section">
@@ -137,8 +134,7 @@ export function SettingsPanel() {
             </div>
           )}
 
-        </div>
-      </div>
+      </Panel>
     </div>
   );
 }

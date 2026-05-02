@@ -1,6 +1,8 @@
 import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAppContext, uid, clone, normalizeState } from './store';
 import { computeProjection } from './utils/compute';
+import { stripUi, mergeAppState } from './utils/merge';
+import type { AppState } from './models/types';
 import { Header, Sidebar, Tabs, Toast } from './components/Layout';
 import { StrataList } from './components/Strata';
 import { FactionsList } from './components/Factions';
@@ -30,18 +32,20 @@ function useServerSync() {
   const { state, updateState, showToast } = useAppContext();
   const { canEdit, token } = useAuth();
 
-  // Stable ref to showToast so we can call it inside async callbacks without
-  // adding it to every effect's dependency array.
   const showToastRef = useRef(showToast);
   useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
   const syncTimer    = useRef<ReturnType<typeof setTimeout>>();
-  const revRef       = useRef(0);      // last known server revision
-  const needsSaveRef = useRef(false);  // true when local changes await upload
-  const applyingRef  = useRef(false);  // true while we apply an incoming SSE update
+  const revRef       = useRef(0);
+  const needsSaveRef = useRef(false);
+  const applyingRef  = useRef(false);  // true while applying an SSE/merge update (skip dirty-track)
   const esRef        = useRef<EventSource | null>(null);
+  // Last state the server acknowledged — used as the 3-way merge base.
+  const baseStateRef = useRef<AppState | null>(null);
+  // After the first SSE message we know the server baseline; subsequent messages can be merged.
+  const initializedRef = useRef(false);
 
-  // ── 1. SSE subscription — receives live state from the server ───────────
+  // ── 1. SSE subscription ─────────────────────────────────────────────────
   useEffect(() => {
     if (APP_MODE !== 'hosted') return;
 
@@ -55,15 +59,28 @@ function useServerSync() {
       es.onmessage = (evt) => {
         try {
           const { rev, state: remote } = JSON.parse(evt.data) as { rev: number; state: unknown };
-          revRef.current    = rev;
-          applyingRef.current = true;           // tell dirty-tracker this is not a local edit
-          updateState(() => normalizeState(remote));
+          const remoteNorm = normalizeState(remote);
+          revRef.current   = rev;
+
+          if (!initializedRef.current) {
+            // First message: accept server state but keep our own ui.
+            initializedRef.current  = true;
+            baseStateRef.current    = remoteNorm;
+            applyingRef.current     = true;
+            updateState(local => ({ ...remoteNorm, ui: local.ui }));
+          } else {
+            // Subsequent messages: 3-way merge so local unsaved edits are not discarded.
+            const base = baseStateRef.current ?? remoteNorm;
+            baseStateRef.current = remoteNorm;
+            applyingRef.current  = true;
+            updateState(local => mergeAppState(base, local, remoteNorm));
+          }
         } catch { /* malformed event — ignore */ }
       };
 
       es.onerror = () => {
         es.close();
-        if (active) setTimeout(connect, 4_000);  // reconnect with back-off
+        if (active) setTimeout(connect, 4_000);
       };
     };
 
@@ -71,11 +88,11 @@ function useServerSync() {
     return () => { active = false; esRef.current?.close(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 2. Dirty tracker — marks only user-originated changes for upload ─────
+  // ── 2. Dirty tracker — marks only user-originated state changes ──────────
   useEffect(() => {
     if (APP_MODE !== 'hosted') return;
     if (applyingRef.current) {
-      applyingRef.current = false;   // this change came from SSE — do not re-upload
+      applyingRef.current = false;
       return;
     }
     needsSaveRef.current = true;
@@ -100,19 +117,24 @@ function useServerSync() {
       if (res.ok) {
         const etag = res.headers.get('ETag');
         if (etag) revRef.current = parseInt(etag, 10);
+        // Base will be updated when the server's SSE echo arrives.
 
       } else if (res.status === 409) {
-        // Another admin saved a newer revision — accept their state.
+        // Another admin saved first — 3-way merge our changes on top of theirs.
         const { rev: serverRev, state: serverState } = await res.json() as
           { rev: number; state: unknown };
+        const remoteNorm = normalizeState(serverState);
+        const base       = baseStateRef.current ?? remoteNorm;
         revRef.current      = serverRev;
-        applyingRef.current = true;
-        updateState(() => normalizeState(serverState));
-        showToastRef.current('State updated by another editor', 'bad');
+        baseStateRef.current = remoteNorm;
+        // Apply merge without setting applyingRef so the dirty-tracker will mark
+        // the merged result for upload on the next debounce cycle.
+        updateState(local => mergeAppState(base, local, remoteNorm));
+        showToastRef.current('Merged with changes from another editor', 'bad');
 
       } else {
         console.warn('PUT /api/state', res.status);
-        needsSaveRef.current = true;  // allow retry on next state change
+        needsSaveRef.current = true;
       }
     } catch (e) {
       console.error('Sync failed:', e);
@@ -122,7 +144,8 @@ function useServerSync() {
 
   useEffect(() => {
     if (APP_MODE !== 'hosted' || !canEdit || !token) return;
-    const snapshot = JSON.stringify(state);
+    // Strip ui so each client keeps its own tab/theme/expansion state.
+    const snapshot = JSON.stringify(stripUi(state));
     const rev      = revRef.current;
     const tok      = token;
     clearTimeout(syncTimer.current);

@@ -2,6 +2,9 @@ import { useAppContext, uid } from '../store';
 import { fmtCount, fmtFull, stratumTotalSupport } from '../utils/compute';
 import type { Stratum } from '../models/types';
 import { useLang } from '../utils/localization';
+import { EmptyState } from './ui/EmptyState';
+import { ListSurface } from './ui/ListSurface';
+import { Panel } from './ui/Panel';
 
 interface StratumCardProps {
   stratum: Stratum;
@@ -166,18 +169,15 @@ export function StrataList() {
   };
 
   return (
-    <div className="panel">
-      <span className="corner tl"></span><span className="corner tr"></span>
-      <span className="corner bl"></span><span className="corner br"></span>
-      <div className="panel-header"><h2>{t("social_strata")}</h2></div>
-      <div className="panel-body">
-        {state.strata.length === 0 ? (
-          <div className="empty">No strata defined.</div>
-        ) : (
-          state.strata.map(s => <StratumCard key={s.id} stratum={s} />)
-        )}
-        <button className="add-btn" onClick={addStratum}>+ {t("add_strata")}</button>
-      </div>
-    </div>
+    <Panel title={t("social_strata")}>
+      {state.strata.length === 0 ? (
+        <EmptyState>No strata defined.</EmptyState>
+      ) : (
+        <ListSurface>
+          {state.strata.map(stratum => <StratumCard key={stratum.id} stratum={stratum} />)}
+        </ListSurface>
+      )}
+      <button className="add-btn" onClick={addStratum}>+ {t("add_strata")}</button>
+    </Panel>
   );
 }

@@ -1,119 +1,171 @@
 # Parliament UI Guide
 
-Industrial sci-fi design system. This document covers how to build new pages that match the existing aesthetic.
+This app uses a compact industrial sci-fi UI system. New pages should be built from the shared primitives in `src/components/ui` instead of copying raw panel/header/tab markup.
 
----
+## Core Files
 
-## Design Tokens (CSS Variables)
-
-All colors and surface values are defined in `:root` in `src/index.css` and overridden per theme.
-
-| Variable | Role |
+| File | Purpose |
 |---|---|
-| `--bg-deep` | Page background (darkest) |
-| `--bg-deeper` | Sidebar / inset backgrounds |
-| `--bg-panel` | Panel surface |
-| `--bg-panel-alt` | Secondary panel surface (item cards) |
-| `--bg-input` | Input / data cell background |
-| `--line` | Default border |
-| `--line-soft` | Subtle divider |
-| `--line-strong` | Emphasized border |
-| `--accent` | Primary accent (gold / green / cyan / crimson by theme) |
-| `--accent-hot` | Bright variant of accent |
-| `--accent-deep` | Dark variant of accent |
-| `--cyan` | Secondary accent |
-| `--text` | Body text |
-| `--text-dim` | Muted label text |
-| `--text-mute` | Very muted / placeholder |
-| `--danger` | Error / delete red |
-| `--good` | Success green |
-| `--halo` | Glow color (matches accent) |
-| `--halo-cyan` | Glow color (matches cyan) |
-| `--grid-line` | Background grid lines |
-| `--grid-glow-1` / `--grid-glow-2` | Background radial glows |
+| `src/navigation.ts` | Left sidebar page registry |
+| `src/components/ui/AppHeader.tsx` | Shared top header bar |
+| `src/components/ui/Panel.tsx` | Shared panel shell with corner brackets |
+| `src/components/ui/TabBar.tsx` | Shared tab navigation |
+| `src/components/ui/EmptyState.tsx` | Shared empty state text |
+| `src/components/ui/ListSurface.tsx` | Shared list/grid wrappers |
+| `src/components/ui/TableSurface.tsx` | Shared horizontal table scroll wrapper |
+| `src/components/map` | Map-specific toolbar, canvas, legend, and inspector components |
+| `src/game/map` | Pure map geometry, viewport, control, and import/export helpers |
+| `src/index.css` | Theme tokens and component styling |
 
----
+## Adding A New Sidebar Page
 
-## Typography
+1. Add a nav item in `src/navigation.ts`:
 
-Three font families are used throughout:
-
-| Family | Use |
-|---|---|
-| `'Cinzel', serif` | Panel headings, tab labels, display titles |
-| `'Rajdhani', sans-serif` | Body text, buttons, general UI |
-| `'JetBrains Mono', monospace` | Numbers, codes, status labels, monospace data |
-
-Rules:
-- All headings and labels are `text-transform: uppercase`
-- Use `letter-spacing` to open up mono labels (1–3px typical)
-- `font-size` for panel headers: 12px. For data labels: 9–11px.
-
----
-
-## Layout
-
-The app uses a three-level structure:
-
-```
-.app
-  .app-header        ← top bar with title + controls
-  .app-body          ← flex row
-    .sidebar         ← left icon rail (54px wide)
-    .app-main        ← flex:1 content area
-      .grid          ← 3-column grid for the sim view
-        .panel       ← left column
-        ...          ← center column (chart + matrix)
-        .panel       ← right column
+```ts
+export const APP_NAV_ITEMS: SidebarNavItem[] = [
+  // existing items...
+  {
+    id: 'diplomacy',
+    tab: 'diplomacy',
+    icon: '◇',
+    label: 'DIPL',
+    title: 'Diplomacy',
+  },
+];
 ```
 
-### Adding a new sidebar page
+Use `disabled: true` for placeholders. If one sidebar button represents several internal tabs, add `activeTabs`.
 
-1. Add an entry to `NAV_ITEMS` in `src/components/Layout.tsx`:
+```ts
+{
+  id: 'parliament',
+  tab: 'sim',
+  icon: '◈',
+  label: 'PARL',
+  title: 'Parliament',
+  activeTabs: ['sim', 'hist', 'trash'],
+}
+```
+
+2. Render the page in `src/App.tsx`:
 
 ```tsx
-{ id: 'mypage', icon: '◆', label: 'PAGE', title: 'My Page' }
+{tab === 'diplomacy' && <DiplomacyPage />}
 ```
 
-2. Render it conditionally in `App.tsx`:
+3. Create `src/components/DiplomacyPage.tsx` using the page pattern below.
+
+## Page Pattern
+
+Use `AppHeader` for the top bar. It renders the crest, title block, spacer, and any children you place after it.
 
 ```tsx
-{tab === 'mypage' && <MyPage />}
+import { AppHeader } from './ui/AppHeader';
+import { Panel } from './ui/Panel';
+
+export function DiplomacyPage() {
+  return (
+    <div className="diplomacy-page">
+      <AppHeader title="DIPLOMACY" subtitle="// FOREIGN OFFICE · v1.0 //">
+        <div className="control-group">
+          <label>TREATIES</label>
+          <input type="number" value={4} readOnly />
+        </div>
+        <button className="primary">New Pact</button>
+      </AppHeader>
+
+      <Panel title="Foreign Powers">
+        {/* content */}
+      </Panel>
+    </div>
+  );
+}
 ```
 
-3. Create `src/components/MyPage.tsx` — see Panel pattern below.
-
----
+Header children can be badges, controls, toggles, stats, buttons, or page-specific indicators. Keep them as direct children of `AppHeader`.
 
 ## Panel
 
-The primary container for any view section.
+Use `Panel` instead of writing `.panel`, `.panel-header`, corner spans, and `.panel-body` by hand.
 
 ```tsx
-<div className="panel">
-  <span className="corner tl" /><span className="corner tr" />
-  <span className="corner bl" /><span className="corner br" />
-
-  <div className="panel-header">
-    <h2>Panel Title</h2>
-    {/* optional extra controls */}
-  </div>
-
-  <div className="panel-body">
-    {/* content */}
-  </div>
-</div>
+<Panel
+  title="Election Archive"
+  subtitle="12 records"
+  actions={<button className="ghost small">Clear All</button>}
+>
+  Content
+</Panel>
 ```
 
-- `corner` spans render the four accent-colored corner brackets
-- `panel-header h2` automatically gets a `◆` prefix and `Cinzel` font
-- `panel-body` scrolls vertically up to `calc(100vh - 280px)`; add `.no-scroll` to disable
+Use `bodyClassName="no-scroll"` when the panel body should not use the default internal scroll behavior.
 
----
+```tsx
+<Panel title="Support Matrix" bodyClassName="matrix-wrap no-scroll">
+  <TableSurface>
+    <table className="matrix">{/* rows */}</table>
+  </TableSurface>
+</Panel>
+```
 
-## Item Card
+## Tabs
 
-Used inside panels to display a data record.
+Use `TabBar` for tabbed pages.
+
+```tsx
+type MyTab = 'overview' | 'history';
+
+const tabs: TabItem<MyTab>[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'history', label: 'History', badge: history.length },
+];
+
+<TabBar active={tab} items={tabs} onChange={setTab} />
+```
+
+Tabs automatically match existing desktop/mobile styling and horizontal mobile scrolling.
+
+## Lists, Grids, Tables
+
+Use these wrappers so spacing and overflow behavior stay consistent:
+
+```tsx
+<ListSurface className="history-list">
+  {items.map(item => <HistoryItem key={item.id} item={item} />)}
+</ListSurface>
+
+<GridSurface className="law-registry-list">
+  {laws.map(law => <LawCard key={law.id} law={law} />)}
+</GridSurface>
+
+<TableSurface>
+  <table className="matrix">{/* rows */}</table>
+</TableSurface>
+```
+
+`GridSurface` is intentionally plain; pass the domain-specific class for columns, such as `law-registry-list`, `constitution-list`, or a new page-specific class.
+
+## Empty States
+
+Use `EmptyState` instead of raw `.empty` divs.
+
+```tsx
+{items.length === 0 ? (
+  <EmptyState>No records yet.</EmptyState>
+) : (
+  <ListSurface>{items.map(...)}</ListSurface>
+)}
+```
+
+For compact nested states:
+
+```tsx
+<EmptyState className="compact-empty">No strata defined.</EmptyState>
+```
+
+## Cards And Rows
+
+Record cards still use `.item` and `.item-head`.
 
 ```tsx
 <div className="item">
@@ -122,162 +174,84 @@ Used inside panels to display a data record.
       <input type="color" value={color} onChange={...} />
     </span>
     <input className="name" value={name} onChange={...} />
-    <div className="item-actions">
-      <button className="small">Edit</button>
-      <button className="small danger ghost">Delete</button>
-    </div>
+    <button className="small danger ghost">Delete</button>
   </div>
-  <div className="item-body">
-    {/* expanded detail */}
-  </div>
+  <div className="item-body">Details</div>
 </div>
 ```
 
-- `.item` has accent corner triangles via `::before`/`::after`
-- `.swatch` wraps a hidden `<input type="color">` — the swatch div is the visible color square
-- `.item-body` is the collapsible detail area
-
----
+Use `.fr-*` for compact faction register rows and `.ag-*` for alliance groups.
 
 ## Buttons
 
 ```tsx
 <button>Default</button>
-<button className="primary">Primary Action</button>
-<button className="small">Compact</button>
-<button className="small ghost">Subtle</button>
-<button className="small danger ghost">Destructive</button>
-<button disabled>Disabled</button>
+<button className="primary">Primary</button>
+<button className="small">Small</button>
+<button className="small ghost">Ghost</button>
+<button className="small danger ghost">Delete</button>
 ```
 
-- Default: dark fill, `--line-strong` border, hover glows cyan
-- `primary`: accent-bordered, accent-hot text, hover glows gold
-- `danger`: red text/border, used for delete actions
-- `ghost`: transparent background — combine with `small` or `danger`
-- All buttons use `Rajdhani` font, `text-transform: uppercase`, `letter-spacing: 2px`
+Buttons are uppercase by default. Prefer `primary` for the main page action, `ghost small` for secondary actions, and `danger ghost` for destructive actions.
 
----
+## Forms
 
-## Inputs & Fields
-
-Standard text inputs inside panels inherit base reset styles. Use `.control-group` for inline label + input pairs (as seen in the header):
+Use `.control-group` for compact header controls:
 
 ```tsx
 <div className="control-group">
-  <label>Label</label>
-  <input type="number" value={...} onChange={...} />
+  <label>Total Seats</label>
+  <input type="number" value={totalSeats} onChange={...} />
 </div>
 ```
 
-For inline editable names in items, use `className="name"` on the input (borderless, only underline on focus).
+Use page-specific field classes when an editor needs denser layout, like the law editor’s `.law-field` and `.law-field-input`.
 
-Number inputs inside form rows:
-```tsx
-<div className="stratum-support-row">
-  <label>
-    <span className="lbl-name">Field Name</span>
-    <span className="popinfo">/ 1,000,000</span>
-  </label>
-  <input type="number" value={...} onChange={...} />
-</div>
-```
+## Theme Tokens
 
----
+Use CSS variables from `src/index.css`; do not hardcode page palettes.
 
-## Status Bar / Register Rows
+| Token | Use |
+|---|---|
+| `--bg-panel` | Main panel surface |
+| `--bg-panel-alt` | Item/card surface |
+| `--bg-input` | Inputs and inset controls |
+| `--line`, `--line-soft`, `--line-strong` | Borders |
+| `--accent`, `--accent-hot`, `--accent-deep` | Primary accent |
+| `--cyan` | Secondary accent |
+| `--text`, `--text-dim`, `--text-mute` | Text |
+| `--danger`, `--good`, `--neutral` | Status colors |
 
-The faction list uses a compact register pattern (`.fr-*` classes):
+## Map And Node Editor Foundations
 
-```
-.fr-wrap
-  .fr                 ← flex row: dot · swatch · name · bar-track · seats · pct · toggle
-  .fr-detail          ← expanded detail, hidden by default
-    .fr-detail-actions
-```
+The map page is split into two layers:
 
-Alliance blocks use `.ag-*` classes with a colored left border.
+| Layer | Files | Rule |
+|---|---|---|
+| UI | `src/components/map/*` | Render SVG, controls, inspector, and user events |
+| Game/map logic | `src/game/map/*` | Hold geometry, viewport math, control aggregation, and map serialization |
 
----
+Keep reusable logic in `src/game/map` before adding it to `MapPage`. For example:
 
-## Empty State
+- Put point, snapping, bounds, panning, and zoom math in `src/game/map/geometry.ts`.
+- Put faction/alliance control calculations in `src/game/map/control.ts`.
+- Put import/export normalization in `src/game/map/io.ts`.
+- Keep `src/components/MapPage.tsx` as the page coordinator that wires app state to reusable UI pieces.
 
-```tsx
-<div className="empty">No items found.</div>
-```
+For a future blueprint-style node editor, follow the same split:
 
-Renders centered italic monospace text in `--text-mute`. Always use this instead of blank space.
+- Put node data models and evaluators under `src/game/nodes`.
+- Use plain objects for `section`, `primitive`, `computedPrimitive`, `transform`, ports, and connections.
+- Let UI components render nodes and wires, but keep evaluation, type checks, connection validation, and JavaScript transform execution outside React components.
+- Reuse map geometry helpers for viewport, panning, zooming, hit testing, snapping, and SVG point conversion.
 
----
+## Checklist For New UI
 
-## Add Button
-
-```tsx
-<div className="factions-add-row">
-  <button className="add-btn" onClick={...}>+ Add Item</button>
-</div>
-```
-
-`.add-btn` is full-width, dashed border, transparent — clearly secondary.
-
----
-
-## Toasts & Indicators
-
-Call `showToast(message, type?)` from `useAppContext()`. `type` is `'good'` (default) or `'error'`.
-
-```tsx
-const { showToast } = useAppContext();
-showToast('Saved successfully');
-showToast('Something failed', 'error');
-```
-
----
-
-## Full page example
-
-```tsx
-// src/components/MyPage.tsx
-import { useAppContext } from '../store';
-
-export function MyPage() {
-  const { state } = useAppContext();
-
-  return (
-    <div className="panel">
-      <span className="corner tl" /><span className="corner tr" />
-      <span className="corner bl" /><span className="corner br" />
-
-      <div className="panel-header">
-        <h2>My Page</h2>
-      </div>
-
-      <div className="panel-body">
-        {state.factions.length === 0 ? (
-          <div className="empty">No factions yet.</div>
-        ) : (
-          state.factions.map(f => (
-            <div key={f.id} className="item">
-              <div className="item-head">
-                <span className="swatch" style={{ background: f.color, color: f.color }} />
-                <span style={{ flex: 1 }}>{f.name}</span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-Then in `Layout.tsx` NAV_ITEMS:
-```tsx
-{ id: 'mypage', icon: '◆', label: 'PAGE', title: 'My Page' }
-```
-
-And in `App.tsx`:
-```tsx
-import { MyPage } from './components/MyPage';
-// ...
-{tab === 'mypage' && <MyPage />}
-```
+- Add sidebar navigation in `src/navigation.ts`.
+- Render the route in `src/App.tsx`.
+- Use `AppHeader` for the page header.
+- Use `Panel` for framed sections.
+- Use `TabBar` for local tabs.
+- Use `EmptyState`, `ListSurface`, `GridSurface`, and `TableSurface` where applicable.
+- Keep domain/game calculations outside UI components under `src/game`.
+- Verify with `npm run build` and `npm run lint`.

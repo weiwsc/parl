@@ -1,5 +1,8 @@
 import { useAppContext, uid } from '../store';
 import type { Stratum, Faction, TrashItem } from '../models/types';
+import { EmptyState } from './ui/EmptyState';
+import { ListSurface } from './ui/ListSurface';
+import { Panel } from './ui/Panel';
 
 export function TrashPanel() {
   const { state, updateState, showToast } = useAppContext();
@@ -44,51 +47,46 @@ export function TrashPanel() {
   };
 
   return (
-    <div className="panel">
-      <span className="corner tl"></span><span className="corner tr"></span>
-      <span className="corner bl"></span><span className="corner br"></span>
-      <div className="panel-header">
-        <h2>Recycle Bin</h2>
-        <button className="ghost small" onClick={purgeTrash}>Empty Bin</button>
-      </div>
-      <div className="panel-body">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          <div>
-            <h3>Deleted Strata</h3>
-            {state.trash.strata.length === 0 ? (
-              <div className="empty">Empty.</div>
-            ) : (
-              <div className="history-list">
-                {state.trash.strata.map((item, idx) => (
-                  <div key={item.id} className="trash-item">
-                    <div className="swatch" style={{ background: 'var(--text-mute)' }}></div>
-                    <div className="name">{item.data.name}</div>
-                    <div className="stamp">{new Date(item.deletedAt).toLocaleTimeString()}</div>
-                    <button className="small" onClick={() => restoreStratum(item, idx)}>Restore</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <h3>Deleted Factions</h3>
-            {state.trash.factions.length === 0 ? (
-              <div className="empty">Empty.</div>
-            ) : (
-              <div className="history-list">
-                {state.trash.factions.map((item, idx) => (
-                  <div key={item.id} className="trash-item">
-                    <div className="swatch" style={{ background: item.data.color }}></div>
-                    <div className="name">{item.data.name}</div>
-                    <div className="stamp">{new Date(item.deletedAt).toLocaleTimeString()}</div>
-                    <button className="small" onClick={() => restoreFaction(item, idx)}>Restore</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+    <Panel
+      title="Recycle Bin"
+      actions={<button className="ghost small" onClick={purgeTrash}>Empty Bin</button>}
+    >
+      <div className="trash-grid">
+        <div>
+          <h3>Deleted Strata</h3>
+          {state.trash.strata.length === 0 ? (
+            <EmptyState>Empty.</EmptyState>
+          ) : (
+            <ListSurface className="history-list">
+              {state.trash.strata.map((item, idx) => (
+                <div key={item.id} className="trash-item">
+                  <div className="swatch" style={{ background: 'var(--text-mute)' }}></div>
+                  <div className="name">{item.data.name}</div>
+                  <div className="stamp">{new Date(item.deletedAt).toLocaleTimeString()}</div>
+                  <button className="small" onClick={() => restoreStratum(item, idx)}>Restore</button>
+                </div>
+              ))}
+            </ListSurface>
+          )}
+        </div>
+        <div>
+          <h3>Deleted Factions</h3>
+          {state.trash.factions.length === 0 ? (
+            <EmptyState>Empty.</EmptyState>
+          ) : (
+            <ListSurface className="history-list">
+              {state.trash.factions.map((item, idx) => (
+                <div key={item.id} className="trash-item">
+                  <div className="swatch" style={{ background: item.data.color }}></div>
+                  <div className="name">{item.data.name}</div>
+                  <div className="stamp">{new Date(item.deletedAt).toLocaleTimeString()}</div>
+                  <button className="small" onClick={() => restoreFaction(item, idx)}>Restore</button>
+                </div>
+              ))}
+            </ListSurface>
+          )}
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

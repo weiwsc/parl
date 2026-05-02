@@ -2,6 +2,9 @@ import { useAppContext } from '../store';
 import { arrangeSeats, fmtFull } from '../utils/compute';
 import type { ProjectionResult } from '../models/types';
 import { useLang } from '../utils/localization';
+import { EmptyState } from './ui/EmptyState';
+import { Panel } from './ui/Panel';
+import { TableSurface } from './ui/TableSurface';
 
 interface ProjectionProps {
   projection: ProjectionResult;
@@ -336,14 +339,9 @@ export function SupportMatrix({ projection }: ProjectionProps) {
 
   if (state.factions.length === 0 || state.strata.length === 0) {
     return (
-        <div className="panel">
-          <span className="corner tl"></span><span className="corner tr"></span>
-          <span className="corner bl"></span><span className="corner br"></span>
-          <div className="panel-header"><h2>Support Matrix &mdash; Read Only</h2></div>
-          <div className="panel-body no-scroll">
-            <div className="empty">Requires both strata and factions.</div>
-          </div>
-        </div>
+        <Panel title="Support Matrix &mdash; Read Only" bodyClassName="no-scroll">
+          <EmptyState>Requires both strata and factions.</EmptyState>
+        </Panel>
     );
   }
 
@@ -352,13 +350,8 @@ export function SupportMatrix({ projection }: ProjectionProps) {
   );
 
   return (
-      <div className="panel">
-        <span className="corner tl"></span><span className="corner tr"></span>
-        <span className="corner bl"></span><span className="corner br"></span>
-
-        <div className="panel-header"><h2>Support Matrix &mdash; Read Only</h2></div>
-
-        <div className="panel-body matrix-wrap no-scroll">
+      <Panel title="Support Matrix &mdash; Read Only" bodyClassName="matrix-wrap no-scroll">
+        <TableSurface>
           <table className="matrix">
             <thead>
             <tr>
@@ -421,7 +414,7 @@ export function SupportMatrix({ projection }: ProjectionProps) {
             </tr>
             </tbody>
           </table>
-        </div>
-      </div>
+        </TableSurface>
+      </Panel>
   );
 }
