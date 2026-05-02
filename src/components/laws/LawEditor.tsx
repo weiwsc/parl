@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { uid } from '../../store';
 import type { Law, LawClause } from '../../models/types';
 import { renderMarkdown } from './markdown';
+import { EditorField } from '../ui/EditorField';
 
 interface ClauseEditorProps {
   clauses: LawClause[];
@@ -89,6 +90,7 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
       status: initial.status ?? 'draft',
       isConstitution,
       factionStances: initial.factionStances ?? {},
+      senateFactionStances: initial.senateFactionStances ?? {},
       createdAt: initial.createdAt ?? Date.now(),
       votedAt: initial.votedAt,
     });
@@ -100,35 +102,32 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
         <span className="law-editor-title">{initial.id ? 'EDIT BILL' : 'NEW BILL'}</span>
       </div>
       <div className="law-editor-body">
-        <div className="law-field">
-          <label className="law-field-label">TITLE</label>
+        <EditorField label="TITLE">
           <input className="law-field-input" value={name} onChange={event => setName(event.target.value)} placeholder="Bill title…" autoFocus />
-        </div>
-        <div className="law-field">
-          <label className="law-field-label">SUBTITLE <span className="law-field-opt">(optional)</span></label>
+        </EditorField>
+        <EditorField label="SUBTITLE" optional="(optional)">
           <input className="law-field-input" value={subtitle} onChange={event => setSubtitle(event.target.value)} placeholder="Short description…" />
-        </div>
-        <div className="law-field">
-          <div className="law-field-label-row">
-            <label className="law-field-label">DESCRIPTION <span className="law-field-opt">(markdown)</span></label>
-            <button className="law-preview-btn" onClick={() => setPreview(current => !current)}>{preview ? '✎ EDIT' : '◉ PREVIEW'}</button>
-          </div>
+        </EditorField>
+        <EditorField
+          label="DESCRIPTION"
+          optional="(markdown)"
+          actions={<button className="law-preview-btn" onClick={() => setPreview(current => !current)}>{preview ? '✎ EDIT' : '◉ PREVIEW'}</button>}
+        >
           {preview
             ? <div className="law-md-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(description) }} />
             : <textarea className="law-field-textarea" value={description} onChange={event => setDescription(event.target.value)} rows={6} placeholder={"Use **bold**, *italic*, # Heading, - list item…"} />
           }
-        </div>
-        <div className="law-field">
-          <label className="law-field-label">CLAUSES</label>
+        </EditorField>
+        <EditorField label="CLAUSES">
           <ClauseEditor clauses={clauses} onChange={setClauses} />
-        </div>
-        <div className="law-field law-field--inline">
+        </EditorField>
+        <EditorField inline>
           <label className="toggle law-constitution-toggle" title="Constitutional laws are displayed separately in the Constitution tab">
             <input type="checkbox" checked={isConstitution} onChange={event => setIsConstitution(event.target.checked)} />
             <span className="switch" />
             <span className="toggle-label">⚖ Constitutional Law</span>
           </label>
-        </div>
+        </EditorField>
       </div>
       <div className="law-editor-foot">
         <button className="btn ghost small" onClick={onCancel}>Cancel</button>

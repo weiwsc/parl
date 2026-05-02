@@ -42,7 +42,7 @@ function useServerSync() {
   const showToastRef = useRef(showToast);
   useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
-  const syncTimer    = useRef<ReturnType<typeof setTimeout>>();
+  const syncTimer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const revRef       = useRef(0);
   const needsSaveRef = useRef(false);
   const applyingRef  = useRef(false);  // true while applying an SSE/merge update (skip dirty-track)
@@ -230,11 +230,11 @@ function AppContent() {
 
   return (
     // data-readonly disables all editing controls via CSS when user cannot edit
-    <div className="app" {...(!canEdit ? { 'data-readonly': '' } : {})}>
+    <div className={`app${tab === 'nodes' ? ' app--nodes' : ''}`} {...(!canEdit ? { 'data-readonly': '' } : {})}>
       <div className="app-body">
         <Sidebar />
 
-        <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}`}>
+        <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}${tab === 'nodes' ? ' app-main--nodes' : ''}`}>
           {tab !== 'map' && tab !== 'law' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
           {tab !== 'settings' && tab !== 'map' && tab !== 'law' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
 

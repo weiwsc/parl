@@ -52,12 +52,17 @@ export const DEFAULT_LAW_VOTING_RULES: LawVotingRules = {
 };
 
 export class LawVotingSession {
-  constructor(
-    private readonly law: Law,
-    private readonly entries: ProjectionEntry[],
-    private readonly totalSeats: number,
-    private readonly rules: LawVotingRules = DEFAULT_LAW_VOTING_RULES
-  ) {}
+  private readonly law: Law;
+  private readonly entries: ProjectionEntry[];
+  private readonly totalSeats: number;
+  private readonly rules: LawVotingRules;
+
+  constructor(law: Law, entries: ProjectionEntry[], totalSeats: number, rules: LawVotingRules = DEFAULT_LAW_VOTING_RULES) {
+    this.law = law;
+    this.entries = entries;
+    this.totalSeats = totalSeats;
+    this.rules = rules;
+  }
 
   breakdown(): VoteBreakdown {
     return computeVoteBreakdown(this.law, this.entries, this.totalSeats);

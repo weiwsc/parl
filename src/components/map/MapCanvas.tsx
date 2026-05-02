@@ -276,18 +276,16 @@ export function MapCanvas(props: MapCanvasProps) {
               />
             )}
             {region.vertices.map((vertex, i) => {
-              const isDrag = dragging?.regionId === selectedId && dragging.vIdx === i;
-
               return (
                 <circle
                   key={`vtx${i}`}
                   cx={vertex.x}
                   cy={vertex.y}
-                  r={isDrag ? 9 : 6}
-                  fill={isDrag ? 'var(--accent-hot)' : 'var(--bg-panel)'}
-                  stroke={isDrag ? 'var(--accent-hot)' : 'var(--cyan)'}
+                  r={6}
+                  fill="var(--bg-panel)"
+                  stroke="var(--cyan)"
                   strokeWidth={2}
-                  style={{ cursor: isDrag ? 'grabbing' : 'grab' }}
+                  style={{ cursor: 'grab' }}
                   onPointerDown={event => {
                     event.stopPropagation();
                     onVertexPointerDown(event, selectedId, i);

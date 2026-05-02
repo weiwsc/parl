@@ -1,0 +1,256 @@
+/* ── Node / Type Editor ───────────────────────────────────────────────────── */
+.ne-page {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app.app--nodes {
+  max-width: none;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.app.app--nodes .app-body {
+  height: 100%;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.app.app--nodes .sidebar {
+  height: 100vh;
+  position: relative;
+  top: auto;
+  border-width: 0 1px 0 0;
+}
+
+.app.app--nodes .app-main.app-main--nodes {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-left: 0;
+  overflow: hidden;
+}
+
+.app.app--nodes .ne-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Topbar: title + tabs + actions in one slim row */
+.ne-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 10px 0 14px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+  height: 40px;
+}
+.ne-topbar-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-right: 14px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.ne-topbar > .tab-bar {
+  flex: 1;
+  border-bottom: none;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+.ne-topbar-actions {
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Workspace: fills remaining height, sidebar + content */
+.ne-workspace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ne-page--canvas .ne-topbar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+}
+
+.ne-page--canvas .ne-workspace {
+  height: 100%;
+}
+
+/* Left sidebar used in types/transforms mode */
+.ne-editor-sidebar {
+  width: 196px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--line-soft);
+  overflow: hidden;
+}
+.ne-editor-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  flex-shrink: 0;
+}
+.ne-editor-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Canvas palette: types + transforms as floating drag sources */
+.ne-canvas-palette {
+  position: absolute;
+  top: 62px;
+  right: 12px;
+  bottom: 52px;
+  z-index: 12;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.36);
+  overflow-y: auto;
+  overflow-x: hidden;
+  backdrop-filter: blur(5px);
+}
+.ne-canvas-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.ne-canvas-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px 5px 10px;
+  background: rgba(0,0,0,0.14);
+  border-bottom: 1px solid var(--line-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ne-sidebar-drag-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  cursor: grab;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  user-select: none;
+}
+.ne-sidebar-drag-item:hover { background: var(--bg-panel-alt); color: var(--text); }
+.ne-sidebar-drag-item:active { cursor: grabbing; }
+.ne-sidebar-drag-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ne-sidebar-drag-item-meta {
+  font-size: 9px;
+  color: var(--text-mute);
+  flex-shrink: 0;
+}
+.ne-sidebar-empty {
+  padding: 8px 10px;
+  font-size: 9px;
+  color: var(--text-mute);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Right content area */
+.ne-editor-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ne-editor-content--canvas {
+  position: relative;
+}
+
+/* Legacy panel overrides for types/schema panels */
+.ne-type-panel .panel-body,
+.ne-schema-panel .panel-body,
+.ne-graph-panel .panel-body {
+  padding: 0;
+  overflow: auto;
+}
+
+/* Type list */
+.ne-type-list { display: flex; flex-direction: column; }
+
+.ne-type-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.1s;
+  font-size: 11px;
+}
+.ne-type-item:hover { background: var(--bg-panel-alt); }
+.ne-type-item.active { background: color-mix(in srgb, var(--accent) 12%, transparent); border-left: 2px solid var(--accent); }
+.ne-type-item[draggable="true"] { cursor: grab; }
+.ne-type-item[draggable="true"]:active { cursor: grabbing; }
+.ne-type-add-instance {
+  margin-left: auto;
+  color: var(--cyan);
+}
+
+.ne-type-icon { font-size: 10px; color: var(--accent); flex-shrink: 0; }
+.ne-type-name { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text); }
+.ne-type-count { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; }
+
+.ne-builtin-tag {
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-deep);
+  border: 1px solid var(--accent-deep);
+  padding: 1px 4px;
+  border-radius: 2px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}

@@ -1,0 +1,21 @@
+/* Login form styles. */
+  /* Login form */
+  .login-form {
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 280px;
+  }
+  .login-form input {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px; outline: none;
+    transition: border-color 0.13s;
+  }
+  .login-form input:focus { border-color: var(--cyan); }
+  .login-error {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    color: var(--danger);
+  }

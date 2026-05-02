@@ -1,0 +1,129 @@
+/* Senate page, seat assignment controls, and static map reuse hooks. */
+  /* ── Senate Page ──────────────────────────────────────────────────────────── */
+  .senate-page { display: flex; flex-direction: column; }
+  .senate-auto-toggle { margin: 0; }
+  .senate-map-body { padding: 0 !important; height: 320px; display: flex; flex-direction: column; }
+
+  /* Region list */
+  .senate-region-list { display: flex; flex-direction: column; overflow: auto; flex: 1; }
+
+  .senate-region-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 11px;
+  }
+
+  .senate-region-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .senate-region-name {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .senate-region-seats {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 24px;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .senate-region-seats.zero { color: var(--text-mute); font-weight: 400; }
+
+  .senate-auto-dot { font-size: 9px; }
+
+  .senate-region-bar { width: 100%; }
+
+  .senate-auto-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--accent-hot);
+    border: 1px solid var(--accent-hot);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  /* Senate faction seat inputs */
+  .senate-seat-auto-row,
+  .senate-seat-input-row,
+  .senate-seat-total-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .senate-seat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-mute);
+    letter-spacing: 0.06em;
+    flex: 1;
+  }
+
+  .senate-seat-auto-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.7;
+  }
+
+  .senate-seat-input {
+    width: 60px;
+    background: var(--bg-input);
+    border: 1px solid var(--line-soft);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 3px 6px;
+    text-align: right;
+  }
+  .senate-seat-input:focus { outline: none; border-color: var(--cyan); }
+
+  /* Static (read-only) map view — reused by senate page and future embeds */
+  .static-map { display: flex; flex-direction: column; height: 100%; }
+  .static-map-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-shrink: 0;
+    background: var(--bg-panel);
+  }
+  .static-map-hint { font-size: 10px; color: var(--text-mute); margin-left: 4px; }
+  .static-map-canvas-wrap { flex: 1; min-height: 0; }
+
+  /* Region card seats badge */
+  .map-region-seats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0;
+  }
+
+  /* Inspector seats inline section */
+  .insp-section--inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+    gap: 8px;
+  }
+  .insp-section--inline .insp-section-label { margin-bottom: 0; }
+  .insp-seats-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }

@@ -1,0 +1,1077 @@
+/* Law, constitution, voting, clause editor, and law history surfaces. */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     LAW / SENATE PAGE
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  .law-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Law header (reuses app-header styles + small overrides) */
+  .law-header .title-block h1 { letter-spacing: 6px; }
+  .law-active-indicator {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4px 14px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--grid-glow-2), transparent);
+    position: relative;
+  }
+  .law-active-indicator::before, .law-active-indicator::after {
+    content: ''; position: absolute;
+    width: 6px; height: 6px;
+    border-color: var(--accent); border-style: solid;
+  }
+  .law-active-indicator::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+  .law-active-indicator::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+  .law-active-icon { font-size: 14px; color: var(--accent); }
+  .law-active-name {
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--accent-hot);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .law-active-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--accent); opacity: 0.7;
+  }
+  .law-header-stats {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-mute);
+    letter-spacing: 1px;
+  }
+
+  /* ── Floor grid ──────────────────────────────────────────────────────────── */
+  .law-floor-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 360px;
+    gap: 16px;
+    padding: 16px 0;
+    align-items: start;
+  }
+  @media (max-width: 1200px) { .law-floor-grid { grid-template-columns: 1fr; } }
+
+  /* ── Law list panel ──────────────────────────────────────────────────────── */
+  .law-list-panel {}
+  .law-list-item {
+    border-bottom: 1px solid var(--line-soft);
+    padding: 10px 12px;
+    position: relative;
+    transition: background 0.13s;
+    cursor: pointer;
+  }
+  .law-list-item:last-child { border-bottom: none; }
+  .law-list-item:hover { background: var(--bg-panel-alt); }
+  .law-list-item.active {
+    background: linear-gradient(180deg, var(--grid-glow-2), transparent);
+    border-left: 2px solid var(--accent);
+  }
+  .law-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+  .law-item-names { display: flex; flex-direction: column; gap: 2px; }
+  .law-item-name {
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text);
+  }
+  .law-item-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1px;
+    color: var(--text-mute);
+  }
+  .law-item-net {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* Mini support bar */
+  .law-sup-bar {
+    height: 4px;
+    background: var(--bg-deeper);
+    display: flex;
+    overflow: hidden;
+    margin-bottom: 6px;
+    border-radius: 0;
+  }
+  .lsb-seg { height: 100%; transition: width 0.2s; }
+  .lsb-sup { background: var(--good); opacity: 0.75; }
+  .lsb-abs { background: var(--neutral); opacity: 0.35; }
+  .lsb-ag  { background: var(--danger); opacity: 0.75; }
+
+  .law-floor-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--line-soft);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px;
+    padding: 4px 0;
+    transition: all 0.13s;
+    text-align: center;
+    pointer-events: none;
+  }
+  .law-list-item:hover .law-floor-btn { border-color: var(--accent); color: var(--accent); }
+  .law-floor-btn.active {
+    border-color: var(--accent-hot);
+    color: var(--accent-hot);
+    background: linear-gradient(180deg, var(--grid-glow-2), transparent);
+  }
+
+  /* ── Vote chart ──────────────────────────────────────────────────────────── */
+  .law-center-col { display: flex; flex-direction: column; gap: 12px; }
+
+  .vote-chart-wrap {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    position: relative;
+    box-shadow: 0 0 24px rgba(0,0,0,0.4);
+  }
+  .vote-svg { width: 100%; max-height: 340px; }
+
+  .vote-stats-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 10px 16px;
+    border-top: 1px solid var(--line-soft);
+    flex-wrap: wrap;
+  }
+  .vote-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0 14px;
+  }
+  .vote-stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .vote-stat-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 1.5px;
+    color: var(--text-mute);
+    text-transform: uppercase;
+  }
+  .vote-stat-sep {
+    width: 1px; height: 30px;
+    background: var(--line-soft);
+    flex-shrink: 0;
+  }
+  .vote-status { font-size: 12px; letter-spacing: 2px; }
+
+  .law-no-floor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 64px 32px;
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+  .law-no-floor-icon { font-size: 36px; opacity: 0.25; }
+  .law-no-floor-txt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 2px; color: var(--text-mute);
+  }
+  .law-no-floor-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-mute); opacity: 0.6; text-align: center;
+  }
+
+  /* ── Stance DnD panel ────────────────────────────────────────────────────── */
+  .stance-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .stance-col {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    min-height: 80px;
+    position: relative;
+    transition: border-color 0.13s, background 0.13s;
+  }
+  .stance-col.drop-active {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--grid-glow-2), var(--bg-panel));
+  }
+  .stance-col-hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    font-weight: 700;
+  }
+  .stance-col-count { font-size: 9px; color: var(--text-mute); font-weight: 400; }
+
+  .stance-chips { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+  .stance-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--line-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    transition: all 0.13s;
+  }
+  .stance-chip.draggable { cursor: grab; }
+  .stance-chip.draggable:hover { border-color: var(--line-strong); }
+  .stance-chip.dragging { opacity: 0.4; }
+  .chip-dot { width: 8px; height: 8px; flex-shrink: 0; }
+  .chip-name { flex: 1; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip-seats { color: var(--text-mute); font-size: 9px; flex-shrink: 0; }
+
+  .stance-col-empty {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-mute);
+    padding: 12px; text-align: center; opacity: 0.5;
+    border: 1px dashed var(--line-soft);
+    margin: 4px;
+  }
+
+  /* ── Law detail panel ────────────────────────────────────────────────────── */
+  .law-detail-panel {}
+  .law-detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 48px 24px;
+    text-align: center;
+  }
+  .law-detail-empty-icon { font-size: 32px; opacity: 0.25; }
+  .law-detail-empty-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 2.5px; color: var(--text-mute);
+  }
+  .law-detail-empty-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-mute); opacity: 0.6;
+  }
+  .law-detail-body { overflow-y: auto; }
+
+  .law-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .law-status-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    text-transform: uppercase;
+  }
+  .law-status-draft    { color: var(--text-mute);  border-color: var(--line); }
+  .law-status-voting   { color: var(--cyan);        border-color: var(--cyan); }
+  .law-status-effect   { color: var(--good);        border-color: var(--good); }
+  .law-status-failed   { color: var(--danger);      border-color: var(--danger); }
+  .law-status-abolished{ color: var(--neutral);     border-color: var(--neutral); }
+
+  .law-chamber-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 1.5px;
+    padding: 2px 5px;
+    border: 1px solid currentColor;
+  }
+  .law-chamber-parliament { color: var(--accent);  border-color: var(--accent); }
+  .law-chamber-senate     { color: var(--cyan);    border-color: var(--cyan); }
+
+  .law-vote-summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+  }
+
+  .law-detail-section {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .law-detail-sec-hd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: var(--text-mute);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .law-detail-sec-hd::before { content: '◆ '; font-size: 7px; color: var(--accent); }
+  .law-detail-sec-hd--toggle { cursor: pointer; display: flex; justify-content: space-between; }
+  .law-detail-sec-hd--toggle:hover { color: var(--text-dim); }
+
+  /* legacy clause list (LawDetailPanel) */
+
+  .law-conclude-area {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .law-conclude-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-align: center;
+    color: var(--text-mute);
+  }
+  .law-conclude-btn {
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 2px;
+    border: 1px solid var(--line);
+    background: var(--bg-input);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.13s;
+    text-align: center;
+  }
+  .law-conclude-btn.pass {
+    border-color: var(--good);
+    color: var(--good);
+  }
+  .law-conclude-btn.pass:hover {
+    background: rgba(124,227,154,0.08);
+    box-shadow: 0 0 12px rgba(124,227,154,0.15);
+  }
+  .law-conclude-btn.fail {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .law-conclude-btn.fail:hover {
+    background: rgba(255,91,110,0.08);
+    box-shadow: 0 0 12px rgba(255,91,110,0.15);
+  }
+
+  .law-conclude-dropdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid var(--line);
+    background: var(--bg-input);
+    padding: 12px;
+  }
+  .law-conclude-dropdown-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: var(--text-mute);
+    text-transform: uppercase;
+  }
+  .law-conclude-status-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+  }
+  .law-status-pick-btn {
+    padding: 5px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 1px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text-mute);
+    cursor: pointer;
+    transition: all 0.13s;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .law-status-pick-btn:hover { color: var(--text-dim); border-color: var(--text-mute); }
+  .law-status-pick-btn.selected { background: var(--bg-deeper); }
+  .law-status-pick-btn.law-status-draft.selected    { color: var(--text-dim);    border-color: var(--line); }
+  .law-status-pick-btn.law-status-voting.selected   { color: var(--cyan);        border-color: var(--cyan);    box-shadow: 0 0 6px rgba(var(--cyan-rgb,80,200,220),0.2); }
+  .law-status-pick-btn.law-status-effect.selected   { color: var(--good);        border-color: var(--good);    box-shadow: 0 0 6px rgba(124,227,154,0.2); }
+  .law-status-pick-btn.law-status-failed.selected   { color: var(--danger);      border-color: var(--danger);  box-shadow: 0 0 6px rgba(255,91,110,0.2); }
+  .law-status-pick-btn.law-status-abolished.selected{ color: var(--neutral);     border-color: var(--neutral); box-shadow: 0 0 6px rgba(var(--neutral-rgb,150,150,150),0.2); }
+  .law-conclude-row {
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  /* ── Markdown rendering ──────────────────────────────────────────────────── */
+  .law-md-body, .law-md-preview {
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .law-md-preview {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    padding: 10px 12px;
+    min-height: 80px;
+  }
+  .md-h3 {
+    font-family: 'Cinzel', serif; font-size: 14px;
+    color: var(--accent); letter-spacing: 2px;
+    margin: 14px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .md-h4 {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--cyan); letter-spacing: 2.5px; text-transform: uppercase;
+    margin: 10px 0 5px;
+  }
+  .md-h4::before { content: '◈ '; font-size: 8px; opacity: 0.7; }
+  .md-p  { margin: 5px 0; }
+  .md-ul { margin: 6px 0; padding-left: 0; list-style: none; }
+  .md-ul-nested { padding-left: 18px; list-style: none; margin: 2px 0; }
+  .md-ul-nested .md-ul-nested { padding-left: 16px; }
+  .md-li {
+    position: relative;
+    margin: 3px 0;
+    padding-left: 22px;
+  }
+  /* Top-level list bullet */
+  .md-ul > .md-li::before {
+    content: '◈';
+    position: absolute; left: 0;
+    color: var(--accent); font-size: 9px;
+    top: 3px;
+  }
+  /* Second-level bullet */
+  .md-ul-nested > .md-li::before {
+    content: '◦';
+    position: absolute; left: 0;
+    color: var(--text-mute); font-size: 11px;
+    top: 1px;
+  }
+  /* Third-level bullet */
+  .md-ul-nested .md-ul-nested > .md-li::before {
+    content: '·';
+    font-size: 14px; top: 0;
+  }
+  .md-empty { color: var(--text-mute); font-style: italic; }
+
+  /* ── Laws tab ────────────────────────────────────────────────────────────── */
+  .law-tab-content { padding: 16px 0; }
+
+  .law-registry-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .law-filter-group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .law-filter-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.13s;
+  }
+  .law-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .law-filter-btn.active { border-color: var(--accent); color: var(--accent-hot); background: linear-gradient(180deg, var(--grid-glow-2), var(--bg-input)); }
+
+  /* ── Bill/Constitution grid ──────────────────────────────────────────────── */
+  .law-registry-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .law-registry-list > .empty { grid-column: 1 / -1; }
+
+  /* ── Law card – Stellaris/Victoria-style ─────────────────────────────────── */
+  .law-card {
+    background:
+      linear-gradient(160deg,
+        color-mix(in srgb, var(--accent) 4%, var(--bg-panel)) 0%,
+        var(--bg-deeper) 100%);
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 4px 16px rgba(0,0,0,0.55);
+  }
+  /* Subtle scanlines */
+  .law-card::after {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+    );
+  }
+  .law-card:hover {
+    border-color: var(--line-strong);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 4px 24px rgba(0,0,0,0.65),
+      0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  /* Status left rail with glow */
+  .law-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%; z-index: 1;
+  }
+  .law-card--draft::before {
+    background: linear-gradient(180deg, var(--text-mute), transparent);
+    opacity: 0.45;
+  }
+  .law-card--effect::before {
+    background: linear-gradient(180deg, var(--good), color-mix(in srgb, var(--good) 30%, transparent));
+    box-shadow: 2px 0 12px color-mix(in srgb, var(--good) 45%, transparent);
+  }
+  .law-card--failed::before {
+    background: linear-gradient(180deg, var(--danger), color-mix(in srgb, var(--danger) 30%, transparent));
+    box-shadow: 2px 0 12px color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  .law-card--abolished::before {
+    background: linear-gradient(180deg, var(--neutral), transparent);
+    opacity: 0.45;
+  }
+
+  /* Corner tick marks */
+  .lc-corner {
+    position: absolute; width: 10px; height: 10px;
+    border-color: var(--line-strong); border-style: solid;
+    pointer-events: none; z-index: 2;
+    transition: border-color 0.2s;
+  }
+  .lc-tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+  .lc-tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+  .lc-bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+  .lc-br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+  .law-card:hover .lc-corner { border-color: var(--accent); }
+
+  /* ── Constitution variant (always gold) ───────────────────────────────────── */
+  .law-card--const {
+    border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+    background:
+      linear-gradient(160deg,
+        color-mix(in srgb, var(--gold) 8%, var(--bg-panel)) 0%,
+        var(--bg-deeper) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      0 4px 20px rgba(0,0,0,0.55),
+      0 0 0 1px var(--gold-dim),
+      0 0 24px var(--gold-glow);
+  }
+  .law-card--const::before {
+    background: linear-gradient(180deg, var(--gold) 0%, color-mix(in srgb, var(--gold) 25%, transparent) 100%);
+    box-shadow: 2px 0 16px var(--gold-glow);
+    width: 4px;
+  }
+  .law-card--const:hover {
+    border-color: var(--gold);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      0 4px 28px rgba(0,0,0,0.65),
+      0 0 0 1px var(--gold),
+      0 0 32px var(--gold-glow);
+  }
+  .law-card--const .lc-corner { border-color: var(--gold-dim); }
+  .law-card--const:hover .lc-corner { border-color: var(--gold); }
+
+  /* Card header */
+  .law-card-hd {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; padding: 12px 16px 12px 20px;
+    cursor: pointer; user-select: none;
+    position: relative; z-index: 1;
+    transition: background 0.15s;
+    border-bottom: 1px solid transparent;
+  }
+  .law-card-hd:hover { background: rgba(255,255,255,0.025); }
+  .law-card:not(.law-card--collapsed) .law-card-hd {
+    border-bottom-color: var(--line-soft);
+  }
+  .law-card--const .law-card-hd:not(.collapsed) {
+    border-bottom-color: color-mix(in srgb, var(--gold) 25%, var(--line-soft));
+  }
+  .law-card-hd-left  { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .law-card-hd-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  .law-card-artnum {
+    font-family: 'Cinzel', serif;
+    font-size: 10px; letter-spacing: 2.5px;
+    color: var(--gold); opacity: 0.9;
+    white-space: nowrap; flex-shrink: 0;
+    text-shadow: 0 0 10px var(--gold-glow);
+  }
+  .law-card-titles { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .law-card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.8px;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .law-card--const .law-card-name {
+    color: var(--gold-hot);
+    text-shadow: 0 0 12px var(--gold-glow);
+    letter-spacing: 1.5px;
+  }
+  .law-card-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px;
+    color: var(--cyan); opacity: 0.65;
+  }
+  .law-card-chevron {
+    font-size: 8px; color: var(--text-mute); flex-shrink: 0;
+    transition: color 0.15s, opacity 0.15s;
+    opacity: 0.5;
+  }
+  .law-card:hover .law-card-chevron { opacity: 1; color: var(--accent); }
+  .law-card--const:hover .law-card-chevron { color: var(--gold); }
+
+  /* Actions row */
+  .law-card-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+
+  /* Status dropdown */
+  .law-status-select {
+    background: var(--bg-deeper);
+    border: 1px solid var(--line);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+    padding: 4px 6px;
+    cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    transition: border-color 0.13s, color 0.13s;
+  }
+  .law-status-select:hover { border-color: var(--line-strong); color: var(--text-dim); }
+  .law-status-select:focus { border-color: var(--accent); color: var(--accent); }
+  .law-card--const .law-status-select:focus { border-color: var(--gold); color: var(--gold); }
+
+  /* Card body */
+  .law-card-body { position: relative; z-index: 1; }
+  .law-card--const .law-card-body { border-top-color: color-mix(in srgb, var(--gold) 30%, var(--line-soft)); }
+
+  .law-card-section {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .law-card-section:last-child { border-bottom: none; }
+
+  /* Constitution ornament divider */
+  .law-const-ornament-row {
+    display: flex; align-items: center; gap: 0;
+    padding: 10px 18px 2px;
+  }
+  .ornament-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.5;
+  }
+  .ornament-glyph {
+    font-size: 8px; color: var(--gold);
+    padding: 0 12px; opacity: 0.8;
+    text-shadow: 0 0 8px var(--gold-glow);
+  }
+  .law-const-sec-hd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px;
+    color: var(--gold); opacity: 0.65;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  /* ── Clause list with tree connector lines ───────────────────────────────── */
+  .law-clauses-list { display: flex; flex-direction: column; gap: 2px; }
+  .law-clause-item {
+    display: flex; align-items: baseline; gap: 10px;
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 13px; color: var(--text-dim);
+    line-height: 1.55; position: relative;
+  }
+  /* Vertical + horizontal connector lines for nested levels */
+  .law-clause-level-1::before {
+    content: ''; position: absolute;
+    left: 8px; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(to bottom,
+      color-mix(in srgb, var(--accent) 45%, transparent),
+      color-mix(in srgb, var(--accent) 10%, transparent));
+  }
+  .law-clause-level-1::after {
+    content: ''; position: absolute;
+    left: 8px; top: 50%; width: 12px; height: 1px;
+    background: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .law-clause-level-2::before {
+    content: ''; position: absolute;
+    left: 32px; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(to bottom,
+      color-mix(in srgb, var(--accent) 28%, transparent),
+      color-mix(in srgb, var(--accent) 8%, transparent));
+  }
+  .law-clause-level-2::after {
+    content: ''; position: absolute;
+    left: 32px; top: 50%; width: 12px; height: 1px;
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .law-clause-level-3::before {
+    content: ''; position: absolute;
+    left: 56px; top: 0; bottom: 0; width: 1px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+  .law-clause-level-3::after {
+    content: ''; position: absolute;
+    left: 56px; top: 50%; width: 12px; height: 1px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+  /* Gold connectors for constitution */
+  .law-card--const .law-clause-level-1::before,
+  .law-card--const .law-clause-level-1::after,
+  .law-card--const .law-clause-level-2::before,
+  .law-card--const .law-clause-level-2::after,
+  .law-card--const .law-clause-level-3::before,
+  .law-card--const .law-clause-level-3::after {
+    background: color-mix(in srgb, var(--gold) 32%, transparent);
+  }
+
+  .law-clause-marker {
+    flex-shrink: 0; min-width: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-align: right;
+  }
+  .law-clause-level-0 .law-clause-marker {
+    color: var(--accent); font-weight: 700; font-size: 11px;
+  }
+  .law-clause-level-1 .law-clause-marker { color: var(--text-mute); font-size: 11px; }
+  .law-clause-level-2 .law-clause-marker { color: var(--text-mute); opacity: 0.55; }
+  .law-clause-level-3 .law-clause-marker { color: var(--text-mute); opacity: 0.35; }
+  .law-clause-text { flex: 1; }
+
+  /* Constitution clause gold */
+  .law-card--const .law-clause-level-0 .law-clause-marker {
+    color: var(--gold); font-family: 'Cinzel', serif;
+    letter-spacing: 1px; font-size: 11px;
+    text-shadow: 0 0 8px var(--gold-glow);
+  }
+  .law-card--const .law-clause-level-0 { margin-top: 3px; }
+  .law-card--const .law-clause-text { color: color-mix(in srgb, var(--text-dim) 80%, var(--gold)); }
+
+  /* Legacy */
+  .law-card-desc {
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 12.5px; color: var(--text-mute);
+    line-height: 1.5; margin-bottom: 6px;
+  }
+
+  /* ── Law editor ──────────────────────────────────────────────────────────── */
+  .law-editor {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    position: relative;
+    box-shadow: 0 0 24px rgba(0,0,0,0.4);
+  }
+  .law-editor::before { content: ''; position: absolute; inset: 4px; border: 1px solid var(--line-soft); pointer-events: none; }
+  .law-editor-hd {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--grid-glow-1), transparent);
+  }
+  .law-editor-title {
+    font-family: 'Cinzel', serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 3px;
+    color: var(--accent);
+  }
+  .law-editor-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .law-editor-foot {
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .law-field { display: flex; flex-direction: column; gap: 5px; }
+  .law-field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: var(--text-mute);
+    text-transform: uppercase;
+  }
+  .law-field-opt { font-size: 8px; opacity: 0.6; }
+  .law-field-label-row { display: flex; align-items: center; justify-content: space-between; }
+
+  .law-field-input {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 14px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.13s;
+  }
+  .law-field-input:focus { border-color: var(--cyan); }
+
+  .law-field-textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; line-height: 1.6;
+    padding: 8px 10px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.13s;
+  }
+  .law-field-textarea:focus { border-color: var(--cyan); }
+
+  .law-preview-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.13s;
+  }
+  .law-preview-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Clause editor */
+  .clause-editor { display: flex; flex-direction: column; gap: 3px; }
+  .clause-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px;
+    background: var(--bg-input);
+    border: 1px solid var(--line-soft);
+    transition: border-color 0.13s;
+  }
+  .clause-row:focus-within { border-color: var(--line); }
+  .clause-btn {
+    background: none;
+    border: 1px solid var(--line-soft);
+    color: var(--text-mute);
+    font-size: 10px; width: 20px; height: 20px;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.13s;
+  }
+  .clause-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .clause-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .clause-btn.clause-del:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+  .clause-bullet {
+    font-size: 10px; color: var(--accent);
+    width: 12px; text-align: center; flex-shrink: 0;
+  }
+  .clause-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 13px; outline: none;
+  }
+  .clause-add-btn {
+    background: none;
+    border: 1px dashed var(--line);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    padding: 5px;
+    cursor: pointer;
+    transition: all 0.13s;
+    margin-top: 2px;
+    text-align: center;
+  }
+  .clause-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── History tab ─────────────────────────────────────────────────────────── */
+  .hist-item {
+    background: var(--bg-mid);
+    border: 1px solid var(--line-soft);
+    margin-bottom: 6px;
+  }
+  .hist-item-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s;
+  }
+  .hist-item-hd:hover { background: var(--bg-hi); }
+  .hist-item.open .hist-item-hd { background: var(--bg-hi); border-bottom: 1px solid var(--line-soft); }
+  .hist-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+  .hist-item-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .hist-item-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hist-item-sub {
+    font-size: 10px;
+    color: var(--text-mute);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hist-item-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-mute);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .hist-chevron {
+    font-size: 9px;
+    color: var(--text-mute);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .hist-item-body {
+    background: var(--bg-deep);
+    padding: 0;
+  }
+  .hist-vote-chart-wrap {
+    padding: 8px 16px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .hist-vote-chart-wrap .vote-chart-wrap { margin: 0; }
+  .law-hist-item {}
+  .law-history-empty { padding: 32px; }
+  .law-hist-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .law-hist-factions {
+    border-top: 1px solid var(--line-soft);
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .law-hist-faction-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+  .law-outcome-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    flex-shrink: 0;
+  }
+  .law-outcome-badge.passed { color: var(--good); }
+  .law-outcome-badge.failed { color: var(--danger); }
+
+  .hist-stance-badge {
+    font-size: 9px; letter-spacing: 1px;
+    padding: 1px 5px;
+    border: 1px solid currentColor;
+    flex-shrink: 0;
+  }
+  .stance-support { color: var(--good); }
+  .stance-abstain { color: var(--neutral); }
+  .stance-against { color: var(--danger); }
+
+  /* ── Constitution tab (gold always, all themes) ──────────────────────────── */
+  .constitution-tab { padding: 0; }
+  .constitution-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 20px 16px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 8%, var(--bg-deep)), transparent);
+    position: relative;
+  }
+  .constitution-header::after {
+    content: '';
+    position: absolute; bottom: 0; left: 20px; right: 20px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.5;
+  }
+  .constitution-icon {
+    font-size: 30px; color: var(--gold); opacity: 0.9;
+    text-shadow: 0 0 20px var(--gold-glow);
+  }
+  .constitution-title {
+    font-family: 'Cinzel', serif;
+    font-size: 15px; letter-spacing: 4px;
+    color: var(--gold);
+    text-shadow: 0 0 14px var(--gold-glow);
+  }
+  .constitution-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-mute);
+    letter-spacing: 1.5px; margin-top: 3px;
+  }
+  .constitution-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px; align-items: start;
+    padding: 16px 20px 32px;
+  }
+  .constitution-empty {
+    padding: 48px 32px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .constitution-empty-icon {
+    font-size: 32px; opacity: 0.25; color: var(--gold); margin-bottom: 4px;
+  }
+  .constitution-empty-hint { font-size: 11px; opacity: 0.5; margin-top: 4px; }
+  .law-field--inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .law-constitution-toggle { margin: 0; }
+
+  /* ── Election name input (Parliament + Senate history) ─────────────────── */
+  .history-name-row {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    grid-column: 1 / -1;
+  }
+  .history-name-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line-soft);
+    color: var(--accent);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 4px 0;
+  }
+  .history-name-input:focus { outline: none; border-color: var(--accent); }
+  .history-name-input::placeholder { color: var(--text-mute); font-family: 'JetBrains Mono', monospace; font-size: 10px; }

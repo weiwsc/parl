@@ -15,7 +15,8 @@ This app uses a compact industrial sci-fi UI system. New pages should be built f
 | `src/components/ui/TableSurface.tsx` | Shared horizontal table scroll wrapper |
 | `src/components/map` | Map-specific toolbar, canvas, legend, and inspector components |
 | `src/game/map` | Pure map geometry, viewport, control, and import/export helpers |
-| `src/index.css` | Theme tokens and component styling |
+| `src/index.css` | Stylesheet import manifest |
+| `src/styles` | Global, shared, and page-owned stylesheets |
 
 ## Adding A New Sidebar Page
 
@@ -209,7 +210,7 @@ Use page-specific field classes when an editor needs denser layout, like the law
 
 ## Theme Tokens
 
-Use CSS variables from `src/index.css`; do not hardcode page palettes.
+Use CSS variables from `src/styles/foundation.css`; do not hardcode page palettes. See `src/styles/README.md` before adding new stylesheet rules.
 
 | Token | Use |
 |---|---|

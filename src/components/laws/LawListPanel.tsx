@@ -14,7 +14,7 @@ interface LawListPanelProps {
   canEdit: boolean;
 }
 
-export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivate, canEdit }: LawListPanelProps) {
+export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivate }: LawListPanelProps) {
   const floorLaws = useMemo(() => getFloorLawEntries(laws, entries), [laws, entries]);
 
   return (

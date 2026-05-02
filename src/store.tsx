@@ -1,6 +1,22 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
-import type { AppState } from './models/types';
+import type {
+  AppState,
+  EntityType,
+  NodeEditorState,
+  NodeEntityBinding,
+  NodeGraph,
+  NodeGraphConnection,
+  NodeGraphNode,
+  NodeInstanceValue,
+  SchemaArrayItem,
+  SchemaChild,
+  SchemaValueType,
+  TransformDefinition,
+  TransformPort,
+  TransformValueType,
+} from './models/types';
+import { defaultEntityTypes } from './game/nodes/schema';
 
 export const STORAGE_KEY = 'parliamentState_v3';
 export const SCHEMA_VERSION = 3;
@@ -45,12 +61,7 @@ export function defaultState(): AppState {
     map: { regions: [] },
     laws: [],
     lawHistory: [],
-    nodes: {
-      types: [
-        { id: 'builtin-faction', name: 'Faction', builtIn: true, entityClass: 'faction', children: [] },
-        { id: 'builtin-region',  name: 'Region',  builtIn: true, entityClass: 'region',  children: [] },
-      ],
-    },
+    nodes: { types: defaultEntityTypes(), graph: { nodes: [], connections: [] }, transforms: defaultTransformDefinitions() },
     senate: { autoAssign: false, strataAssign: false, factionSeats: {}, history: [] },
   };
 }
@@ -114,11 +125,7 @@ export function normalizeState(p: any): AppState {
           }))
         : []
     },
-    nodes: {
-      types: (p.nodes && Array.isArray(p.nodes.types))
-        ? p.nodes.types
-        : d.nodes.types,
-    },
+    nodes: normalizeNodeEditorState(p.nodes, d.nodes),
     senate: {
       autoAssign: !!(p.senate && p.senate.autoAssign),
       strataAssign: !!(p.senate && p.senate.strataAssign),
@@ -150,6 +157,284 @@ export function normalizeState(p: any): AppState {
     });
   }
   return s;
+}
+
+function normalizeNodeEditorState(value: any, fallback: NodeEditorState): NodeEditorState {
+  const incomingTypes = value && Array.isArray(value.types)
+    ? value.types.map(normalizeEntityType)
+    : fallback.types;
+  const types = ensureBuiltinTypes(incomingTypes, fallback.types);
+
+  return {
+    types,
+    graph: normalizeNodeGraph(value?.graph),
+    transforms: normalizeTransformDefinitions(value?.transforms, fallback.transforms),
+  };
+}
+
+function defaultTransformDefinitions(): TransformDefinition[] {
+  return [{
+    id: 'builtin-transform-pass',
+    name: 'Pass Through',
+    description: 'Return the input value unchanged.',
+    inputs: [{ id: 'builtin-pass-input', name: 'input', valueType: { kind: 'any' } }],
+    outputs: [{ id: 'builtin-pass-output', name: 'output', valueType: { kind: 'any' } }],
+    expression: 'return { output: input };',
+  }];
+}
+
+function ensureBuiltinTypes(types: EntityType[], defaults: EntityType[]): EntityType[] {
+  const next = [...types];
+
+  for (const builtin of defaults.filter(type => type.builtIn)) {
+    const index = next.findIndex(type => type.id === builtin.id || type.entityClass === builtin.entityClass);
+    if (index < 0) {
+      next.unshift(builtin);
+      continue;
+    }
+
+    const existing = next[index];
+    next[index] = {
+      ...builtin,
+      ...existing,
+      id: builtin.id,
+      builtIn: true,
+      entityClass: builtin.entityClass,
+      children: mergeBuiltinChildren(builtin.children, existing.children),
+    };
+  }
+
+  return next;
+}
+
+function mergeBuiltinChildren(defaults: SchemaChild[], existing: SchemaChild[]): SchemaChild[] {
+  if (existing.length === 0) return defaults;
+
+  const next = [...existing];
+  for (const defaultChild of defaults) {
+    const index = next.findIndex(child => child.id === defaultChild.id);
+    if (index < 0) {
+      next.push(defaultChild);
+      continue;
+    }
+
+    const existingChild = next[index];
+    if (defaultChild.kind === 'section' && existingChild.kind === 'section') {
+      next[index] = {
+        ...defaultChild,
+        ...existingChild,
+        children: mergeBuiltinChildren(defaultChild.children, existingChild.children),
+      };
+    }
+  }
+
+  return next;
+}
+
+function normalizeEntityType(value: any): EntityType {
+  return {
+    id: stringOr(value?.id, uid('type')),
+    name: stringOr(value?.name, 'Type'),
+    description: optionalString(value?.description),
+    builtIn: !!value?.builtIn,
+    entityClass: optionalString(value?.entityClass),
+    children: Array.isArray(value?.children) ? normalizeSchemaChildren(value.children) : [],
+  };
+}
+
+function normalizeSchemaChildren(value: any[]): SchemaChild[] {
+  return value.flatMap(normalizeSchemaChild);
+}
+
+function normalizeSchemaChild(value: any): SchemaChild[] {
+  const kind = value?.kind;
+  const common = {
+    id: stringOr(value?.id, uid('field')),
+    name: stringOr(value?.name, kind === 'section' ? 'section' : 'value'),
+    description: optionalString(value?.description),
+  };
+
+  if (kind === 'section') {
+    return [{
+      kind: 'section',
+      ...common,
+      children: Array.isArray(value?.children) ? normalizeSchemaChildren(value.children) : [],
+    }];
+  }
+
+  if (kind === 'reference') {
+    return [{
+      kind: 'reference',
+      ...common,
+      typeId: stringOr(value?.typeId, ''),
+      computed: !!value?.computed,
+    }];
+  }
+
+  if (kind === 'array') {
+    return [{
+      kind: 'array',
+      ...common,
+      item: normalizeArrayItem(value?.item),
+      computed: !!value?.computed,
+    }];
+  }
+
+  if (kind === 'primitive') {
+    return [{
+      kind: 'primitive',
+      ...common,
+      valueType: normalizeSchemaValueType(value?.valueType),
+      defaultValue: value?.defaultValue,
+      computed: !!value?.computed,
+    }];
+  }
+
+  return [];
+}
+
+function normalizeArrayItem(value: any): SchemaArrayItem {
+  if (value?.kind === 'reference') {
+    return { kind: 'reference', typeId: stringOr(value.typeId, '') };
+  }
+  return { kind: 'primitive', valueType: normalizeSchemaValueType(value?.valueType) };
+}
+
+function normalizeNodeGraph(value: any): NodeGraph {
+  const graphNodes: NodeGraphNode[] = Array.isArray(value?.nodes) ? value.nodes.flatMap(normalizeGraphNode) : [];
+  const nodeIds = new Set(graphNodes.map(node => node.id));
+  const connections = Array.isArray(value?.connections)
+    ? value.connections.flatMap((connection: any) => normalizeConnection(connection, nodeIds))
+    : [];
+
+  return { nodes: graphNodes, connections };
+}
+
+function normalizeGraphNode(value: any): NodeGraphNode[] {
+  const common = {
+    id: stringOr(value?.id, uid('node')),
+    title: stringOr(value?.title, value?.kind === 'transform' ? 'Transform' : 'Node'),
+    x: finiteNumber(value?.x, 80),
+    y: finiteNumber(value?.y, 80),
+  };
+
+  if (value?.kind === 'transform') {
+    return [{
+      kind: 'transform',
+      ...common,
+      transformId: optionalString(value?.transformId),
+      inputs: normalizeTransformPorts(value?.inputs, 'input'),
+      outputs: normalizeTransformPorts(value?.outputs, 'output'),
+      expression: stringOr(value?.expression, 'return {};'),
+    }];
+  }
+
+  if (value?.kind === 'entity') {
+    return [{
+      kind: 'entity',
+      ...common,
+      typeId: stringOr(value?.typeId, ''),
+      binding: normalizeEntityBinding(value?.binding),
+      values: normalizeInstanceValues(value?.values),
+    }];
+  }
+
+  return [];
+}
+
+function normalizeEntityBinding(value: any): NodeEntityBinding | undefined {
+  const entityClass = optionalString(value?.entityClass);
+  const entityId = optionalString(value?.entityId);
+  return entityClass && entityId ? { entityClass, entityId } : undefined;
+}
+
+function normalizeInstanceValues(value: any): Record<string, NodeInstanceValue> | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+
+  const next: Record<string, NodeInstanceValue> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (typeof raw === 'string' || typeof raw === 'number') next[key] = raw;
+  }
+
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+function normalizeTransformDefinitions(value: any, fallback: TransformDefinition[]): TransformDefinition[] {
+  if (!Array.isArray(value)) return fallback;
+
+  const transforms = value.map(normalizeTransformDefinition);
+  return transforms.length > 0 ? transforms : fallback;
+}
+
+function normalizeTransformDefinition(value: any): TransformDefinition {
+  return {
+    id: stringOr(value?.id, uid('transform')),
+    name: stringOr(value?.name, 'Transform'),
+    description: optionalString(value?.description),
+    inputs: normalizeTransformPorts(value?.inputs, 'input'),
+    outputs: normalizeTransformPorts(value?.outputs, 'output'),
+    expression: stringOr(value?.expression, 'return {};'),
+  };
+}
+
+function normalizeTransformPorts(value: any, fallbackName: string): TransformPort[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return [{ id: uid(fallbackName), name: fallbackName, valueType: { kind: 'any' } }];
+  }
+
+  return value.map((port: any) => ({
+    id: stringOr(port?.id, uid('port')),
+    name: stringOr(port?.name, fallbackName),
+    valueType: normalizeTransformValueType(port?.valueType),
+  }));
+}
+
+function normalizeConnection(value: any, nodeIds: Set<string>): NodeGraphConnection[] {
+  const fromNodeId = stringOr(value?.from?.nodeId, '');
+  const toNodeId = stringOr(value?.to?.nodeId, '');
+  if (!nodeIds.has(fromNodeId) || !nodeIds.has(toNodeId)) return [];
+
+  return [{
+    id: stringOr(value?.id, uid('conn')),
+    from: {
+      nodeId: fromNodeId,
+      path: stringOr(value?.from?.path, ''),
+      label: stringOr(value?.from?.label, value?.from?.path || ''),
+    },
+    to: {
+      nodeId: toNodeId,
+      path: stringOr(value?.to?.path, ''),
+      label: stringOr(value?.to?.label, value?.to?.path || ''),
+    },
+    mode: value?.mode === 'take' ? 'take' : 'read',
+    amount: typeof value?.amount === 'number' ? value.amount : undefined,
+  }];
+}
+
+function normalizeSchemaValueType(value: unknown): SchemaValueType {
+  return value === 'string' ? 'string' : 'number';
+}
+
+function normalizeTransformValueType(value: any): TransformValueType {
+  if (value === 'number' || value === 'string') return { kind: 'primitive', valueType: value };
+  if (value === 'any') return { kind: 'any' };
+
+  if (value?.kind === 'primitive') return { kind: 'primitive', valueType: normalizeSchemaValueType(value.valueType) };
+  if (value?.kind === 'reference') return { kind: 'reference', typeId: stringOr(value.typeId, '') };
+  if (value?.kind === 'array') return { kind: 'array', item: normalizeArrayItem(value.item) };
+  return { kind: 'any' };
+}
+
+function stringOr(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.length > 0 ? value : fallback;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function finiteNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 export function loadFromStorage(): AppState {

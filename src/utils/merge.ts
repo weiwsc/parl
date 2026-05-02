@@ -1,6 +1,15 @@
-import type { AppState } from '../models/types';
+import type { AppState, NodeGraph } from '../models/types';
 
 type Rec = Record<string, unknown>;
+type Identified = { id: string };
+
+function hasId(value: unknown): value is Identified {
+  return !!value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'string';
+}
+
+function isIdArray(value: unknown): value is Identified[] {
+  return Array.isArray(value) && value.every(hasId);
+}
 
 // One level of field-by-field merge for plain objects (e.g. faction.support, law.factionStances).
 // Returns remote as base, overrides any field that only the local side changed.
@@ -29,8 +38,15 @@ function mergeEntity<T extends Rec>(base: T, local: T, remote: T): T {
     if (lChanged && !rChanged) {
       result[key] = l;
     } else if (lChanged && rChanged) {
-      // Both changed: recurse into plain-object sub-fields (e.g. support, factionStances)
-      if (l && r && b && typeof l === 'object' && !Array.isArray(l)) {
+      // Both changed: merge nested id arrays such as schema children/ports,
+      // otherwise recurse into plain-object sub-fields (e.g. support, factionStances).
+      if (isIdArray(l) && isIdArray(r) && (Array.isArray(b) || b === undefined)) {
+        result[key] = mergeById(
+          (Array.isArray(b) ? b.filter(hasId) : []),
+          l,
+          r,
+        );
+      } else if (l && r && b && typeof l === 'object' && !Array.isArray(l)) {
         result[key] = mergeRecord(b as Rec, l as Rec, r as Rec);
       }
       // else: remote wins (already in result)
@@ -73,6 +89,19 @@ function mergeById<T extends { id: string }>(base: T[], local: T[], remote: T[])
   return result;
 }
 
+function mergeGraph(base: NodeGraph | undefined, local: NodeGraph | undefined, remote: NodeGraph | undefined): NodeGraph {
+  const empty: NodeGraph = { nodes: [], connections: [] };
+  const b = base ?? empty;
+  const l = local ?? empty;
+  const r = remote ?? empty;
+  const nodes = mergeById(b.nodes, l.nodes, r.nodes);
+  const nodeIds = new Set(nodes.map(node => node.id));
+  const connections = mergeById(b.connections, l.connections, r.connections)
+    .filter(connection => nodeIds.has(connection.from.nodeId) && nodeIds.has(connection.to.nodeId));
+
+  return { nodes, connections };
+}
+
 // Strip ui before sending to the server — ui state is per-client and should not be shared.
 export function stripUi(state: AppState): Omit<AppState, 'ui'> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -102,11 +131,19 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
       alliances: mergeById(base.trash.alliances, local.trash.alliances, remote.trash.alliances),
     },
     map: { regions: mergeById(base.map.regions, local.map.regions, remote.map.regions) },
-    nodes: { types: mergeById(
-      base.nodes?.types  ?? [],
-      local.nodes?.types ?? [],
-      remote.nodes?.types ?? [],
-    ) },
+    nodes: {
+      types: mergeById(
+        base.nodes?.types  ?? [],
+        local.nodes?.types ?? [],
+        remote.nodes?.types ?? [],
+      ),
+      graph: mergeGraph(base.nodes?.graph, local.nodes?.graph, remote.nodes?.graph),
+      transforms: mergeById(
+        base.nodes?.transforms ?? [],
+        local.nodes?.transforms ?? [],
+        remote.nodes?.transforms ?? [],
+      ),
+    },
     senate: {
       autoAssign:    sc(local.senate?.autoAssign,    base.senate?.autoAssign,    remote.senate?.autoAssign)    as boolean,
       strataAssign:  sc(local.senate?.strataAssign,  base.senate?.strataAssign,  remote.senate?.strataAssign)  as boolean,

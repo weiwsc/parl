@@ -1,0 +1,71 @@
+/* Read-only affordances, auth badge, settings panel, and language selector. */
+  /* ==== READ-ONLY MODE ==== */
+  [data-readonly] input:not([data-ro-allow]),
+  [data-readonly] select:not([data-ro-allow]),
+  [data-readonly] textarea:not([data-ro-allow]) {
+    pointer-events: none !important;
+  }
+  /* Color pickers sit under swatches at opacity:0 — keep them invisible */
+  [data-readonly] input[type="color"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  [data-readonly] button:not([data-ro-allow]) {
+    display: none !important;
+  }
+  [data-readonly] .add-btn { display: none; }
+
+  /* ==== AUTH BADGE ==== */
+  .auth-badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    border: 1px solid currentColor;
+  }
+  .auth-badge--admin { color: var(--accent-hot); border-color: var(--accent); }
+  .auth-badge--guest { color: var(--text-mute); border-color: var(--line); }
+
+  /* ==== SETTINGS PANEL ==== */
+  .settings-panel { max-width: 560px; }
+  .settings-section {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .settings-section:last-child { border-bottom: none; }
+  .settings-section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent-deep);
+    margin-bottom: 12px;
+  }
+  .settings-section-title::before { content: '◆ '; }
+  .settings-row {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 10px;
+  }
+  .settings-row--buttons { flex-wrap: wrap; }
+  .settings-row--buttons button { min-width: 120px; }
+  .settings-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-dim);
+    min-width: 80px; flex-shrink: 0;
+  }
+
+  /* Language selector */
+  .lang-selector { display: flex; gap: 4px; }
+  .lang-btn {
+    padding: 5px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    cursor: pointer; transition: all 0.13s;
+  }
+  .lang-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .lang-btn.active {
+    border-color: var(--accent); color: var(--accent-hot);
+    background: linear-gradient(180deg, var(--grid-glow-2), transparent);
+  }

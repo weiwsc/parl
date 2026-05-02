@@ -19,6 +19,8 @@ export function normalizeImportedMapRegions(
       description: readString(region.description),
       vertices: readVertices(region.vertices),
       factionControl: readFactionControl(region.factionControl),
+      seatings: readFiniteNumber(region.seatings) ?? 0,
+      strataWeights: isRecord(region.strataWeights) ? readNumberRecord(region.strataWeights) : {},
     }));
 }
 
@@ -44,6 +46,15 @@ function readFactionControl(value: unknown): FactionControlEntry[] {
       const percentage = readFiniteNumber(control.percentage);
       return factionId && percentage !== null ? [{ factionId, percentage }] : [];
     });
+}
+
+function readNumberRecord(value: Record<string, unknown>): Record<string, number> {
+  const record: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    const numberValue = readFiniteNumber(raw);
+    if (numberValue !== null) record[key] = numberValue;
+  }
+  return record;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

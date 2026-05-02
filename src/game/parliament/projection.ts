@@ -92,7 +92,7 @@ export class ParliamentSystem {
   }
 
   private buildEntries(state: AppState): ProjectionEntry[] {
-    const entries = state.factions.map(faction => {
+    const entries: ProjectionEntry[] = state.factions.map(faction => {
       const alliance = state.alliances?.find(a => a.factionIds.includes(faction.id));
       return {
         faction,

@@ -144,6 +144,12 @@ export type Language = 'en' | 'cn';
 // ── Node / Type Editor ────────────────────────────────────────────────────────
 
 export type SchemaValueType = 'number' | 'string';
+export type NodeValueType =
+  | { kind: 'any' }
+  | { kind: 'primitive'; valueType: SchemaValueType }
+  | { kind: 'reference'; typeId: string }
+  | { kind: 'array'; item: SchemaArrayItem };
+export type TransformValueType = NodeValueType;
 
 export interface SchemaPrimitive {
   kind: 'primitive';
@@ -155,6 +161,28 @@ export interface SchemaPrimitive {
   computed: boolean;
 }
 
+export interface SchemaReference {
+  kind: 'reference';
+  id: string;
+  name: string;
+  description?: string;
+  typeId: string;
+  computed: boolean;
+}
+
+export type SchemaArrayItem =
+  | { kind: 'primitive'; valueType: SchemaValueType }
+  | { kind: 'reference'; typeId: string };
+
+export interface SchemaArray {
+  kind: 'array';
+  id: string;
+  name: string;
+  description?: string;
+  item: SchemaArrayItem;
+  computed: boolean;
+}
+
 export interface SchemaSection {
   kind: 'section';
   id: string;
@@ -163,7 +191,7 @@ export interface SchemaSection {
   children: SchemaChild[];
 }
 
-export type SchemaChild = SchemaSection | SchemaPrimitive;
+export type SchemaChild = SchemaSection | SchemaPrimitive | SchemaReference | SchemaArray;
 
 export interface EntityType {
   id: string;
@@ -172,6 +200,80 @@ export interface EntityType {
   builtIn: boolean;
   entityClass?: string;
   children: SchemaChild[];
+}
+
+export interface NodeGraphPortRef {
+  nodeId: string;
+  path: string;
+  label: string;
+}
+
+export type NodeConnectionMode = 'read' | 'take';
+
+export interface NodeGraphConnection {
+  id: string;
+  from: NodeGraphPortRef;
+  to: NodeGraphPortRef;
+  mode: NodeConnectionMode;
+  amount?: number;
+}
+
+export interface NodeEntityBinding {
+  entityClass: string;
+  entityId: string;
+}
+
+export type NodeInstanceValue = string | number;
+
+export interface EntityGraphNode {
+  kind: 'entity';
+  id: string;
+  typeId: string;
+  title: string;
+  x: number;
+  y: number;
+  binding?: NodeEntityBinding;
+  values?: Record<string, NodeInstanceValue>;
+}
+
+export interface TransformPort {
+  id: string;
+  name: string;
+  valueType: TransformValueType;
+}
+
+export interface TransformDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  inputs: TransformPort[];
+  outputs: TransformPort[];
+  expression: string;
+}
+
+export interface TransformGraphNode {
+  kind: 'transform';
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+  transformId?: string;
+  inputs: TransformPort[];
+  outputs: TransformPort[];
+  expression: string;
+}
+
+export type NodeGraphNode = EntityGraphNode | TransformGraphNode;
+
+export interface NodeGraph {
+  nodes: NodeGraphNode[];
+  connections: NodeGraphConnection[];
+}
+
+export interface NodeEditorState {
+  types: EntityType[];
+  graph: NodeGraph;
+  transforms: TransformDefinition[];
 }
 
 export interface AppState {
@@ -196,6 +298,6 @@ export interface AppState {
   map: { regions: MapRegion[] };
   laws: Law[];
   lawHistory: LawVoteRecord[];
-  nodes: { types: EntityType[] };
+  nodes: NodeEditorState;
   senate: SenateState;
 }
