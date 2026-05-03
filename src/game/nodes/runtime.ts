@@ -486,8 +486,15 @@ function assignPropValue(props: Record<string, NodeRuntimeValue>, key: string, v
 }
 
 function getPropValue(props: Record<string, NodeRuntimeValue>, key: string): NodeRuntimeValue {
+  const nestedValue = getNestedPropValue(props, key);
+  if (nestedValue !== undefined) return nestedValue;
+
   if (Object.prototype.hasOwnProperty.call(props, key)) return props[key];
 
+  return undefined;
+}
+
+function getNestedPropValue(props: Record<string, NodeRuntimeValue>, key: string): NodeRuntimeValue {
   const segments = key.split('.').filter(Boolean);
   if (segments.length < 2 || segments.some(segment => !isSafeIdentifier(segment))) return undefined;
 
