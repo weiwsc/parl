@@ -203,6 +203,13 @@ function useServerSync() {
                 ? mergeAppState(localBase, local, remoteNorm)
                 : { ...remoteNorm, ui: local.ui }
             ));
+          } else if (message.clientId === clientIdRef.current) {
+            // The server broadcasts our own accepted snapshots back over SSE.
+            // If the user kept typing after that snapshot was sent, applying the
+            // echo as a 3-way merge can make the older text win the same-field
+            // conflict and briefly rewind controlled inputs/code editors.
+            baseStateRef.current = remoteNorm;
+            lastSharedSnapshotRef.current = sharedStateSnapshot(remoteNorm);
           } else {
             // Subsequent messages: 3-way merge so local unsaved edits are not discarded.
             const base = baseStateRef.current ?? remoteNorm;

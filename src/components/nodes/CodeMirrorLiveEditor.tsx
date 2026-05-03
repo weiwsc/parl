@@ -33,6 +33,7 @@ export function CodeMirrorLiveEditor({
   const onChangeRef = useRef(onChange);
   const completionContextRef = useRef(completionContext);
   const initialValueRef = useRef(value);
+  const latestValueRef = useRef(value);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -41,6 +42,10 @@ export function CodeMirrorLiveEditor({
   useEffect(() => {
     completionContextRef.current = completionContext;
   }, [completionContext]);
+
+  useEffect(() => {
+    latestValueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -67,6 +72,12 @@ export function CodeMirrorLiveEditor({
           indentUnit.of('  '),
           EditorView.lineWrapping,
           EditorView.contentAttributes.of({ 'aria-label': ariaLabel }),
+          EditorView.domEventHandlers({
+            blur: (_event, editorView) => {
+              const current = editorView.state.doc.toString();
+              if (current !== latestValueRef.current) onChangeRef.current(current);
+            },
+          }),
           EditorView.updateListener.of(update => {
             if (update.docChanged) {
               onChangeRef.current(update.state.doc.toString());
@@ -89,6 +100,7 @@ export function CodeMirrorLiveEditor({
 
     const current = view.state.doc.toString();
     if (current === value) return;
+    if (view.hasFocus) return;
 
     view.dispatch({
       changes: { from: 0, to: current.length, insert: value },
