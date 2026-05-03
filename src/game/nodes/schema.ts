@@ -399,5 +399,6 @@ export function describeArrayItem(item: SchemaArray['item']): string {
 }
 
 export function normalizeSchemaValueType(value: unknown): SchemaValueType {
+  if (value === 'boolean') return 'boolean';
   return value === 'string' ? 'string' : 'number';
 }

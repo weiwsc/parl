@@ -143,7 +143,7 @@ export type Language = 'en' | 'cn';
 
 // ── Node / Type Editor ────────────────────────────────────────────────────────
 
-export type SchemaValueType = 'number' | 'string';
+export type SchemaValueType = 'number' | 'string' | 'boolean';
 export type NodeChartKind = 'pie' | 'bar';
 export type NodeComputedViewKind = NodeChartKind | 'markdown';
 export interface NodeChartValueType {
@@ -169,7 +169,7 @@ export interface SchemaPrimitive {
   name: string;
   description?: string;
   valueType: SchemaValueType;
-  defaultValue?: number | string;
+  defaultValue?: number | string | boolean;
   computed: boolean;
 }
 
@@ -246,7 +246,7 @@ export interface NodeEntityBinding {
   entityId: string;
 }
 
-export type NodeInstanceValue = string | number;
+export type NodeInstanceValue = string | number | boolean;
 
 export interface EntityGraphNode {
   kind: 'entity';

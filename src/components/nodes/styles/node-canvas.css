@@ -532,6 +532,39 @@
   color: var(--text-mute);
   opacity: 0.78;
 }
+.ne-value-checkbox {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  background: var(--bg-input);
+  border: 1px solid var(--line-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  padding: 1px 4px;
+}
+.ne-value-checkbox input {
+  width: 10px;
+  height: 10px;
+  margin: 0;
+  accent-color: var(--cyan);
+  flex-shrink: 0;
+}
+.ne-value-checkbox span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ne-value-checkbox:has(input:checked) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--cyan) 42%, var(--line-soft));
+  background: color-mix(in srgb, var(--cyan) 9%, var(--bg-input));
+}
+.ne-value-checkbox:has(input:disabled) {
+  opacity: 0.72;
+}
 .ne-value-readout {
   min-width: 0;
   color: var(--text-dim);

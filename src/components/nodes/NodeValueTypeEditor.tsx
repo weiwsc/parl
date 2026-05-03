@@ -1,4 +1,4 @@
-import type { EntityType, NodeValueType, SchemaArrayItem } from '../../game/nodes/types';
+import type { EntityType, NodeValueType, SchemaArrayItem, SchemaValueType } from '../../game/nodes/types';
 import { arrayValueType, chartValueType, describeNodeValueType, markdownValueType, primitiveValueType, referenceValueType } from '../../game/nodes/schema';
 
 interface NodeValueTypeEditorProps {
@@ -26,6 +26,7 @@ export function NodeValueTypeEditor({ valueType, typeOptions, disabled, onChange
           const kind = event.target.value;
           if (kind === 'primitive:number') onChange(primitiveValueType('number'));
           else if (kind === 'primitive:string') onChange(primitiveValueType('string'));
+          else if (kind === 'primitive:boolean') onChange(primitiveValueType('boolean'));
           else if (kind === 'reference') onChange(referenceValueType(typeOptions[0]?.id ?? ''));
           else if (kind === 'array') onChange(arrayValueType({ kind: 'primitive', valueType: 'number' }));
           else if (kind === 'chart:pie') onChange(chartValueType('pie'));
@@ -37,6 +38,7 @@ export function NodeValueTypeEditor({ valueType, typeOptions, disabled, onChange
         <option value="any">any</option>
         <option value="primitive:number">number</option>
         <option value="primitive:string">string</option>
+        <option value="primitive:boolean">boolean</option>
         <option value="reference">type</option>
         <option value="array">array</option>
         <option value="chart:pie">pie chart</option>
@@ -89,16 +91,22 @@ function ArrayItemEditor({
         <select
           value={item.valueType}
           disabled={disabled}
-          onChange={event => onChange({ kind: 'primitive', valueType: event.target.value === 'string' ? 'string' : 'number' })}
+          onChange={event => onChange({ kind: 'primitive', valueType: normalizePrimitiveSelectValue(event.target.value) })}
         >
           <option value="number">number</option>
           <option value="string">string</option>
+          <option value="boolean">boolean</option>
         </select>
       ) : (
         <TypeSelect value={item.typeId} typeOptions={typeOptions} disabled={disabled} onChange={typeId => onChange({ kind: 'reference', typeId })} />
       )}
     </>
   );
+}
+
+function normalizePrimitiveSelectValue(value: string): SchemaValueType {
+  if (value === 'string' || value === 'boolean') return value;
+  return 'number';
 }
 
 function TypeSelect({

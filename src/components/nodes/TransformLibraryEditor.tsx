@@ -234,6 +234,7 @@ function assignPreviewPropValue(props: Record<string, NodeRuntimeValue>, key: st
 
 function sampleFieldValue(detail?: string): NodeRuntimeValue {
   if (detail === 'string') return 'sample';
+  if (detail === 'boolean') return true;
   if (detail?.startsWith('array')) return [];
   if (detail?.startsWith('ref:')) return { typeId: detail.slice(4), nodeId: 'sample', values: {} };
   if (detail === 'pie chart' || detail === 'bar chart') {

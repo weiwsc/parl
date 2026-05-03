@@ -290,7 +290,7 @@ export function entityFieldValue(
   const bound = boundValue(type, node.binding, path, context.factions, context.regions);
   if (bound !== undefined) return bound;
 
-  if (child.kind === 'primitive') return child.defaultValue ?? '';
+  if (child.kind === 'primitive') return child.defaultValue ?? (child.valueType === 'boolean' ? false : '');
   return undefined;
 }
 
@@ -665,6 +665,7 @@ function sampleValueForPort(port: TransformPort, index: number): NodeRuntimeValu
   const ordinal = index + 1;
 
   if (port.valueType.kind === 'primitive') {
+    if (port.valueType.valueType === 'boolean') return index % 2 === 0;
     return port.valueType.valueType === 'string' ? `${port.name || 'value'} sample` : ordinal * 10;
   }
 
@@ -678,6 +679,7 @@ function sampleValueForPort(port: TransformPort, index: number): NodeRuntimeValu
 
   if (port.valueType.kind === 'array') {
     if (port.valueType.item.kind === 'primitive') {
+      if (port.valueType.item.valueType === 'boolean') return [true, false, true];
       return port.valueType.item.valueType === 'string'
         ? [`${port.name || 'item'} A`, `${port.name || 'item'} B`]
         : [ordinal, ordinal + 1, ordinal + 2];

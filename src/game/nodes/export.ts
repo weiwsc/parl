@@ -217,7 +217,7 @@ function sanitizeNodeValueType(
   const value = asRecord(valueType);
   if (!value) return { kind: 'any' };
 
-  if (value.kind === 'primitive' && (value.valueType === 'number' || value.valueType === 'string')) {
+  if (value.kind === 'primitive' && (value.valueType === 'number' || value.valueType === 'string' || value.valueType === 'boolean')) {
     return { kind: 'primitive', valueType: value.valueType };
   }
 
@@ -254,7 +254,7 @@ function sanitizeArrayItem(
   const value = asRecord(item);
   if (!value) return null;
 
-  if (value.kind === 'primitive' && (value.valueType === 'number' || value.valueType === 'string')) {
+  if (value.kind === 'primitive' && (value.valueType === 'number' || value.valueType === 'string' || value.valueType === 'boolean')) {
     return { kind: 'primitive', valueType: value.valueType };
   }
 

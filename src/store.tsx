@@ -409,7 +409,7 @@ function normalizeInstanceValues(value: any): Record<string, NodeInstanceValue> 
 
   const next: Record<string, NodeInstanceValue> = {};
   for (const [key, raw] of Object.entries(value)) {
-    if (typeof raw === 'string' || typeof raw === 'number') next[key] = raw;
+    if (typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean') next[key] = raw;
   }
 
   return Object.keys(next).length > 0 ? next : undefined;
@@ -474,11 +474,12 @@ function normalizeConnection(value: any, nodeIds: Set<string>): NodeGraphConnect
 }
 
 function normalizeSchemaValueType(value: unknown): SchemaValueType {
+  if (value === 'boolean') return 'boolean';
   return value === 'string' ? 'string' : 'number';
 }
 
 function normalizeTransformValueType(value: any): TransformValueType {
-  if (value === 'number' || value === 'string') return { kind: 'primitive', valueType: value };
+  if (value === 'number' || value === 'string' || value === 'boolean') return { kind: 'primitive', valueType: value };
   if (value === 'any') return { kind: 'any' };
 
   if (value?.kind === 'primitive') return { kind: 'primitive', valueType: normalizeSchemaValueType(value.valueType) };

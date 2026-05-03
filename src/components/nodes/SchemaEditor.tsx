@@ -100,6 +100,7 @@ function PrimitiveEditor({
         >
           <option value="number">number</option>
           <option value="string">string</option>
+          <option value="boolean">boolean</option>
         </select>
         <ComputedToggle checked={node.computed} disabled={readOnly} onChange={computed => onUpdate({ ...node, computed })} />
         <NodeActions index={index} total={total} readOnly={readOnly} onMove={onMove} onRemove={onRemove} />
@@ -186,6 +187,7 @@ function ArrayEditor({
           >
             <option value="number">number</option>
             <option value="string">string</option>
+            <option value="boolean">boolean</option>
           </select>
         ) : (
           <TypeReferenceSelect

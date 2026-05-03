@@ -515,6 +515,20 @@ function InstanceValueEditor({
     return <span className={readoutClass}>{runtimeValueLabel(value) || fallback}</span>;
   }
 
+  if (child.valueType === 'boolean') {
+    return (
+      <label className="ne-value-checkbox" title={runtimeValueLabel(value) || 'false'}>
+        <input
+          type="checkbox"
+          checked={value === true}
+          disabled={!canEdit}
+          onChange={event => onChange(event.target.checked)}
+        />
+        <span>{value === true ? 'true' : 'false'}</span>
+      </label>
+    );
+  }
+
   return (
     <input
       className="ne-value-input"
