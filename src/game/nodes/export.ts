@@ -12,7 +12,6 @@ import type {
   TransformPort,
   TypeMethodDefinition,
 } from './types';
-import { graphNodePorts } from './schema';
 
 export const NODE_EDITOR_EXPORT_KIND = 'parl.nodeEditor.export';
 export const NODE_EDITOR_EXPORT_VERSION = 1;
@@ -96,7 +95,7 @@ export function sanitizeStandaloneNodeEditorState(value: unknown): {
     .filter(hasStringId)
     .map(transform => sanitizeTransformDefinition(transform as unknown as TransformDefinition, typeIds, report));
   const transformIds = new Set(transforms.map(transform => transform.id));
-  const graph = sanitizeGraph(toGraph(source.graph), types, transformIds, typeIds, report);
+  const graph = sanitizeGraph(toGraph(source.graph), transformIds, typeIds, report);
   const { types: _types, graph: _graph, transforms: _transforms, config: _config, ...rest } = source;
 
   return {
@@ -255,7 +254,6 @@ function sanitizeArrayItem(
 
 function sanitizeGraph(
   graph: NodeGraph,
-  types: EntityType[],
   transformIds: Set<string>,
   typeIds: Set<string>,
   report: NodeEditorExportReport,
@@ -263,8 +261,6 @@ function sanitizeGraph(
   const nodes = graph.nodes.flatMap(node => sanitizeGraphNode(node, transformIds, typeIds, report));
   const nodeIds = new Set(nodes.map(node => node.id));
   const draftGraph: NodeGraph = { nodes, connections: [] };
-  const validOutputs = new Set(nodes.flatMap(node => graphNodePorts(node, types, 'output')).map(portKey));
-  const validInputs = new Set(nodes.flatMap(node => graphNodePorts(node, types, 'input')).map(portKey));
   const connections = graph.connections.flatMap(connection => {
     const from = toPortRef(connection.from);
     const to = toPortRef(connection.to);
@@ -274,9 +270,7 @@ function sanitizeGraph(
     }
 
     const isValid = nodeIds.has(from.nodeId)
-      && nodeIds.has(to.nodeId)
-      && validOutputs.has(portKey(from))
-      && validInputs.has(portKey(to));
+      && nodeIds.has(to.nodeId);
     if (!isValid) {
       report.strippedConnections += 1;
       return [];
@@ -318,10 +312,6 @@ function sanitizeGraphNode(
   }
 
   return [transformNode];
-}
-
-function portKey(port: { nodeId: string; path: string }): string {
-  return `${port.nodeId}:${port.path}`;
 }
 
 function toGraph(value: unknown): NodeGraph {
