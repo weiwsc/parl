@@ -13,6 +13,7 @@ import type {
   SchemaReference,
   TransformDefinition,
 } from '../../game/nodes/types';
+import { isMethodAssignedPropPath } from '../../game/nodes/methodWrites';
 import { describeArrayItem, describeNodeValueType, findSchemaChildByPath, schemaChildValueType } from '../../game/nodes/schema';
 import type { CanvasPoint, PortDirection } from './nodeCanvasTypes';
 
@@ -169,6 +170,7 @@ export function graphPortValueType(
 
   const child = findSchemaChildByPath(type.children, port.path);
   if (!child || child.kind === 'section') return null;
+  if (direction === 'input' && isMethodAssignedPropPath(type, port.path)) return null;
   return schemaChildValueType(child);
 }
 

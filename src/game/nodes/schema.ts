@@ -22,6 +22,7 @@ import type {
   TransformPort,
   TransformValueType,
 } from './types';
+import { schemaPathToPropPath, typeAssignedPropPaths } from './methodWrites';
 
 function nodeUid(prefix: string): string {
   return prefix + Math.random().toString(36).slice(2, 9);
@@ -315,22 +316,27 @@ export function findSchemaChildByPath(children: SchemaChild[], path: string, pat
   return null;
 }
 
-export function collectSchemaPorts(children: SchemaChild[], pathPrefix = 'props'): SchemaPort[] {
+export function collectSchemaPorts(
+  children: SchemaChild[],
+  pathPrefix = 'props',
+  methodAssignedPaths = new Set<string>(),
+): SchemaPort[] {
   const ports: SchemaPort[] = [];
 
   for (const child of children) {
     const path = `${pathPrefix}.${child.name || child.kind}`;
 
     if (child.kind === 'section') {
-      ports.push(...collectSchemaPorts(child.children, path));
+      ports.push(...collectSchemaPorts(child.children, path, methodAssignedPaths));
       continue;
     }
 
+    const methodOwned = methodAssignedPaths.has(schemaPathToPropPath(path));
     ports.push({
       path,
       label: path.replace(/^props\./, ''),
       typeLabel: describeSchemaChildType(child),
-      acceptsInput: child.computed,
+      acceptsInput: child.computed && !methodOwned,
     });
   }
 
@@ -350,7 +356,7 @@ export function graphNodePorts(node: NodeGraphNode, types: EntityType[], directi
   const type = types.find(candidate => candidate.id === node.typeId);
   if (!type) return [];
 
-  return collectSchemaPorts(type.children)
+  return collectSchemaPorts(type.children, 'props', typeAssignedPropPaths(type))
     .filter(port => direction === 'output' || port.acceptsInput)
     .map(port => ({
       nodeId: node.id,

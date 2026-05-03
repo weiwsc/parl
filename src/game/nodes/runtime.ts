@@ -12,6 +12,7 @@ import type {
   TransformPort,
   TypeMethodDefinition,
 } from './types';
+import { collectPropWritePaths, methodsAssigningProp, schemaPathToPropPath } from './methodWrites';
 import { findSchemaChildByPath, schemaChildValueType } from './schema';
 import type { Faction, MapRegion } from '../../models/types';
 
@@ -319,11 +320,61 @@ function resolveEntityPort(
   if (!child || child.kind === 'section') return undefined;
 
   if (child.computed) {
+    if (methodsAssigningProp(type, path).length > 0) {
+      return resolveMethodAssignedProp(node, type, path, context, resolveIncoming, pushError);
+    }
+
     const wired = resolveIncoming({ nodeId: node.id, path, label: `${node.title}.${path}` }, schemaChildValueType(child));
     if (wired !== undefined) return wired;
   }
 
   return entityFieldValue(node, type, child, path, context);
+}
+
+function resolveMethodAssignedProp(
+  node: EntityGraphNode,
+  type: EntityType,
+  schemaPath: string,
+  context: NodeRuntimeContext,
+  resolveIncoming: (target: NodeGraphPortRef, targetType?: NodeValueType) => NodeRuntimeValue,
+  pushError: (nodeId: string, message: string) => void
+): NodeRuntimeValue {
+  const methods = methodsAssigningProp(type, schemaPath);
+  if (methods.length === 0) return undefined;
+
+  const props = collectEntityProps(node, type, context, resolveIncoming);
+  const propRules = collectPropWriteRules(type.children);
+
+  for (const method of methods) {
+    const inputValues: Record<string, NodeRuntimeValue> = {};
+    for (const input of method.inputs) {
+      inputValues[input.name] = resolveIncoming(
+        {
+          nodeId: node.id,
+          path: methodPortPath(method, 'input', input),
+          label: `${node.title}.${method.name}.${input.name}`,
+        },
+        input.valueType
+      );
+    }
+
+    const propWriteDiagnostics = validatePropWrites(method.expression, propRules);
+    if (propWriteDiagnostics.some(diagnostic => diagnostic.level === 'error')) {
+      for (const diagnostic of propWriteDiagnostics) pushError(node.id, diagnostic.message);
+      continue;
+    }
+
+    try {
+      executeTransformExpression(method.expression, inputValues, {
+        props,
+        target: { typeId: type.id, nodeId: node.id, props },
+      });
+    } catch (error) {
+      pushError(node.id, error instanceof Error ? error.message : 'Method failed');
+    }
+  }
+
+  return getPropValue(props, schemaPathToPropPath(schemaPath));
 }
 
 function resolveMethodOutput(
@@ -434,6 +485,21 @@ function assignPropValue(props: Record<string, NodeRuntimeValue>, key: string, v
   cursor[segments[segments.length - 1]] = value;
 }
 
+function getPropValue(props: Record<string, NodeRuntimeValue>, key: string): NodeRuntimeValue {
+  if (Object.prototype.hasOwnProperty.call(props, key)) return props[key];
+
+  const segments = key.split('.').filter(Boolean);
+  if (segments.length < 2 || segments.some(segment => !isSafeIdentifier(segment))) return undefined;
+
+  let cursor: NodeRuntimeValue = props;
+  for (const segment of segments) {
+    if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor)) return undefined;
+    cursor = (cursor as Record<string, NodeRuntimeValue>)[segment];
+  }
+
+  return cursor;
+}
+
 function collectPropWriteRules(children: SchemaChild[], pathPrefix = 'props'): Record<string, PropWriteRule> {
   const rules: Record<string, PropWriteRule> = {};
 
@@ -458,10 +524,7 @@ function validatePropWrites(
 
   const diagnostics: TransformPreviewDiagnostic[] = [];
   const seen = new Set<string>();
-  const assignmentPattern = /(?:^|[^\w$.])((?:scope\.)?props|target\.props)((?:\.[A-Za-z_$][\w$]*)+)\s*(?:\*\*|[-+*/%&|^])?=(?!=|>)/g;
-
-  for (const match of expression.matchAll(assignmentPattern)) {
-    const key = normalizePropWritePath(match[2]);
+  for (const key of collectPropWritePaths(expression)) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
 
@@ -483,10 +546,6 @@ function validatePropWrites(
   }
 
   return diagnostics;
-}
-
-function normalizePropWritePath(dottedPath: string): string {
-  return dottedPath.split('.').filter(Boolean).join('.');
 }
 
 function resolveTransformPort(

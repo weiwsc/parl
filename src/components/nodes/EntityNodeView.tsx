@@ -12,6 +12,7 @@ import type {
   TransformPort,
   TypeMethodDefinition,
 } from '../../game/nodes/types';
+import { isMethodAssignedPropPath } from '../../game/nodes/methodWrites';
 import { describeNodeValueType, describeSchemaChildType } from '../../game/nodes/schema';
 import { runtimeValueLabel, type NodeEvaluation, type NodeRuntimeValue } from '../../game/nodes/runtime';
 import { ComputedValueView } from './ComputedValueView';
@@ -241,7 +242,7 @@ function InstanceSection({
 }) {
   const [expanded, setExpanded] = useState(true);
   const sectionPath = `${pathPrefix}.${child.name}`;
-  const collapsedPortRefs = collectSectionPortRefs(node, child.children, sectionPath);
+  const collapsedPortRefs = collectSectionPortRefs(node, type, child.children, sectionPath);
   const registerCollapsedAnchors = (element: HTMLElement | null) => {
     collapsedPortRefs.forEach(({ direction, port }) => {
       registerPortAnchor(portKey(direction, port), element);
@@ -418,6 +419,7 @@ function methodPortTitle(method: TypeMethodDefinition): string {
 
 function collectSectionPortRefs(
   node: Extract<NodeGraphNode, { kind: 'entity' }>,
+  type: EntityType,
   children: SchemaChild[],
   pathPrefix: string,
 ): { direction: PortDirection; port: NodeGraphPortRef }[] {
@@ -426,14 +428,14 @@ function collectSectionPortRefs(
   for (const child of children) {
     const path = `${pathPrefix}.${child.name}`;
     if (child.kind === 'section') {
-      refs.push(...collectSectionPortRefs(node, child.children, path));
+      refs.push(...collectSectionPortRefs(node, type, child.children, path));
       continue;
     }
 
     const label = `${node.title}.${path.replace(/^props\./, '')}`;
     const port = { nodeId: node.id, path, label };
     refs.push({ direction: 'output', port });
-    if (child.computed) refs.push({ direction: 'input', port });
+    if (child.computed && !isMethodAssignedPropPath(type, path)) refs.push({ direction: 'input', port });
   }
 
   return refs;
@@ -442,6 +444,7 @@ function collectSectionPortRefs(
 function InstanceField({
   node,
   child,
+  type,
   pathPrefix,
   evaluation,
   canEdit,
@@ -452,6 +455,7 @@ function InstanceField({
 }: {
   node: Extract<NodeGraphNode, { kind: 'entity' }>;
   child: SchemaFieldChild;
+  type: EntityType;
   pathPrefix: string;
   evaluation: NodeEvaluation;
   canEdit: boolean;
@@ -467,13 +471,20 @@ function InstanceField({
   const value = evaluation.values[`${node.id}:${path}`];
   const titleAttr = child.description ? `${path} - ${child.description}` : path;
   const isComputedView = child.kind === 'computedView';
+  const methodOwned = child.computed && isMethodAssignedPropPath(type, path);
+  const rowClass = [
+    'ne-node-head',
+    'ne-instance-field-row',
+    isComputedView ? 'ne-instance-visual-row' : '',
+    methodOwned ? 'ne-instance-field-row--method-owned' : '',
+  ].filter(Boolean).join(' ');
 
   return (
-    <div className={`ne-node ne-${isComputedView ? 'computed-view' : child.kind}`} title={titleAttr}>
-      <div className={`ne-node-head ne-instance-field-row${isComputedView ? ' ne-instance-visual-row' : ''}`}>
-        {child.computed ? (
+    <div className={`ne-node ne-${isComputedView ? 'computed-view' : child.kind}${methodOwned ? ' ne-method-owned-field' : ''}`} title={titleAttr}>
+      <div className={rowClass}>
+        {child.computed && !methodOwned ? (
           <PortHandle direction="input" port={port} canEdit={canEdit} registerPortAnchor={registerPortAnchor} onStartWire={onStartWire} onCompleteWire={onCompleteWire} />
-        ) : <span className="ne-port-spacer" />}
+        ) : <span className={`ne-port-spacer${methodOwned ? ' ne-port-spacer--method-owned' : ''}`} title={methodOwned ? 'Method-owned field rejects outside wire input' : undefined} />}
         <span className={`ne-kind-tag ${fieldKindClass(child)}`}>{fieldKindLabel(child)}</span>
         <span className="ne-instance-field-name">{child.name}</span>
         <span className="ne-type-pill">{typeLabel}</span>

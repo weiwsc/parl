@@ -554,6 +554,26 @@
   background: color-mix(in srgb, var(--good) 6%, var(--bg-panel-alt));
   border-left: 2px solid color-mix(in srgb, var(--good) 65%, var(--cyan));
 }
+.ne-method-owned-field > .ne-node-head {
+  background: color-mix(in srgb, var(--text-mute) 8%, var(--bg-panel-alt));
+  border-left: 2px solid color-mix(in srgb, var(--text-mute) 58%, transparent);
+}
+.ne-method-owned-field .ne-kind-tag {
+  filter: grayscale(0.7);
+  opacity: 0.82;
+}
+.ne-method-owned-field .ne-value-readout--computed {
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--text-mute) 10%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--text-mute) 34%, var(--line-soft));
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--text-mute) 58%, transparent);
+}
+.ne-port-spacer--method-owned {
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--text-mute) 62%, transparent);
+  background: color-mix(in srgb, var(--text-mute) 14%, transparent);
+  box-shadow: none;
+}
 .ne-instance-visual-row {
   grid-template-columns: 8px auto minmax(0, 1fr) minmax(54px, auto) minmax(70px, 92px) 10px;
 }
