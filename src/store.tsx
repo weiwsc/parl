@@ -173,16 +173,21 @@ export function normalizeState(p: any): AppState {
 }
 
 function normalizeNodeEditorState(value: any, fallback: NodeEditorState): NodeEditorState {
+  const sharedFields: Record<string, unknown> =
+    value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
+  delete sharedFields.config;
+
   const incomingTypes = value && Array.isArray(value.types)
     ? value.types.map(normalizeEntityType)
     : fallback.types;
   const types = ensureBuiltinTypes(incomingTypes, fallback.types);
 
   return {
+    ...sharedFields,
     types,
     graph: normalizeNodeGraph(value?.graph),
     transforms: normalizeTransformDefinitions(value?.transforms, fallback.transforms),
-  };
+  } as NodeEditorState;
 }
 
 function defaultTransformDefinitions(): TransformDefinition[] {

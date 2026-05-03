@@ -78,6 +78,41 @@
   justify-content: center;
 }
 
+.ne-config-export-summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--text-dim);
+  font-size: var(--ne-font-9, 9px);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ne-config-export-summary span {
+  padding: 2px 6px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-input);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.ne-config-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: max-content;
+}
+
+.ne-config-actions button {
+  white-space: nowrap;
+}
+
+.ne-config-file-input {
+  display: none;
+}
+
 /* Font scale hooks */
 .ne-page :is(input, select, button, textarea, code, pre) {
   font-size: var(--ne-font-10, 10px);

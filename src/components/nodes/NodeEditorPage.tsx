@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useRef, useState } from 'react';
+import type { ChangeEvent, CSSProperties } from 'react';
 import { useAppContext, uid } from '../../store';
 import { useAuth } from '../../context/AuthContext';
 import { Panel } from '../ui/Panel';
 import { EmptyState } from '../ui/EmptyState';
 import { EditorField } from '../ui/EditorField';
 import { TabBar, type TabItem } from '../ui/TabBar';
-import type { EntityType, NodeEditorConfig, NodeGraph, SchemaChild, TransformDefinition, TypeMethodDefinition } from '../../game/nodes/types';
+import type { EntityType, NodeEditorConfig, NodeEditorState, NodeGraph, SchemaChild, TransformDefinition, TypeMethodDefinition } from '../../game/nodes/types';
 import {
   DEFAULT_NODE_EDITOR_CONFIG,
   NODE_EDITOR_FONT_SCALE_MAX,
@@ -14,6 +14,7 @@ import {
   NODE_EDITOR_FONT_SCALE_STEP,
   clampFontScale,
 } from '../../game/nodes/config';
+import { parseNodeEditorImport, serializeNodeEditorExport } from '../../game/nodes/export';
 import { collectSchemaPorts } from '../../game/nodes/schema';
 import { SchemaEditor } from './SchemaEditor';
 import { NodeCanvas } from './NodeCanvas';
@@ -25,7 +26,7 @@ import './node-editor.css';
 type NodeEditorMode = 'types' | 'canvas' | 'transforms' | 'config';
 
 export function NodeEditorPage() {
-  const { state, updateState } = useAppContext();
+  const { state, updateState, showToast } = useAppContext();
   const { canEdit } = useAuth();
   const nodeState = ensureNodeState(state.nodes);
   const types = nodeState.types;
@@ -69,6 +70,54 @@ export function NodeEditorPage() {
 
   const updateConfig = (config: NodeEditorConfig) => {
     updateState(s => ({ ...s, ui: { ...s.ui, nodeEditor: config } }));
+  };
+
+  const exportNodeData = () => {
+    const { json, bundle } = serializeNodeEditorExport(nodeState);
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `node_editor_${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    const strippedCount = Object.values(bundle.meta.stripped).reduce((sum, count) => sum + count, 0);
+    showToast(strippedCount > 0
+      ? `Node data exported; stripped ${strippedCount} external references`
+      : 'Node data exported');
+  };
+
+  const importNodeData = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = loadEvent => {
+      try {
+        const raw = loadEvent.target?.result;
+        if (typeof raw !== 'string') throw new Error('Import file is not text.');
+        const imported = parseNodeEditorImport(raw);
+        updateState(s => ({ ...s, nodes: imported.nodes }));
+        setSelectedId(current => (
+          imported.nodes.types.some(type => type.id === current)
+            ? current
+            : imported.nodes.types[0]?.id ?? null
+        ));
+        setMode('types');
+
+        const strippedCount = Object.values(imported.report).reduce((sum, count) => sum + count, 0);
+        showToast(strippedCount > 0
+          ? `Node data imported; stripped ${strippedCount} external references`
+          : 'Node data imported');
+      } catch {
+        showToast('Node data import failed', 'error');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   };
 
   const addType = () => {
@@ -133,6 +182,10 @@ export function NodeEditorPage() {
             <NodeEditorConfigPanel
               config={config}
               onChange={updateConfig}
+              nodeState={nodeState}
+              onExportNodeData={exportNodeData}
+              onImportNodeData={importNodeData}
+              canImport={canEdit}
             />
           </div>
         ) : (
@@ -268,10 +321,20 @@ function scaledFontSize(size: number, scale: number): string {
 function NodeEditorConfigPanel({
   config,
   onChange,
+  nodeState,
+  onExportNodeData,
+  onImportNodeData,
+  canImport,
 }: {
   config: NodeEditorConfig;
   onChange: (config: NodeEditorConfig) => void;
+  nodeState: NodeEditorState;
+  onExportNodeData: () => void;
+  onImportNodeData: (event: ChangeEvent<HTMLInputElement>) => void;
+  canImport: boolean;
 }) {
+  const importRef = useRef<HTMLInputElement>(null);
+
   const setFontScale = (fontScale: number) => {
     onChange({ ...config, fontScale: clampFontScale(fontScale) });
   };
@@ -319,6 +382,32 @@ function NodeEditorConfigPanel({
           >
             Reset
           </button>
+        </div>
+        <div className="ne-config-row ne-config-row--export">
+          <div className="ne-config-label">
+            <span>NODE DATA</span>
+            <code>{nodeState.types.length}T</code>
+          </div>
+          <div className="ne-config-export-summary">
+            <span>{nodeState.graph.nodes.length} nodes</span>
+            <span>{nodeState.graph.connections.length} wires</span>
+            <span>{nodeState.transforms.length} transforms</span>
+          </div>
+          <div className="ne-config-actions">
+            <button className="small ghost" onClick={() => importRef.current?.click()} disabled={!canImport} title="Import node editor JSON">
+              Import JSON
+            </button>
+            <button className="small primary" onClick={onExportNodeData} title="Export node editor JSON">
+              Export JSON
+            </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept="application/json,.json"
+              className="ne-config-file-input"
+              onChange={onImportNodeData}
+            />
+          </div>
         </div>
       </div>
     </Panel>

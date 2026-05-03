@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:hosted": "VITE_APP_MODE=hosted vite",
+    "backend:dev": "dotnet watch --project backend/ParliamentApi.csproj",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

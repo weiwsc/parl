@@ -25,6 +25,7 @@ COPY --from=build-frontend /app/dist ./wwwroot
 VOLUME ["/data"]
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DATA_PATH=/data/state.json
 ENV DATABASE_PATH=/data/parl.db
 
 ENTRYPOINT ["dotnet", "ParliamentApi.dll"]

@@ -1,4 +1,4 @@
-import type { AppState, NodeGraph } from '../models/types';
+import type { AppState, NodeEditorState, NodeGraph } from '../models/types';
 
 type Rec = Record<string, unknown>;
 type Identified = { id: string };
@@ -102,6 +102,39 @@ function mergeGraph(base: NodeGraph | undefined, local: NodeGraph | undefined, r
   return { nodes, connections };
 }
 
+function mergeNodeEditorState(
+  base: NodeEditorState | undefined,
+  local: NodeEditorState | undefined,
+  remote: NodeEditorState | undefined,
+): NodeEditorState {
+  const b = (base ?? {}) as Rec;
+  const l = (local ?? {}) as Rec;
+  const r = (remote ?? {}) as Rec;
+  const result: Rec = { ...r };
+
+  for (const key of Object.keys(l)) {
+    if (key === 'types' || key === 'graph' || key === 'transforms' || key === 'config') continue;
+    const lChanged = JSON.stringify(l[key]) !== JSON.stringify(b[key]);
+    const rChanged = JSON.stringify(r[key]) !== JSON.stringify(b[key]);
+    if (lChanged && !rChanged) {
+      result[key] = l[key];
+    } else if (lChanged && rChanged && l[key] && r[key] && b[key] && typeof l[key] === 'object' && !Array.isArray(l[key])) {
+      result[key] = mergeRecord(b[key] as Rec, l[key] as Rec, r[key] as Rec);
+    }
+  }
+
+  delete result.config;
+  result.types = mergeById(base?.types ?? [], local?.types ?? [], remote?.types ?? []);
+  result.graph = mergeGraph(base?.graph, local?.graph, remote?.graph);
+  result.transforms = mergeById(
+    base?.transforms ?? [],
+    local?.transforms ?? [],
+    remote?.transforms ?? [],
+  );
+
+  return result as unknown as NodeEditorState;
+}
+
 // Strip ui before sending to the server — ui state is per-client and should not be shared.
 export function stripUi(state: AppState): Omit<AppState, 'ui'> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -131,19 +164,7 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
       alliances: mergeById(base.trash.alliances, local.trash.alliances, remote.trash.alliances),
     },
     map: { regions: mergeById(base.map.regions, local.map.regions, remote.map.regions) },
-    nodes: {
-      types: mergeById(
-        base.nodes?.types  ?? [],
-        local.nodes?.types ?? [],
-        remote.nodes?.types ?? [],
-      ),
-      graph: mergeGraph(base.nodes?.graph, local.nodes?.graph, remote.nodes?.graph),
-      transforms: mergeById(
-        base.nodes?.transforms ?? [],
-        local.nodes?.transforms ?? [],
-        remote.nodes?.transforms ?? [],
-      ),
-    },
+    nodes: mergeNodeEditorState(base.nodes, local.nodes, remote.nodes),
     senate: {
       autoAssign:    sc(local.senate?.autoAssign,    base.senate?.autoAssign,    remote.senate?.autoAssign)    as boolean,
       strataAssign:  sc(local.senate?.strataAssign,  base.senate?.strataAssign,  remote.senate?.strataAssign)  as boolean,

@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useRef, useCallback } from 'react';
-import { useAppContext, uid, clone, normalizeState } from './store';
+import { useAppContext, uid, clone, normalizeState, STORAGE_KEY } from './store';
 import { computeProjection } from './utils/compute';
 import { stripUi, mergeAppState } from './utils/merge';
 import type { AppState } from './models/types';
@@ -31,7 +31,8 @@ import './App.css';
 //     from SSE (already on the server, do not echo back).
 
 const MAIN_DOCUMENT_ID = 'main';
-const SYNC_CLIENT_ID_KEY = 'parlSyncClientId_v1';
+const SYNC_CLIENT_ID_KEY = 'parlSyncClientId_v2';
+const LOCAL_SYNC_CHANNEL = 'parlLocalStateSync_v1';
 
 type SyncDocumentEnvelope = {
   documentId: string;
@@ -56,18 +57,93 @@ function createId(prefix: string): string {
 
 function getSyncClientId(): string {
   try {
-    const existing = localStorage.getItem(SYNC_CLIENT_ID_KEY);
+    const existing = sessionStorage.getItem(SYNC_CLIENT_ID_KEY);
     if (existing) return existing;
     const next = createId('client');
-    localStorage.setItem(SYNC_CLIENT_ID_KEY, next);
+    sessionStorage.setItem(SYNC_CLIENT_ID_KEY, next);
     return next;
   } catch {
     return createId('client');
   }
 }
 
+function snapshotToState(snapshot: string): AppState {
+  return normalizeState(JSON.parse(snapshot));
+}
+
 function sharedStateSnapshot(state: AppState): string {
   return JSON.stringify(stripUi(state));
+}
+
+function useLocalWindowSync() {
+  const { state, updateState } = useAppContext();
+  const windowIdRef = useRef(createId('local-window'));
+  const applyingRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const baseStateRef = useRef<AppState | null>(state);
+  const lastSharedSnapshotRef = useRef(sharedStateSnapshot(state));
+
+  const applyRemoteSnapshot = useCallback((snapshot: string) => {
+    if (snapshot === lastSharedSnapshotRef.current) return;
+
+    const remoteNorm = snapshotToState(snapshot);
+    const base = baseStateRef.current ?? remoteNorm;
+    baseStateRef.current = remoteNorm;
+    lastSharedSnapshotRef.current = snapshot;
+    applyingRef.current = true;
+    updateState(local => mergeAppState(base, local, remoteNorm));
+  }, [updateState]);
+
+  useEffect(() => {
+    if (APP_MODE !== 'local') return;
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      try {
+        applyRemoteSnapshot(sharedStateSnapshot(normalizeState(JSON.parse(event.newValue))));
+      } catch {
+        // Ignore malformed external storage writes.
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+
+    if ('BroadcastChannel' in window) {
+      const channel = new BroadcastChannel(LOCAL_SYNC_CHANNEL);
+      channelRef.current = channel;
+      channel.onmessage = (event: MessageEvent<{ sourceId?: string; snapshot?: string }>) => {
+        if (event.data?.sourceId === windowIdRef.current || !event.data?.snapshot) return;
+        try {
+          applyRemoteSnapshot(event.data.snapshot);
+        } catch {
+          // Ignore malformed cross-window messages.
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      channelRef.current?.close();
+      channelRef.current = null;
+    };
+  }, [applyRemoteSnapshot]);
+
+  useEffect(() => {
+    if (APP_MODE !== 'local') return;
+
+    const snapshot = sharedStateSnapshot(state);
+    if (applyingRef.current) {
+      applyingRef.current = false;
+      lastSharedSnapshotRef.current = snapshot;
+      return;
+    }
+
+    if (snapshot === lastSharedSnapshotRef.current) return;
+
+    lastSharedSnapshotRef.current = snapshot;
+    baseStateRef.current = snapshotToState(snapshot);
+    channelRef.current?.postMessage({ sourceId: windowIdRef.current, snapshot });
+  }, [state]);
 }
 
 function useServerSync() {
@@ -87,7 +163,6 @@ function useServerSync() {
   const saveSeqRef = useRef(0);
   const lastSharedSnapshotRef = useRef<string | null>(null);
   const clientIdRef = useRef(getSyncClientId());
-  const pendingMutationsRef = useRef(new Set<string>());
   // Last state the server acknowledged — used as the 3-way merge base.
   const baseStateRef = useRef<AppState | null>(null);
   // After the first SSE message we know the server baseline; subsequent messages can be merged.
@@ -113,19 +188,6 @@ function useServerSync() {
           if (remoteRev === null) return;
           if (initializedRef.current && remoteRev < revRef.current) return;
           revRef.current = remoteRev;
-
-          const isOwnMutation = message.clientId === clientIdRef.current && !!message.mutationId;
-          if (isOwnMutation) {
-            pendingMutationsRef.current.delete(message.mutationId!);
-            baseStateRef.current = remoteNorm;
-            lastSharedSnapshotRef.current = sharedStateSnapshot(remoteNorm);
-            if (!initializedRef.current) {
-              initializedRef.current = true;
-              applyingRef.current = true;
-              updateState(local => ({ ...remoteNorm, ui: local.ui }));
-            }
-            return;
-          }
 
           if (!initializedRef.current) {
             // First message: accept server state but keep our own ui. If the
@@ -200,7 +262,6 @@ function useServerSync() {
       if (seq !== saveSeqRef.current) return;
 
       if (res.ok) {
-        pendingMutationsRef.current.delete(mutationId);
         const envelope = await res.json() as SyncDocumentEnvelope;
         const responseRev = parseRevision(envelope.revision ?? res.headers.get('ETag'));
         if (responseRev !== null) revRef.current = responseRev;
@@ -215,7 +276,6 @@ function useServerSync() {
       } else if (res.status === 409) {
         if (seq !== saveSeqRef.current) return;
         // Another admin saved first — 3-way merge our changes on top of theirs.
-        pendingMutationsRef.current.delete(mutationId);
         const envelope = await res.json() as SyncDocumentEnvelope;
         const remoteNorm = normalizeState(envelope.document);
         const base       = baseStateRef.current ?? remoteNorm;
@@ -250,7 +310,6 @@ function useServerSync() {
     const tok      = token;
     const seq      = ++saveSeqRef.current;
     const mutationId = createId('mutation');
-    pendingMutationsRef.current.add(mutationId);
     clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => save(snapshot, revRef.current, tok, seq, mutationId), 600);
     return () => clearTimeout(syncTimer.current);
@@ -264,6 +323,7 @@ function AppContent() {
   const { canEdit } = useAuth();
   const { tab } = state.ui;
 
+  useLocalWindowSync();
   useServerSync();
 
   const projection = useMemo(() => {
