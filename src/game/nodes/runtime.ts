@@ -5,10 +5,8 @@ import type {
   NodeGraphConnection,
   NodeGraphPortRef,
   NodeValueType,
-  SchemaArray,
   SchemaChild,
-  SchemaPrimitive,
-  SchemaReference,
+  SchemaFieldChild,
   TransformDefinition,
   TransformGraphNode,
   TransformPort,
@@ -58,7 +56,26 @@ export interface FunctionScriptContext {
   inputs: Record<string, NodeRuntimeValue>;
   outputs: Record<string, NodeRuntimeValue>;
   props: Record<string, NodeRuntimeValue>;
+  chart: ChartScriptHelpers;
   target?: TypeMethodTarget;
+}
+
+export interface CanonicalChartItem {
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface CanonicalChartBlock {
+  title: string;
+  data: CanonicalChartItem[];
+}
+
+export interface ChartScriptHelpers {
+  item: (label: string, value: number | string, color?: string) => CanonicalChartItem;
+  pie: (dataOrTitle: NodeRuntimeValue, dataOrTitleMaybe?: NodeRuntimeValue) => CanonicalChartBlock;
+  pies: (...charts: NodeRuntimeValue[]) => CanonicalChartBlock[];
+  bar: (dataOrTitle: NodeRuntimeValue, dataOrTitleMaybe?: NodeRuntimeValue) => CanonicalChartBlock;
 }
 
 export interface TypeMethodTarget {
@@ -179,6 +196,7 @@ export function previewTransformDefinition(
     'scope',
     'inputs',
     'outputs',
+    'chart',
     ...(hasProps ? ['props'] : []),
     ...(options.target ? ['target'] : []),
   ];
@@ -261,7 +279,7 @@ export function runtimeValueLabel(value: NodeRuntimeValue): string {
 export function entityFieldValue(
   node: EntityGraphNode,
   type: EntityType,
-  child: SchemaPrimitive | SchemaReference | SchemaArray,
+  child: SchemaFieldChild,
   path: string,
   context: Pick<NodeRuntimeContext, 'factions' | 'regions'>
 ): NodeRuntimeValue {
@@ -504,18 +522,20 @@ export function executeTransformExpression(
     inputs,
     outputs: context.outputs ?? {},
     props,
+    chart: createChartScriptHelpers(),
     target: context.target,
   };
   if (!hasExplicitReturn(expression)) {
     throw new Error('JavaScript must include a return statement.');
   }
-  const fn = new Function('scope', 'inputs', 'outputs', 'props', 'target', expression);
+  const fn = new Function('scope', 'inputs', 'outputs', 'props', 'target', 'chart', expression);
   return fn(
     scriptContext,
     scriptContext.inputs,
     scriptContext.outputs,
     scriptContext.props,
-    scriptContext.target
+    scriptContext.target,
+    scriptContext.chart
   );
 }
 
@@ -618,7 +638,171 @@ function sampleValueForPort(port: TransformPort, index: number): NodeRuntimeValu
     ];
   }
 
+  if (port.valueType.kind === 'chart') {
+    return {
+      title: port.valueType.chart === 'pie' ? 'Vote share' : 'Queue',
+      data: [
+        { label: 'Draft', value: ordinal * 8, color: 'var(--cyan)' },
+        { label: 'Review', value: ordinal * 5, color: 'var(--accent)' },
+        { label: 'Passed', value: ordinal * 3, color: 'var(--good)' },
+      ],
+    };
+  }
+
+  if (port.valueType.kind === 'markdown') {
+    return [
+      '# Computed note',
+      '',
+      '- Generated from method output',
+      '- Supports **bold** and *italic* text',
+    ].join('\n');
+  }
+
   return ordinal * 10;
+}
+
+const CHART_SCRIPT_PALETTE = [
+  'var(--cyan)',
+  'var(--accent)',
+  'var(--accent-hot)',
+  'var(--neutral)',
+  'var(--good)',
+  'var(--danger)',
+  '#8bbcff',
+  '#f5d56f',
+];
+
+const CHART_VALUE_KEYS = ['value', 'amount', 'count', 'total', 'pct', 'percentage', 'percent', 'seats', 'power', 'population'];
+const CHART_LABEL_KEYS = ['label', 'name', 'title', 'id', 'key'];
+const CHART_COLOR_KEYS = ['color', 'colour', 'fill'];
+
+function createChartScriptHelpers(): ChartScriptHelpers {
+  return {
+    item: (label, value, color) => chartScriptItem(label, value, color),
+    pie: (dataOrTitle, dataOrTitleMaybe) => chartBlockFromArgs(dataOrTitle, dataOrTitleMaybe, 'Pie'),
+    pies: (...charts) => charts.map((chart, index) => chartBlockFromValue(chart, `Pie ${index + 1}`)),
+    bar: (dataOrTitle, dataOrTitleMaybe) => chartBlockFromArgs(dataOrTitle, dataOrTitleMaybe, 'Bar'),
+  };
+}
+
+function chartBlockFromArgs(
+  dataOrTitle: NodeRuntimeValue,
+  dataOrTitleMaybe: NodeRuntimeValue,
+  fallbackTitle: string
+): CanonicalChartBlock {
+  if (typeof dataOrTitle === 'string' && dataOrTitleMaybe !== undefined) {
+    return chartBlockFromValue(dataOrTitleMaybe, dataOrTitle);
+  }
+
+  const title = typeof dataOrTitleMaybe === 'string' ? dataOrTitleMaybe : fallbackTitle;
+  return chartBlockFromValue(dataOrTitle, title);
+}
+
+function chartBlockFromValue(value: NodeRuntimeValue, fallbackTitle: string): CanonicalChartBlock {
+  if (isChartRecord(value) && Array.isArray(value.data)) {
+    return {
+      title: stringFromChartRecord(value, ['title', 'name', 'label']) ?? fallbackTitle,
+      data: normalizeChartScriptItems(value.data),
+    };
+  }
+
+  return {
+    title: fallbackTitle,
+    data: normalizeChartScriptItems(value),
+  };
+}
+
+function normalizeChartScriptItems(value: NodeRuntimeValue): CanonicalChartItem[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item, index) => normalizeChartScriptItem(item, index))
+      .filter((item): item is CanonicalChartItem => !!item);
+  }
+
+  if (isChartRecord(value)) {
+    const nested = value.data ?? value.segments ?? value.items ?? value.values ?? value.entries;
+    if (Array.isArray(nested)) return normalizeChartScriptItems(nested);
+
+    const direct = normalizeChartScriptItem(value, 0);
+    if (direct) return [direct];
+
+    return Object.entries(value)
+      .map(([key, item], index) => {
+        const amount = coerceChartNumber(item);
+        return amount === null ? null : { label: key, value: amount, color: chartScriptColorAt(index) };
+      })
+      .filter((item): item is CanonicalChartItem => !!item);
+  }
+
+  const direct = normalizeChartScriptItem(value, 0);
+  return direct ? [direct] : [];
+}
+
+function normalizeChartScriptItem(value: NodeRuntimeValue, index: number): CanonicalChartItem | null {
+  if (Array.isArray(value)) {
+    const amount = coerceChartNumber(value[1]);
+    if (amount === null) return null;
+    const label = runtimeValueLabel(value[0]) || `Item ${index + 1}`;
+    const color = typeof value[2] === 'string' && value[2] ? value[2] : chartScriptColorAt(index);
+    return { label, value: amount, color };
+  }
+
+  if (isChartRecord(value)) {
+    const amount = numberFromChartRecord(value, CHART_VALUE_KEYS);
+    if (amount === null) return null;
+    return {
+      label: stringFromChartRecord(value, CHART_LABEL_KEYS) ?? `Item ${index + 1}`,
+      value: amount,
+      color: stringFromChartRecord(value, CHART_COLOR_KEYS) ?? chartScriptColorAt(index),
+    };
+  }
+
+  const amount = coerceChartNumber(value);
+  return amount === null ? null : { label: `Item ${index + 1}`, value: amount, color: chartScriptColorAt(index) };
+}
+
+function chartScriptItem(label: string, value: NodeRuntimeValue, color = CHART_SCRIPT_PALETTE[0]): CanonicalChartItem {
+  return {
+    label,
+    value: coerceChartNumber(value) ?? 0,
+    color,
+  };
+}
+
+function stringFromChartRecord(record: Record<string, NodeRuntimeValue>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+
+  return null;
+}
+
+function numberFromChartRecord(record: Record<string, NodeRuntimeValue>, keys: string[]): number | null {
+  for (const key of keys) {
+    const amount = coerceChartNumber(record[key]);
+    if (amount !== null) return amount;
+  }
+
+  return null;
+}
+
+function coerceChartNumber(value: NodeRuntimeValue): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function isChartRecord(value: NodeRuntimeValue): value is Record<string, NodeRuntimeValue> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function chartScriptColorAt(index: number): string {
+  return CHART_SCRIPT_PALETTE[index % CHART_SCRIPT_PALETTE.length];
 }
 
 function applyConnectionMode(connection: NodeGraphConnection, value: NodeRuntimeValue): NodeRuntimeValue {

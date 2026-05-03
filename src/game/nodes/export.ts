@@ -165,6 +165,16 @@ function sanitizeSchemaChildren(
       continue;
     }
 
+    if (child.kind === 'computedView') {
+      const valueType = sanitizeNodeValueType(child.valueType, typeIds, report);
+      next.push({
+        ...child,
+        valueType: valueType.kind === 'chart' || valueType.kind === 'markdown' ? valueType : { kind: 'chart', chart: 'pie' },
+        computed: true,
+      });
+      continue;
+    }
+
     next.push(child);
   }
 
@@ -223,6 +233,14 @@ function sanitizeNodeValueType(
   if (value.kind === 'array') {
     const item = sanitizeArrayItem(value.item, typeIds, report);
     return item ? { kind: 'array', item } : { kind: 'any' };
+  }
+
+  if (value.kind === 'chart') {
+    return { kind: 'chart', chart: value.chart === 'bar' ? 'bar' : 'pie' };
+  }
+
+  if (value.kind === 'markdown') {
+    return { kind: 'markdown' };
   }
 
   return { kind: 'any' };

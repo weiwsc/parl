@@ -144,11 +144,23 @@ export type Language = 'en' | 'cn';
 // ── Node / Type Editor ────────────────────────────────────────────────────────
 
 export type SchemaValueType = 'number' | 'string';
+export type NodeChartKind = 'pie' | 'bar';
+export type NodeComputedViewKind = NodeChartKind | 'markdown';
+export interface NodeChartValueType {
+  kind: 'chart';
+  chart: NodeChartKind;
+}
+export interface NodeMarkdownValueType {
+  kind: 'markdown';
+}
+export type NodeComputedViewValueType = NodeChartValueType | NodeMarkdownValueType;
 export type NodeValueType =
   | { kind: 'any' }
   | { kind: 'primitive'; valueType: SchemaValueType }
   | { kind: 'reference'; typeId: string }
-  | { kind: 'array'; item: SchemaArrayItem };
+  | { kind: 'array'; item: SchemaArrayItem }
+  | NodeChartValueType
+  | NodeMarkdownValueType;
 export type TransformValueType = NodeValueType;
 
 export interface SchemaPrimitive {
@@ -183,6 +195,15 @@ export interface SchemaArray {
   computed: boolean;
 }
 
+export interface SchemaComputedView {
+  kind: 'computedView';
+  id: string;
+  name: string;
+  description?: string;
+  valueType: NodeComputedViewValueType;
+  computed: true;
+}
+
 export interface SchemaSection {
   kind: 'section';
   id: string;
@@ -191,7 +212,8 @@ export interface SchemaSection {
   children: SchemaChild[];
 }
 
-export type SchemaChild = SchemaSection | SchemaPrimitive | SchemaReference | SchemaArray;
+export type SchemaFieldChild = SchemaPrimitive | SchemaReference | SchemaArray | SchemaComputedView;
+export type SchemaChild = SchemaSection | SchemaFieldChild;
 
 export interface EntityType {
   id: string;

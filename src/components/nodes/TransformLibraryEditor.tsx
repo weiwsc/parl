@@ -236,6 +236,17 @@ function sampleFieldValue(detail?: string): NodeRuntimeValue {
   if (detail === 'string') return 'sample';
   if (detail?.startsWith('array')) return [];
   if (detail?.startsWith('ref:')) return { typeId: detail.slice(4), nodeId: 'sample', values: {} };
+  if (detail === 'pie chart' || detail === 'bar chart') {
+    return {
+      title: detail === 'pie chart' ? 'Vote share' : 'Queue',
+      data: [
+        { label: 'Draft', value: 42, color: 'var(--cyan)' },
+        { label: 'Review', value: 28, color: 'var(--accent)' },
+        { label: 'Passed', value: 19, color: 'var(--good)' },
+      ],
+    };
+  }
+  if (detail === 'markdown') return '# Note\n\n- Computed markdown';
   return 10;
 }
 

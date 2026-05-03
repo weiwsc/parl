@@ -190,6 +190,10 @@ function completionsForPath(
     return fieldCompletions(completionContext?.fields, rest.slice(1), 'target.props');
   }
 
+  if (root === 'chart' && rest.length === 0) {
+    return chartCompletions();
+  }
+
   return [];
 }
 
@@ -197,10 +201,20 @@ function topLevelCompletions(completionContext?: JsCodeCompletionContext): Compl
   return [
     { label: 'inputs', type: 'namespace', detail: 'input ports', boost: 100 },
     { label: 'outputs', type: 'namespace', detail: 'mutable output record', boost: 99 },
-    ...(completionContext?.fields?.length ? [{ label: 'props', type: 'namespace', detail: 'attached field values', boost: 98 }] : []),
+    { label: 'chart', type: 'namespace', detail: 'chart data helpers', boost: 98 },
+    ...(completionContext?.fields?.length ? [{ label: 'props', type: 'namespace', detail: 'attached field values', boost: 97 }] : []),
     ...(completionContext?.fields?.length ? [{ label: 'target', type: 'namespace', detail: 'attached type context', boost: 87 }] : []),
     { label: 'scope', type: 'namespace', detail: 'full script context', boost: 86 },
     { label: 'return', type: 'keyword', apply: 'return ', detail: 'required output return', boost: 80 },
+  ];
+}
+
+function chartCompletions(): Completion[] {
+  return [
+    { label: 'pie', type: 'function', apply: 'pie("Title", )', detail: 'canonical pie chart block', boost: 95 },
+    { label: 'pies', type: 'function', apply: 'pies()', detail: 'multiple canonical pie chart blocks', boost: 94 },
+    { label: 'bar', type: 'function', apply: 'bar("Title", )', detail: 'canonical bar chart block', boost: 93 },
+    { label: 'item', type: 'function', apply: 'item("Label", 0)', detail: 'canonical chart item', boost: 92 },
   ];
 }
 

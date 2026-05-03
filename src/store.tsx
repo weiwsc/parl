@@ -327,6 +327,15 @@ function normalizeSchemaChild(value: any): SchemaChild[] {
     }];
   }
 
+  if (kind === 'computedView') {
+    return [{
+      kind: 'computedView',
+      ...common,
+      valueType: normalizeComputedViewValueType(value?.valueType),
+      computed: true,
+    }];
+  }
+
   if (kind === 'primitive') {
     return [{
       kind: 'primitive',
@@ -475,7 +484,20 @@ function normalizeTransformValueType(value: any): TransformValueType {
   if (value?.kind === 'primitive') return { kind: 'primitive', valueType: normalizeSchemaValueType(value.valueType) };
   if (value?.kind === 'reference') return { kind: 'reference', typeId: stringOr(value.typeId, '') };
   if (value?.kind === 'array') return { kind: 'array', item: normalizeArrayItem(value.item) };
+  if (value?.kind === 'chart') return normalizeChartValueType(value);
+  if (value?.kind === 'markdown') return { kind: 'markdown' };
   return { kind: 'any' };
+}
+
+function normalizeComputedViewValueType(value: any): Extract<TransformValueType, { kind: 'chart' | 'markdown' }> {
+  return value?.kind === 'markdown' ? { kind: 'markdown' } : normalizeChartValueType(value);
+}
+
+function normalizeChartValueType(value: any): Extract<TransformValueType, { kind: 'chart' }> {
+  return {
+    kind: 'chart',
+    chart: value?.chart === 'bar' ? 'bar' : 'pie',
+  };
 }
 
 function stringOr(value: unknown, fallback: string): string {

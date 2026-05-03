@@ -126,6 +126,10 @@
   background: color-mix(in srgb, var(--neutral) 10%, var(--bg-panel-alt));
   border-left: 2px solid var(--neutral);
 }
+.ne-computed-view > .ne-node-head {
+  background: color-mix(in srgb, var(--good) 7%, var(--bg-panel-alt));
+  border-left: 2px solid color-mix(in srgb, var(--good) 70%, var(--cyan));
+}
 
 .ne-expand-btn { flex-shrink: 0; width: 18px; }
 .ne-drag-handle {
@@ -154,6 +158,7 @@
 .ne-kind-prim { color: var(--cyan); background: color-mix(in srgb, var(--cyan) 15%, transparent); }
 .ne-kind-ref { color: var(--accent-hot); background: color-mix(in srgb, var(--accent) 15%, transparent); }
 .ne-kind-arr { color: var(--neutral); background: color-mix(in srgb, var(--neutral) 22%, transparent); }
+.ne-kind-view { color: var(--good); background: color-mix(in srgb, var(--good) 17%, transparent); }
 
 .ne-port-dot {
   font-size: 10px;
@@ -203,6 +208,10 @@
 }
 .ne-computed-label input { cursor: pointer; }
 .ne-computed-label:has(input:checked) { color: var(--accent-hot); }
+.ne-computed-label-static {
+  color: var(--good);
+  cursor: default;
+}
 
 .ne-desc-input {
   flex: 1;

@@ -6,16 +6,15 @@ import type {
   NodeGraphNode,
   NodeGraphPortRef,
   NodeInstanceValue,
-  SchemaArray,
   SchemaChild,
-  SchemaPrimitive,
-  SchemaReference,
+  SchemaFieldChild,
   SchemaSection,
   TransformPort,
   TypeMethodDefinition,
 } from '../../game/nodes/types';
 import { describeNodeValueType, describeSchemaChildType } from '../../game/nodes/schema';
 import { runtimeValueLabel, type NodeEvaluation, type NodeRuntimeValue } from '../../game/nodes/runtime';
+import { ComputedValueView } from './ComputedValueView';
 import { NodeValueTypeEditor } from './NodeValueTypeEditor';
 import { PortHandle } from './PortHandle';
 import type { PortDirection, RegisterPortAnchor } from './nodeCanvasTypes';
@@ -452,7 +451,7 @@ function InstanceField({
   onValueChange,
 }: {
   node: Extract<NodeGraphNode, { kind: 'entity' }>;
-  child: SchemaPrimitive | SchemaReference | SchemaArray;
+  child: SchemaFieldChild;
   pathPrefix: string;
   evaluation: NodeEvaluation;
   canEdit: boolean;
@@ -467,10 +466,11 @@ function InstanceField({
   const port: NodeGraphPortRef = { nodeId: node.id, path, label: `${node.title}.${displayLabel}` };
   const value = evaluation.values[`${node.id}:${path}`];
   const titleAttr = child.description ? `${path} - ${child.description}` : path;
+  const isComputedView = child.kind === 'computedView';
 
   return (
-    <div className={`ne-node ne-${child.kind}`} title={titleAttr}>
-      <div className="ne-node-head ne-instance-field-row">
+    <div className={`ne-node ne-${isComputedView ? 'computed-view' : child.kind}`} title={titleAttr}>
+      <div className={`ne-node-head ne-instance-field-row${isComputedView ? ' ne-instance-visual-row' : ''}`}>
         {child.computed ? (
           <PortHandle direction="input" port={port} canEdit={canEdit} registerPortAnchor={registerPortAnchor} onStartWire={onStartWire} onCompleteWire={onCompleteWire} />
         ) : <span className="ne-port-spacer" />}
@@ -480,6 +480,7 @@ function InstanceField({
         <InstanceValueEditor child={child} value={value} computed={child.computed} canEdit={canEdit} onChange={next => onValueChange(path, next)} />
         <PortHandle direction="output" port={port} canEdit={canEdit} registerPortAnchor={registerPortAnchor} onStartWire={onStartWire} onCompleteWire={onCompleteWire} />
       </div>
+      {isComputedView && <ComputedValueView valueType={child.valueType} value={value} />}
     </div>
   );
 }
@@ -491,7 +492,7 @@ function InstanceValueEditor({
   canEdit,
   onChange,
 }: {
-  child: SchemaPrimitive | SchemaReference | SchemaArray;
+  child: SchemaFieldChild;
   value: NodeRuntimeValue;
   computed: boolean;
   canEdit: boolean;

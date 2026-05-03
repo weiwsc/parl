@@ -2,8 +2,10 @@ import { useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
 import type {
   EntityType,
+  NodeComputedViewKind,
   SchemaArray,
   SchemaChild,
+  SchemaComputedView,
   SchemaPrimitive,
   SchemaReference,
   SchemaSection,
@@ -11,12 +13,15 @@ import type {
 } from '../../game/nodes/types';
 import {
   addChild,
+  chartValueType,
   describeArrayItem,
   describeSchemaChildType,
+  markdownValueType,
   moveChild,
   moveChildInTree,
   moveChildToParentEnd,
   newArray,
+  newComputedView,
   newPrimitive,
   newReference,
   newSection,
@@ -43,6 +48,7 @@ export function SchemaNodeEditor(props: NodeProps) {
   if (props.node.kind === 'section') return <SectionEditor {...props} node={props.node} />;
   if (props.node.kind === 'reference') return <ReferenceEditor {...props} node={props.node} />;
   if (props.node.kind === 'array') return <ArrayEditor {...props} node={props.node} />;
+  if (props.node.kind === 'computedView') return <ComputedViewEditor {...props} node={props.node} />;
   return <PrimitiveEditor {...props} node={props.node} />;
 }
 
@@ -203,6 +209,46 @@ function ArrayEditor({
   );
 }
 
+function ComputedViewEditor({
+  node, index, total, pathPrefix, readOnly, onUpdate, onRemove, onMove, onReorder,
+}: NodeProps & { node: SchemaComputedView }) {
+  const path = `${pathPrefix}.${node.name}`;
+  const selectedView = node.valueType.kind === 'markdown' ? 'markdown' : node.valueType.chart;
+
+  return (
+    <NodeShell node={node} className="ne-computed-view" readOnly={readOnly} onReorder={onReorder}>
+      <div className="ne-node-head">
+        <DragHandle nodeId={node.id} readOnly={readOnly} />
+        <span className="ne-kind-tag ne-kind-view">V</span>
+        <span className="ne-port-dot" title="Computed view — can receive wire input">◉</span>
+        <NameInput node={node} readOnly={readOnly} onUpdate={onUpdate} />
+        <select
+          className="ne-type-select"
+          value={selectedView}
+          disabled={readOnly}
+          onChange={event => {
+            const view = event.target.value as NodeComputedViewKind;
+            onUpdate({ ...node, valueType: view === 'markdown' ? markdownValueType() : chartValueType(view) });
+          }}
+        >
+          <option value="pie">pie chart</option>
+          <option value="bar">bar chart</option>
+          <option value="markdown">markdown</option>
+        </select>
+        <span className="ne-computed-label ne-computed-label-static">computed</span>
+        <NodeActions index={index} total={total} readOnly={readOnly} onMove={onMove} onRemove={onRemove} />
+      </div>
+      <FieldMeta
+        node={node}
+        readOnly={readOnly}
+        typeLabel={describeSchemaChildType(node)}
+        path={path}
+        onDescription={description => onUpdate({ ...node, description })}
+      />
+    </NodeShell>
+  );
+}
+
 function SectionEditor({
   node, index, total, depth, pathPrefix, typeOptions, readOnly, onUpdate, onRemove, onMove, onReorder, onAppend,
 }: NodeProps & { node: SchemaSection }) {
@@ -318,6 +364,9 @@ function SchemaChildList({ children, pathPrefix, depth, typeOptions, readOnly, o
           <button className="small ghost" onClick={() => onChange(addChild(children, newPrimitive()))}>+ Primitive</button>
           <button className="small ghost" onClick={() => onChange(addChild(children, newReference(firstTypeId)))}>+ Reference</button>
           <button className="small ghost" onClick={() => onChange(addChild(children, newArray(firstTypeId)))}>+ Array</button>
+          <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('pie')))}>+ Pie</button>
+          <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('bar')))}>+ Bar</button>
+          <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('markdown')))}>+ Markdown</button>
         </div>
       )}
     </div>

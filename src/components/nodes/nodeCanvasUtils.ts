@@ -9,7 +9,7 @@ import type {
   NodeValueType,
   SchemaArray,
   SchemaArrayItem,
-  SchemaPrimitive,
+  SchemaFieldChild,
   SchemaReference,
   TransformDefinition,
 } from '../../game/nodes/types';
@@ -65,20 +65,23 @@ export function cleanValues(values: Record<string, NodeInstanceValue>): Record<s
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
-export function fieldKindClass(child: SchemaPrimitive | SchemaReference | SchemaArray): string {
+export function fieldKindClass(child: SchemaFieldChild): string {
   if (child.kind === 'primitive') return 'ne-kind-prim';
   if (child.kind === 'reference') return 'ne-kind-ref';
+  if (child.kind === 'computedView') return 'ne-kind-view';
   return 'ne-kind-arr';
 }
 
-export function fieldKindLabel(child: SchemaPrimitive | SchemaReference | SchemaArray): string {
+export function fieldKindLabel(child: SchemaFieldChild): string {
   if (child.kind === 'primitive') return 'P';
   if (child.kind === 'reference') return 'R';
+  if (child.kind === 'computedView') return 'V';
   return '[]';
 }
 
-export function emptyValueLabel(child: SchemaReference | SchemaArray): string {
+export function emptyValueLabel(child: SchemaReference | SchemaArray | Extract<SchemaFieldChild, { kind: 'computedView' }>): string {
   if (child.kind === 'reference') return child.typeId ? `ref:${child.typeId}` : 'unbound ref';
+  if (child.kind === 'computedView') return child.valueType.kind === 'markdown' ? 'markdown' : `${child.valueType.chart} chart`;
   return `array<${describeArrayItem(child.item)}>`;
 }
 
@@ -235,6 +238,14 @@ function isConnectionValueCompatible(source: NodeValueType, target: NodeValueTyp
 
   if (target.kind === 'reference') {
     return source.kind === 'reference' && compatibleTypeId(source.typeId, target.typeId);
+  }
+
+  if (target.kind === 'chart') {
+    return source.kind === 'chart' && source.chart === target.chart;
+  }
+
+  if (target.kind === 'markdown') {
+    return source.kind === 'markdown';
   }
 
   return false;

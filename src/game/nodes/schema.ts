@@ -1,6 +1,10 @@
 import type {
   EntityGraphNode,
   EntityType,
+  NodeChartKind,
+  NodeChartValueType,
+  NodeComputedViewKind,
+  NodeMarkdownValueType,
   NodeGraph,
   NodeGraphConnection,
   NodeGraphNode,
@@ -8,6 +12,8 @@ import type {
   NodeValueType,
   SchemaArray,
   SchemaChild,
+  SchemaComputedView,
+  SchemaFieldChild,
   SchemaPrimitive,
   SchemaReference,
   SchemaSection,
@@ -48,6 +54,17 @@ export function newArray(typeId = ''): SchemaArray {
     description: '',
     item: typeId ? { kind: 'reference', typeId } : { kind: 'primitive', valueType: 'number' },
     computed: false,
+  };
+}
+
+export function newComputedView(view: NodeComputedViewKind = 'pie'): SchemaComputedView {
+  return {
+    kind: 'computedView',
+    id: nodeUid('view'),
+    name: view === 'pie' ? 'pieChart' : view === 'bar' ? 'barChart' : 'markdown',
+    description: '',
+    valueType: view === 'markdown' ? markdownValueType() : chartValueType(view),
+    computed: true,
   };
 }
 
@@ -270,9 +287,18 @@ export function arrayValueType(item: SchemaArray['item'] = { kind: 'primitive', 
   return { kind: 'array', item };
 }
 
-export function schemaChildValueType(child: Exclude<SchemaChild, SchemaSection>): NodeValueType {
+export function chartValueType(chart: NodeChartKind = 'pie'): NodeChartValueType {
+  return { kind: 'chart', chart };
+}
+
+export function markdownValueType(): NodeMarkdownValueType {
+  return { kind: 'markdown' };
+}
+
+export function schemaChildValueType(child: SchemaFieldChild): NodeValueType {
   if (child.kind === 'primitive') return primitiveValueType(child.valueType);
   if (child.kind === 'reference') return referenceValueType(child.typeId);
+  if (child.kind === 'computedView') return child.valueType;
   return arrayValueType(child.item);
 }
 
@@ -346,9 +372,10 @@ export function createConnection(from: NodeGraphPortRef, to: NodeGraphPortRef): 
   };
 }
 
-export function describeSchemaChildType(child: Exclude<SchemaChild, SchemaSection>): string {
+export function describeSchemaChildType(child: SchemaFieldChild): string {
   if (child.kind === 'primitive') return child.valueType;
   if (child.kind === 'reference') return `ref:${child.typeId || 'unbound'}`;
+  if (child.kind === 'computedView') return describeNodeValueType(child.valueType);
   return `array<${describeArrayItem(child.item)}>`;
 }
 
@@ -356,6 +383,8 @@ export function describeNodeValueType(valueType: NodeValueType): string {
   if (valueType.kind === 'any') return 'any';
   if (valueType.kind === 'primitive') return valueType.valueType;
   if (valueType.kind === 'reference') return `ref:${valueType.typeId || 'unbound'}`;
+  if (valueType.kind === 'chart') return `${valueType.chart} chart`;
+  if (valueType.kind === 'markdown') return 'markdown';
   return `array<${describeArrayItem(valueType.item)}>`;
 }
 
