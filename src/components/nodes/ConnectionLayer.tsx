@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { NodeConnectionMode, NodeGraph } from '../../game/nodes/types';
 import type { CanvasPoint, WireDragState } from './nodeCanvasTypes';
@@ -10,7 +11,7 @@ interface ConnectionLayerProps {
   onConnectionLabelClick?: (connectionId: string, event: ReactMouseEvent<SVGGElement>) => void;
 }
 
-export function ConnectionLayer({ graph, anchors, pendingWire, onConnectionLabelClick }: ConnectionLayerProps) {
+export const ConnectionLayer = memo(function ConnectionLayer({ graph, anchors, pendingWire, onConnectionLabelClick }: ConnectionLayerProps) {
   const pendingFrom = pendingWire ? anchors[portKey('output', pendingWire.from)] : null;
   return (
     <svg className="ne-connection-layer">
@@ -35,9 +36,9 @@ export function ConnectionLayer({ graph, anchors, pendingWire, onConnectionLabel
       )}
     </svg>
   );
-}
+});
 
-function ConnectionPath({
+const ConnectionPath = memo(function ConnectionPath({
   connectionId,
   from,
   to,
@@ -86,4 +87,4 @@ function ConnectionPath({
       )}
     </g>
   );
-}
+});

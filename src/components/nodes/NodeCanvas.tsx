@@ -44,12 +44,23 @@ interface NodeCanvasProps {
   onChange: (graph: NodeGraph) => void;
 }
 
+interface NodeDragPreview {
+  nodeId: string;
+  x: number;
+  y: number;
+}
+
 export function NodeCanvas({ types, graph, transforms, factions, regions, canEdit, onChange }: NodeCanvasProps) {
   const viewportDivRef = useRef<HTMLDivElement | null>(null);
   const portElementsRef = useRef(new Map<string, HTMLElement>());
   const portResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const portMeasureFrameRef = useRef<number | null>(null);
+  const graphRef = useRef(graph);
+  const nodeDragFrameRef = useRef<number | null>(null);
+  const pendingNodeDragPreviewRef = useRef<NodeDragPreview | null>(null);
   const [portAnchors, setPortAnchors] = useState<Record<string, CanvasPoint>>({});
   const [nodeDrag, setNodeDrag] = useState<NodeDragState | null>(null);
+  const [nodeDragPreview, setNodeDragPreview] = useState<NodeDragPreview | null>(null);
   const [panDrag, setPanDrag] = useState<PanDragState | null>(null);
   const [wireDrag, setWireDrag] = useState<WireDragState | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>({ panX: 40, panY: 40, zoom: 1 });
@@ -60,8 +71,20 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
   const [connectionMenu, setConnectionMenu] = useState<{ connectionId: string; x: number; y: number } | null>(null);
   const viewportRef = useRef<CanvasViewport>(viewport);
   const evaluation = useMemo(() => evaluateGraph({ graph, types, transforms, factions, regions }), [graph, types, transforms, factions, regions]);
+  const typeById = useMemo(() => new Map(types.map(type => [type.id, type])), [types]);
+  const displayedGraph = useMemo<NodeGraph>(() => {
+    if (!nodeDragPreview) return graph;
+    return {
+      ...graph,
+      nodes: graph.nodes.map(node => node.id === nodeDragPreview.nodeId
+        ? { ...node, x: nodeDragPreview.x, y: nodeDragPreview.y }
+        : node
+      ),
+    };
+  }, [graph, nodeDragPreview]);
 
   viewportRef.current = viewport;
+  graphRef.current = graph;
 
   const updateGraph = useCallback((updater: (graph: NodeGraph) => NodeGraph) => onChange(updater(graph)), [graph, onChange]);
 
@@ -92,6 +115,14 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     setPortAnchors(current => sameAnchors(current, next) ? current : next);
   }, []);
 
+  const schedulePortAnchorMeasure = useCallback(() => {
+    if (portMeasureFrameRef.current !== null) return;
+    portMeasureFrameRef.current = window.requestAnimationFrame(() => {
+      portMeasureFrameRef.current = null;
+      measurePortAnchors();
+    });
+  }, [measurePortAnchors]);
+
   const registerPortAnchor: RegisterPortAnchor = useCallback((key, element) => {
     const observer = portResizeObserverRef.current;
     const previous = portElementsRef.current.get(key);
@@ -103,23 +134,34 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     } else {
       portElementsRef.current.delete(key);
     }
-    window.requestAnimationFrame(measurePortAnchors);
-  }, [measurePortAnchors]);
+    schedulePortAnchorMeasure();
+  }, [schedulePortAnchorMeasure]);
 
   useLayoutEffect(() => {
-    measurePortAnchors();
-  }, [graph.nodes, graph.connections, wireDrag, measurePortAnchors]);
+    schedulePortAnchorMeasure();
+  }, [displayedGraph.nodes, schedulePortAnchorMeasure]);
 
   useEffect(() => {
-    window.addEventListener('resize', measurePortAnchors);
-    return () => window.removeEventListener('resize', measurePortAnchors);
-  }, [measurePortAnchors]);
+    window.addEventListener('resize', schedulePortAnchorMeasure);
+    return () => window.removeEventListener('resize', schedulePortAnchorMeasure);
+  }, [schedulePortAnchorMeasure]);
+
+  useEffect(() => () => {
+    if (portMeasureFrameRef.current !== null) {
+      window.cancelAnimationFrame(portMeasureFrameRef.current);
+      portMeasureFrameRef.current = null;
+    }
+    if (nodeDragFrameRef.current !== null) {
+      window.cancelAnimationFrame(nodeDragFrameRef.current);
+      nodeDragFrameRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof ResizeObserver === 'undefined') return;
 
     const observer = new ResizeObserver(() => {
-      window.requestAnimationFrame(measurePortAnchors);
+      schedulePortAnchorMeasure();
     });
     portResizeObserverRef.current = observer;
     portElementsRef.current.forEach(element => observer.observe(element));
@@ -128,7 +170,7 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
       observer.disconnect();
       portResizeObserverRef.current = null;
     };
-  }, [measurePortAnchors]);
+  }, [schedulePortAnchorMeasure]);
 
   // Wheel zoom (non-passive to prevent browser scroll)
   useEffect(() => {
@@ -189,27 +231,62 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const scheduleNodeDragPreview = useCallback((preview: NodeDragPreview) => {
+    pendingNodeDragPreviewRef.current = preview;
+    if (nodeDragFrameRef.current !== null) return;
+
+    nodeDragFrameRef.current = window.requestAnimationFrame(() => {
+      nodeDragFrameRef.current = null;
+      const next = pendingNodeDragPreviewRef.current;
+      setNodeDragPreview(next);
+    });
+  }, []);
+
   // Node drag via window listeners
   useEffect(() => {
     if (!nodeDrag) return;
     const handleMove = (event: PointerEvent) => {
       const point = getCanvasPoint(event);
+      scheduleNodeDragPreview({
+        nodeId: nodeDrag.nodeId,
+        x: Math.round(point.x - nodeDrag.dx),
+        y: Math.round(point.y - nodeDrag.dy),
+      });
+    };
+    const handleUp = (event: PointerEvent) => {
+      const point = getCanvasPoint(event);
+      const finalPosition = {
+        nodeId: nodeDrag.nodeId,
+        x: Math.round(point.x - nodeDrag.dx),
+        y: Math.round(point.y - nodeDrag.dy),
+      };
+      if (nodeDragFrameRef.current !== null) {
+        window.cancelAnimationFrame(nodeDragFrameRef.current);
+        nodeDragFrameRef.current = null;
+      }
+      pendingNodeDragPreviewRef.current = null;
+      setNodeDragPreview(null);
+      setNodeDrag(null);
+
+      const currentGraph = graphRef.current;
+      const currentNode = currentGraph.nodes.find(node => node.id === finalPosition.nodeId);
+      if (!currentNode || (currentNode.x === finalPosition.x && currentNode.y === finalPosition.y)) return;
+
       onChange({
-        ...graph,
-        nodes: graph.nodes.map(node => node.id === nodeDrag.nodeId
-          ? { ...node, x: Math.round(point.x - nodeDrag.dx), y: Math.round(point.y - nodeDrag.dy) }
+        ...currentGraph,
+        nodes: currentGraph.nodes.map(node => node.id === finalPosition.nodeId
+          ? { ...node, x: finalPosition.x, y: finalPosition.y }
           : node
         ),
       });
     };
-    const handleUp = () => setNodeDrag(null);
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleUp, { once: true });
     return () => {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
     };
-  }, [getCanvasPoint, graph, nodeDrag, onChange]);
+  }, [getCanvasPoint, nodeDrag, onChange, scheduleNodeDragPreview]);
 
   const addLocalTransform = () => {
     const el = viewportDivRef.current;
@@ -302,29 +379,30 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     };
   }, [addConnection, getCanvasPoint, wireDrag]);
 
-  const startNodeDrag = (event: ReactPointerEvent<HTMLElement>, node: NodeGraphNode) => {
+  const startNodeDrag = useCallback((event: ReactPointerEvent<HTMLElement>, node: NodeGraphNode) => {
     if (!canEdit || isInteractiveTarget(event.target)) return;
     const point = getCanvasPoint(event);
     setNodeDrag({ nodeId: node.id, dx: point.x - node.x, dy: point.y - node.y });
+    setNodeDragPreview({ nodeId: node.id, x: node.x, y: node.y });
     event.preventDefault();
     event.stopPropagation();
-  };
+  }, [canEdit, getCanvasPoint]);
 
-  const startWire = (event: ReactPointerEvent<HTMLElement>, from: NodeGraphPortRef) => {
+  const startWire = useCallback((event: ReactPointerEvent<HTMLElement>, from: NodeGraphPortRef) => {
     if (!canEdit) return;
     if (event.button !== 0) return;
     setWireDrag({ from, point: getCanvasPoint(event) });
     event.preventDefault();
     event.stopPropagation();
-  };
+  }, [canEdit, getCanvasPoint]);
 
-  const completeWire = (event: ReactPointerEvent<HTMLElement>, to: NodeGraphPortRef) => {
+  const completeWire = useCallback((event: ReactPointerEvent<HTMLElement>, to: NodeGraphPortRef) => {
     if (!wireDrag) return;
     addConnection(wireDrag.from, to);
     setWireDrag(null);
     event.preventDefault();
     event.stopPropagation();
-  };
+  }, [addConnection, wireDrag]);
 
   const handleViewportPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     setConnectionMenu(null);
@@ -384,6 +462,59 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
 
   const { panX, panY, zoom } = viewport;
   const isPanning = !!panDrag;
+  const nodeElements = useMemo(() => displayedGraph.nodes.map(node => node.kind === 'transform' ? (
+    <TransformNodeView
+      key={node.id}
+      node={node}
+      types={types}
+      transforms={transforms}
+      evaluation={evaluation}
+      canEdit={canEdit}
+      registerPortAnchor={registerPortAnchor}
+      onStartDrag={event => startNodeDrag(event, node)}
+      onStartWire={startWire}
+      onCompleteWire={completeWire}
+      onUpdate={updated => updateGraph(current => ({
+        ...current,
+        nodes: current.nodes.map(candidate => candidate.id === updated.id ? updated : candidate),
+      }))}
+      onDelete={() => updateGraph(current => deleteGraphNode(current, node.id))}
+    />
+  ) : (
+    <EntityNodeView
+      key={node.id}
+      node={node}
+      type={typeById.get(node.typeId)}
+      types={types}
+      factions={factions}
+      regions={regions}
+      evaluation={evaluation}
+      canEdit={canEdit}
+      registerPortAnchor={registerPortAnchor}
+      onStartDrag={event => startNodeDrag(event, node)}
+      onStartWire={startWire}
+      onCompleteWire={completeWire}
+      onUpdate={updated => updateGraph(current => ({
+        ...current,
+        nodes: current.nodes.map(candidate => candidate.id === updated.id ? updated : candidate),
+      }))}
+      onDelete={() => updateGraph(current => deleteGraphNode(current, node.id))}
+    />
+  )), [
+    canEdit,
+    completeWire,
+    displayedGraph.nodes,
+    evaluation,
+    factions,
+    regions,
+    registerPortAnchor,
+    startNodeDrag,
+    startWire,
+    transforms,
+    typeById,
+    types,
+    updateGraph,
+  ]);
 
   return (
     <div className="ne-canvas-shell">
@@ -420,7 +551,7 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
         }}
         onDrop={handleSurfaceDrop}
       >
-        {graph.nodes.length === 0 && (
+        {displayedGraph.nodes.length === 0 && (
           <div className="ne-canvas-empty">
             <EmptyState>Drag a type or transform from the left panel to start.</EmptyState>
           </div>
@@ -430,46 +561,8 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
           className="ne-canvas-surface"
           style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}
         >
-          <ConnectionLayer graph={graph} anchors={portAnchors} pendingWire={wireDrag} onConnectionLabelClick={openConnectionMenu} />
-          {graph.nodes.map(node => node.kind === 'transform' ? (
-            <TransformNodeView
-              key={node.id}
-              node={node}
-              types={types}
-              transforms={transforms}
-              evaluation={evaluation}
-              canEdit={canEdit}
-              registerPortAnchor={registerPortAnchor}
-              onStartDrag={event => startNodeDrag(event, node)}
-              onStartWire={startWire}
-              onCompleteWire={completeWire}
-              onUpdate={updated => updateGraph(current => ({
-                ...current,
-                nodes: current.nodes.map(candidate => candidate.id === updated.id ? updated : candidate),
-              }))}
-              onDelete={() => updateGraph(current => deleteGraphNode(current, node.id))}
-            />
-          ) : (
-            <EntityNodeView
-              key={node.id}
-              node={node}
-              type={types.find(type => type.id === node.typeId)}
-              types={types}
-              factions={factions}
-              regions={regions}
-              evaluation={evaluation}
-              canEdit={canEdit}
-              registerPortAnchor={registerPortAnchor}
-              onStartDrag={event => startNodeDrag(event, node)}
-              onStartWire={startWire}
-              onCompleteWire={completeWire}
-              onUpdate={updated => updateGraph(current => ({
-                ...current,
-                nodes: current.nodes.map(candidate => candidate.id === updated.id ? updated : candidate),
-              }))}
-              onDelete={() => updateGraph(current => deleteGraphNode(current, node.id))}
-            />
-          ))}
+          <ConnectionLayer graph={displayedGraph} anchors={portAnchors} pendingWire={wireDrag} onConnectionLabelClick={openConnectionMenu} />
+          {nodeElements}
         </div>
         {connectionMenu && (
           <ConnectionFloatingMenu
