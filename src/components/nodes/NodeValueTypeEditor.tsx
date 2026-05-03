@@ -9,34 +9,28 @@ interface NodeValueTypeEditorProps {
 }
 
 export function NodeValueTypeEditor({ valueType, typeOptions, disabled, onChange }: NodeValueTypeEditorProps) {
+  const selectedKind = valueType.kind === 'primitive' ? `primitive:${valueType.valueType}` : valueType.kind;
+
   return (
     <div className="ne-value-type-editor" title={describeNodeValueType(valueType)}>
       <select
-        value={valueType.kind}
+        value={selectedKind}
         disabled={disabled}
         onChange={event => {
           const kind = event.target.value;
-          if (kind === 'primitive') onChange(primitiveValueType('number'));
+          if (kind === 'primitive:number') onChange(primitiveValueType('number'));
+          else if (kind === 'primitive:string') onChange(primitiveValueType('string'));
           else if (kind === 'reference') onChange(referenceValueType(typeOptions[0]?.id ?? ''));
           else if (kind === 'array') onChange(arrayValueType({ kind: 'primitive', valueType: 'number' }));
           else onChange({ kind: 'any' });
         }}
       >
         <option value="any">any</option>
-        <option value="primitive">primitive</option>
+        <option value="primitive:number">number</option>
+        <option value="primitive:string">string</option>
         <option value="reference">type</option>
         <option value="array">array</option>
       </select>
-      {valueType.kind === 'primitive' && (
-        <select
-          value={valueType.valueType}
-          disabled={disabled}
-          onChange={event => onChange(primitiveValueType(event.target.value === 'string' ? 'string' : 'number'))}
-        >
-          <option value="number">number</option>
-          <option value="string">string</option>
-        </select>
-      )}
       {valueType.kind === 'reference' && (
         <TypeSelect value={valueType.typeId} typeOptions={typeOptions} disabled={disabled} onChange={typeId => onChange(referenceValueType(typeId))} />
       )}

@@ -2,13 +2,18 @@ import type { Faction, MapRegion } from '../../models/types';
 import type {
   EntityType,
   NodeGraph,
+  NodeGraphConnection,
+  NodeGraphNode,
   NodeGraphPortRef,
   NodeInstanceValue,
+  NodeValueType,
   SchemaArray,
+  SchemaArrayItem,
   SchemaPrimitive,
   SchemaReference,
+  TransformDefinition,
 } from '../../game/nodes/types';
-import { describeArrayItem } from '../../game/nodes/schema';
+import { describeArrayItem, describeNodeValueType, findSchemaChildByPath, schemaChildValueType } from '../../game/nodes/schema';
 import type { CanvasPoint, PortDirection } from './nodeCanvasTypes';
 
 export const CANVAS_MIN_ZOOM = 0.1;
@@ -102,9 +107,152 @@ export function getInputPortFromPoint(clientX: number, clientY: number): NodeGra
   return nodeId && path && label ? { nodeId, path, label } : null;
 }
 
+export interface ConnectionValidationResult {
+  ok: boolean;
+  message?: string;
+  replaceExistingTarget?: boolean;
+}
+
+export function validateConnection(
+  graph: NodeGraph,
+  types: EntityType[],
+  transforms: TransformDefinition[],
+  from: NodeGraphPortRef,
+  to: NodeGraphPortRef,
+): ConnectionValidationResult {
+  const sourceType = graphPortValueType(from, graph, types, transforms, 'output');
+  const targetType = graphPortValueType(to, graph, types, transforms, 'input');
+
+  if (!sourceType || !targetType) {
+    return { ok: false, message: 'Cannot determine port type.' };
+  }
+
+  if (!isConnectionValueCompatible(sourceType, targetType)) {
+    return {
+      ok: false,
+      message: `${describeNodeValueType(sourceType)} cannot connect to ${describeNodeValueType(targetType)}.`,
+    };
+  }
+
+  const existing = graph.connections.filter(connection => samePortRef(connection.to, to));
+  const duplicate = existing.some(connection => samePortRef(connection.from, from));
+  if (duplicate) return { ok: false, message: 'That wire already exists.' };
+
+  return {
+    ok: true,
+    replaceExistingTarget: targetType.kind !== 'array' && existing.length > 0,
+  };
+}
+
+export function graphPortValueType(
+  port: NodeGraphPortRef,
+  graph: NodeGraph,
+  types: EntityType[],
+  transforms: TransformDefinition[],
+  direction: PortDirection,
+): NodeValueType | null {
+  const node = graph.nodes.find(candidate => candidate.id === port.nodeId);
+  if (!node) return null;
+
+  if (node.kind === 'transform') {
+    return transformPortValueType(node, transforms, port.path, direction);
+  }
+
+  const type = types.find(candidate => candidate.id === node.typeId);
+  if (!type) return null;
+
+  const methodPortType = methodPortValueType(type, port.path, direction);
+  if (methodPortType) return methodPortType;
+
+  const child = findSchemaChildByPath(type.children, port.path);
+  if (!child || child.kind === 'section') return null;
+  return schemaChildValueType(child);
+}
+
+export function isArrayCollectorTarget(
+  port: NodeGraphPortRef,
+  graph: NodeGraph,
+  types: EntityType[],
+  transforms: TransformDefinition[],
+): boolean {
+  return graphPortValueType(port, graph, types, transforms, 'input')?.kind === 'array';
+}
+
+export function targetConnectionCount(connections: NodeGraphConnection[], target: NodeGraphPortRef): number {
+  return connections.filter(connection => samePortRef(connection.to, target)).length;
+}
+
 export function sameAnchors(a: Record<string, CanvasPoint>, b: Record<string, CanvasPoint>): boolean {
   const aKeys = Object.keys(a);
   const bKeys = Object.keys(b);
   if (aKeys.length !== bKeys.length) return false;
   return bKeys.every(key => a[key] && Math.abs(a[key].x - b[key].x) < 0.5 && Math.abs(a[key].y - b[key].y) < 0.5);
+}
+
+function transformPortValueType(
+  node: Extract<NodeGraphNode, { kind: 'transform' }>,
+  transforms: TransformDefinition[],
+  path: string,
+  direction: PortDirection,
+): NodeValueType | null {
+  const definition = node.transformId
+    ? transforms.find(candidate => candidate.id === node.transformId)
+    : undefined;
+  const spec = definition ?? node;
+  const ports = direction === 'input' ? spec.inputs : spec.outputs;
+  return ports.find(port => port.name === path)?.valueType ?? null;
+}
+
+function methodPortValueType(type: EntityType, path: string, direction: PortDirection): NodeValueType | null {
+  const match = /^methods\.([^.]+)\.(inputs|outputs)\.(.+)$/.exec(path);
+  if (!match) return null;
+
+  const [, methodId, portGroup, portName] = match;
+  if ((direction === 'input' && portGroup !== 'inputs') || (direction === 'output' && portGroup !== 'outputs')) {
+    return null;
+  }
+
+  const method = type.methods?.find(candidate => candidate.id === methodId);
+  if (!method) return null;
+
+  const ports = portGroup === 'inputs' ? method.inputs : method.outputs;
+  return ports.find(port => port.name === portName)?.valueType ?? null;
+}
+
+function isConnectionValueCompatible(source: NodeValueType, target: NodeValueType): boolean {
+  if (target.kind === 'any' || source.kind === 'any') return true;
+
+  if (target.kind === 'array') {
+    if (source.kind === 'array') return isArrayItemCompatible(source.item, target.item);
+    return isConnectionValueCompatible(source, arrayItemValueType(target.item));
+  }
+
+  if (source.kind === 'array') return false;
+
+  if (target.kind === 'primitive') {
+    return source.kind === 'primitive' && source.valueType === target.valueType;
+  }
+
+  if (target.kind === 'reference') {
+    return source.kind === 'reference' && compatibleTypeId(source.typeId, target.typeId);
+  }
+
+  return false;
+}
+
+function isArrayItemCompatible(source: SchemaArrayItem, target: SchemaArrayItem): boolean {
+  if (target.kind === 'primitive') {
+    return source.kind === 'primitive' && source.valueType === target.valueType;
+  }
+
+  return source.kind === 'reference' && compatibleTypeId(source.typeId, target.typeId);
+}
+
+function arrayItemValueType(item: SchemaArrayItem): NodeValueType {
+  if (item.kind === 'primitive') return { kind: 'primitive', valueType: item.valueType };
+  return { kind: 'reference', typeId: item.typeId };
+}
+
+function compatibleTypeId(sourceTypeId: string, targetTypeId: string): boolean {
+  return !sourceTypeId || !targetTypeId || sourceTypeId === targetTypeId;
 }

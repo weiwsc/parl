@@ -21,18 +21,53 @@ import './App.css';
 // ─── Server sync (hosted mode — real-time collaborative) ─────────────────────
 //
 // Architecture:
-//   • All clients (guests + admins) subscribe to GET /api/state/events (SSE).
+//   • All clients (guests + admins) subscribe to GET /api/documents/main/events (SSE).
 //     The server sends the full state immediately on connect, then pushes
 //     every subsequent change made by any admin.
-//   • Admins debounce-PUT their local changes to /api/state with an If-Match
-//     revision header for optimistic concurrency.  A 409 means another admin
+//   • Admins debounce-PUT their local changes to /api/documents/main/snapshot
+//     with a clientId, mutationId, and baseRevision. A 409 means another admin
 //     saved first; we rebase local changes onto the server version.
 //   • We track whether a state update originated locally (needs upload) or
 //     from SSE (already on the server, do not echo back).
 
+const MAIN_DOCUMENT_ID = 'main';
+const SYNC_CLIENT_ID_KEY = 'parlSyncClientId_v1';
+
+type SyncDocumentEnvelope = {
+  documentId: string;
+  revision: number;
+  clientId?: string | null;
+  mutationId?: string | null;
+  duplicate?: boolean;
+  document: unknown;
+};
+
 function parseRevision(value: unknown): number | null {
   const parsed = Number.parseInt(String(value ?? '').replace(/"/g, ''), 10);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function createId(prefix: string): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return uid(`${prefix}-`);
+}
+
+function getSyncClientId(): string {
+  try {
+    const existing = localStorage.getItem(SYNC_CLIENT_ID_KEY);
+    if (existing) return existing;
+    const next = createId('client');
+    localStorage.setItem(SYNC_CLIENT_ID_KEY, next);
+    return next;
+  } catch {
+    return createId('client');
+  }
+}
+
+function sharedStateSnapshot(state: AppState): string {
+  return JSON.stringify(stripUi(state));
 }
 
 function useServerSync() {
@@ -50,6 +85,9 @@ function useServerSync() {
   const initialLocalStateRef = useRef<AppState | null>(state);
   const hasSeenStateRef = useRef(false);
   const saveSeqRef = useRef(0);
+  const lastSharedSnapshotRef = useRef<string | null>(null);
+  const clientIdRef = useRef(getSyncClientId());
+  const pendingMutationsRef = useRef(new Set<string>());
   // Last state the server acknowledged — used as the 3-way merge base.
   const baseStateRef = useRef<AppState | null>(null);
   // After the first SSE message we know the server baseline; subsequent messages can be merged.
@@ -63,16 +101,31 @@ function useServerSync() {
 
     const connect = () => {
       if (!active) return;
-      const es = new EventSource(`${API_BASE}/state/events`);
+      const es = new EventSource(`${API_BASE}/documents/${MAIN_DOCUMENT_ID}/events`);
       esRef.current = es;
 
       es.onmessage = (evt) => {
         try {
-          const { rev, state: remote } = JSON.parse(evt.data) as { rev: number; state: unknown };
-          const remoteNorm = normalizeState(remote);
-          const remoteRev = parseRevision(rev);
+          const message = JSON.parse(evt.data) as SyncDocumentEnvelope;
+          if (message.documentId !== MAIN_DOCUMENT_ID) return;
+          const remoteNorm = normalizeState(message.document);
+          const remoteRev = parseRevision(message.revision);
           if (remoteRev === null) return;
+          if (initializedRef.current && remoteRev < revRef.current) return;
           revRef.current = remoteRev;
+
+          const isOwnMutation = message.clientId === clientIdRef.current && !!message.mutationId;
+          if (isOwnMutation) {
+            pendingMutationsRef.current.delete(message.mutationId!);
+            baseStateRef.current = remoteNorm;
+            lastSharedSnapshotRef.current = sharedStateSnapshot(remoteNorm);
+            if (!initializedRef.current) {
+              initializedRef.current = true;
+              applyingRef.current = true;
+              updateState(local => ({ ...remoteNorm, ui: local.ui }));
+            }
+            return;
+          }
 
           if (!initializedRef.current) {
             // First message: accept server state but keep our own ui. If the
@@ -111,49 +164,62 @@ function useServerSync() {
   // ── 2. Dirty tracker — marks only user-originated state changes ──────────
   useEffect(() => {
     if (APP_MODE !== 'hosted') return;
+    const sharedSnapshot = sharedStateSnapshot(state);
     if (!hasSeenStateRef.current) {
       hasSeenStateRef.current = true;
+      lastSharedSnapshotRef.current = sharedSnapshot;
       return;
     }
     if (applyingRef.current) {
       applyingRef.current = false;
+      lastSharedSnapshotRef.current = sharedSnapshot;
       return;
     }
-    needsSaveRef.current = true;
+    if (sharedSnapshot !== lastSharedSnapshotRef.current) {
+      lastSharedSnapshotRef.current = sharedSnapshot;
+      needsSaveRef.current = true;
+    }
   }, [state]);
 
   // ── 3. Debounced PUT — upload local changes (admins only) ───────────────
-  const save = useCallback(async (body: string, rev: number, tok: string, seq: number) => {
+  const save = useCallback(async (body: string, rev: number, tok: string, seq: number, mutationId: string) => {
     if (!initializedRef.current || !needsSaveRef.current || seq !== saveSeqRef.current) return;
     needsSaveRef.current = false;
 
     try {
-      const res = await fetch(`${API_BASE}/state`, {
+      const payload = `{"clientId":${JSON.stringify(clientIdRef.current)},"mutationId":${JSON.stringify(mutationId)},"baseRevision":${rev},"document":${body}}`;
+      const res = await fetch(`${API_BASE}/documents/${MAIN_DOCUMENT_ID}/snapshot`, {
         method:  'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization:  `Bearer ${tok}`,
-          'If-Match':     String(rev),
         },
-        body,
+        body: payload,
       });
 
+      if (seq !== saveSeqRef.current) return;
+
       if (res.ok) {
-        const etagRev = parseRevision(res.headers.get('ETag'));
-        if (etagRev !== null) revRef.current = etagRev;
+        pendingMutationsRef.current.delete(mutationId);
+        const envelope = await res.json() as SyncDocumentEnvelope;
+        const responseRev = parseRevision(envelope.revision ?? res.headers.get('ETag'));
+        if (responseRev !== null) revRef.current = responseRev;
         try {
-          baseStateRef.current = normalizeState(JSON.parse(body));
+          const remoteNorm = normalizeState(envelope.document);
+          baseStateRef.current = remoteNorm;
+          lastSharedSnapshotRef.current = sharedStateSnapshot(remoteNorm);
         } catch {
           // Base will still be updated when the server's SSE echo arrives.
         }
 
       } else if (res.status === 409) {
+        if (seq !== saveSeqRef.current) return;
         // Another admin saved first — 3-way merge our changes on top of theirs.
-        const { rev: serverRev, state: serverState } = await res.json() as
-          { rev: number; state: unknown };
-        const remoteNorm = normalizeState(serverState);
+        pendingMutationsRef.current.delete(mutationId);
+        const envelope = await res.json() as SyncDocumentEnvelope;
+        const remoteNorm = normalizeState(envelope.document);
         const base       = baseStateRef.current ?? remoteNorm;
-        const parsedServerRev = parseRevision(serverRev);
+        const parsedServerRev = parseRevision(envelope.revision);
         if (parsedServerRev !== null) revRef.current = parsedServerRev;
         baseStateRef.current = remoteNorm;
         // Apply merge without setting applyingRef so the dirty-tracker will mark
@@ -162,17 +228,17 @@ function useServerSync() {
         showToastRef.current('Merged with changes from another editor', 'bad');
 
       } else {
-        console.warn('PUT /api/state', res.status);
+        console.warn('PUT /api/documents/main/snapshot', res.status);
         needsSaveRef.current = true;
         if (seq === saveSeqRef.current) {
-          syncTimer.current = setTimeout(() => save(body, revRef.current, tok, seq), 1_500);
+          syncTimer.current = setTimeout(() => save(body, revRef.current, tok, seq, mutationId), 1_500);
         }
       }
     } catch (e) {
       console.error('Sync failed:', e);
       needsSaveRef.current = true;
       if (seq === saveSeqRef.current) {
-        syncTimer.current = setTimeout(() => save(body, revRef.current, tok, seq), 1_500);
+        syncTimer.current = setTimeout(() => save(body, revRef.current, tok, seq, mutationId), 1_500);
       }
     }
   }, [updateState]);
@@ -180,11 +246,13 @@ function useServerSync() {
   useEffect(() => {
     if (APP_MODE !== 'hosted' || !canEdit || !token || !initializedRef.current || !needsSaveRef.current) return;
     // Strip ui so each client keeps its own tab/theme/expansion state.
-    const snapshot = JSON.stringify(stripUi(state));
+    const snapshot = sharedStateSnapshot(state);
     const tok      = token;
     const seq      = ++saveSeqRef.current;
+    const mutationId = createId('mutation');
+    pendingMutationsRef.current.add(mutationId);
     clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(() => save(snapshot, revRef.current, tok, seq), 600);
+    syncTimer.current = setTimeout(() => save(snapshot, revRef.current, tok, seq, mutationId), 600);
     return () => clearTimeout(syncTimer.current);
   }, [state, canEdit, token, save]); // eslint-disable-line react-hooks/exhaustive-deps
 }

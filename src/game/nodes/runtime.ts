@@ -4,6 +4,7 @@ import type {
   NodeGraph,
   NodeGraphConnection,
   NodeGraphPortRef,
+  NodeValueType,
   SchemaArray,
   SchemaChild,
   SchemaPrimitive,
@@ -11,7 +12,9 @@ import type {
   TransformDefinition,
   TransformGraphNode,
   TransformPort,
+  TypeMethodDefinition,
 } from './types';
+import { findSchemaChildByPath, schemaChildValueType } from './schema';
 import type { Faction, MapRegion } from '../../models/types';
 
 export type NodeRuntimeValue =
@@ -51,6 +54,29 @@ export interface TransformPreviewResult {
   diagnostics: TransformPreviewDiagnostic[];
 }
 
+export interface FunctionScriptContext {
+  inputs: Record<string, NodeRuntimeValue>;
+  outputs: Record<string, NodeRuntimeValue>;
+  props: Record<string, NodeRuntimeValue>;
+  target?: TypeMethodTarget;
+}
+
+export interface TypeMethodTarget {
+  typeId: string;
+  nodeId?: string;
+  props: Record<string, NodeRuntimeValue>;
+}
+
+export interface TransformPreviewOptions {
+  props?: Record<string, NodeRuntimeValue>;
+  propRules?: Record<string, PropWriteRule>;
+  target?: TypeMethodTarget;
+}
+
+export interface PropWriteRule {
+  computed: boolean;
+}
+
 export function evaluateGraph(context: NodeRuntimeContext): NodeEvaluation {
   const values: Record<string, NodeRuntimeValue> = {};
   const errors: Record<string, string[]> = {};
@@ -64,11 +90,12 @@ export function evaluateGraph(context: NodeRuntimeContext): NodeEvaluation {
     context.graph.connections.filter(connection => connection.to.nodeId === target.nodeId && connection.to.path === target.path)
   );
 
-  const resolveIncoming = (target: NodeGraphPortRef): NodeRuntimeValue => {
+  const resolveIncoming = (target: NodeGraphPortRef, targetType?: NodeValueType): NodeRuntimeValue => {
     const incoming = incomingFor(target);
     if (incoming.length === 0) return undefined;
 
     const resolved = incoming.map(connection => applyConnectionMode(connection, resolvePort(connection.from)));
+    if (targetType?.kind === 'array') return flattenIncomingArray(resolved);
     return resolved.length === 1 ? resolved[0] : resolved;
   };
 
@@ -90,7 +117,7 @@ export function evaluateGraph(context: NodeRuntimeContext): NodeEvaluation {
     } else if (node.kind === 'transform') {
       value = resolveTransformPort(node, port.path, resolveIncoming, pushError, context.transforms);
     } else {
-      value = resolveEntityPort(node, port.path, context, resolveIncoming);
+      value = resolveEntityPort(node, port.path, context, resolveIncoming, pushError);
     }
 
     values[key] = value;
@@ -131,11 +158,13 @@ export function transformSpec(node: TransformGraphNode, definitions: TransformDe
 }
 
 export function previewTransformDefinition(
-  definition: Pick<TransformDefinition, 'inputs' | 'outputs' | 'expression'>
+  definition: Pick<TransformDefinition, 'inputs' | 'outputs' | 'expression'>,
+  options: TransformPreviewOptions = {}
 ): TransformPreviewResult {
   const diagnostics: TransformPreviewDiagnostic[] = [];
   const inputs: Record<string, NodeRuntimeValue> = {};
   const outputs: Record<string, NodeRuntimeValue> = {};
+  const props = options.props ?? options.target?.props ?? {};
 
   addPortNameDiagnostics('Input', definition.inputs.map(port => port.name), diagnostics);
   addPortNameDiagnostics('Output', definition.outputs.map(port => port.name), diagnostics);
@@ -145,13 +174,20 @@ export function previewTransformDefinition(
     inputs[input.name] = sampleValueForPort(input, index);
   }
 
-  const availableVariables = Object.keys(inputs).filter(isSafeIdentifier);
+  const hasProps = Object.keys(props).length > 0 || !!options.target;
+  const availableVariables = [
+    'scope',
+    'inputs',
+    'outputs',
+    ...(hasProps ? ['props'] : []),
+    ...(options.target ? ['target'] : []),
+  ];
   const invalidInputNames = Object.keys(inputs).filter(name => !isSafeIdentifier(name));
 
   for (const name of invalidInputNames) {
     diagnostics.push({
       level: 'warning',
-      message: `Input "${name}" is not a valid JavaScript variable name, so the snippet cannot read it directly.`,
+      message: `Input "${name}" is not a valid JavaScript variable name. Read it with inputs[${JSON.stringify(name)}].`,
     });
   }
 
@@ -172,15 +208,26 @@ export function previewTransformDefinition(
     return { inputs, availableVariables, result: undefined, outputs, diagnostics };
   }
 
+  const propWriteDiagnostics = validatePropWrites(definition.expression, options.propRules);
+  diagnostics.push(...propWriteDiagnostics);
+
   if (!hasExplicitReturn(definition.expression)) {
     diagnostics.push({
-      level: 'info',
-      message: 'No return statement found; this is evaluated as a single expression.',
+      level: 'error',
+      message: returnRequirementMessage(definition.outputs),
     });
   }
 
+  if (diagnostics.some(diagnostic => diagnostic.level === 'error')) {
+    for (const output of definition.outputs) outputs[output.name] = undefined;
+    return { inputs, availableVariables, result: undefined, outputs, diagnostics };
+  }
+
   try {
-    const result = executeTransformExpression(definition.expression, inputs) as NodeRuntimeValue;
+    const result = executeTransformExpression(definition.expression, inputs, {
+      props,
+      target: options.target,
+    }) as NodeRuntimeValue;
 
     for (const output of definition.outputs) {
       outputs[output.name] = resolveTransformOutputValue(result, output.name, definition.outputs);
@@ -232,26 +279,202 @@ function resolveEntityPort(
   node: EntityGraphNode,
   path: string,
   context: NodeRuntimeContext,
-  resolveIncoming: (target: NodeGraphPortRef) => NodeRuntimeValue
+  resolveIncoming: (target: NodeGraphPortRef, targetType?: NodeValueType) => NodeRuntimeValue,
+  pushError: (nodeId: string, message: string) => void
 ): NodeRuntimeValue {
   const type = context.types.find(candidate => candidate.id === node.typeId);
   if (!type) return undefined;
 
-  const child = findSchemaChild(type.children, path);
+  const methodPort = findMethodPortByPath(type, path);
+  if (methodPort) {
+    if (methodPort.direction === 'input') {
+      return resolveIncoming(
+        { nodeId: node.id, path, label: `${node.title}.${methodPort.method.name}.${methodPort.port.name}` },
+        methodPort.port.valueType
+      );
+    }
+
+    return resolveMethodOutput(node, type, methodPort.method, path, context, resolveIncoming, pushError);
+  }
+
+  const child = findSchemaChildByPath(type.children, path);
   if (!child || child.kind === 'section') return undefined;
 
   if (child.computed) {
-    const wired = resolveIncoming({ nodeId: node.id, path, label: `${node.title}.${path}` });
+    const wired = resolveIncoming({ nodeId: node.id, path, label: `${node.title}.${path}` }, schemaChildValueType(child));
     if (wired !== undefined) return wired;
   }
 
   return entityFieldValue(node, type, child, path, context);
 }
 
+function resolveMethodOutput(
+  node: EntityGraphNode,
+  type: EntityType,
+  method: TypeMethodDefinition,
+  outputPath: string,
+  context: NodeRuntimeContext,
+  resolveIncoming: (target: NodeGraphPortRef, targetType?: NodeValueType) => NodeRuntimeValue,
+  pushError: (nodeId: string, message: string) => void
+): NodeRuntimeValue {
+  const inputValues: Record<string, NodeRuntimeValue> = {};
+
+  for (const input of method.inputs) {
+    inputValues[input.name] = resolveIncoming(
+      {
+        nodeId: node.id,
+        path: methodPortPath(method, 'input', input),
+        label: `${node.title}.${method.name}.${input.name}`,
+      },
+      input.valueType
+    );
+  }
+
+  const props = collectEntityProps(node, type, context, resolveIncoming);
+  const propWriteDiagnostics = validatePropWrites(method.expression, collectPropWriteRules(type.children));
+  if (propWriteDiagnostics.some(diagnostic => diagnostic.level === 'error')) {
+    for (const diagnostic of propWriteDiagnostics) pushError(node.id, diagnostic.message);
+    return undefined;
+  }
+
+  try {
+    const result = executeTransformExpression(method.expression, inputValues, {
+      props,
+      target: { typeId: type.id, nodeId: node.id, props },
+    });
+    return resolveTransformOutputValue(result, methodPortNameFromPath(outputPath), method.outputs);
+  } catch (error) {
+    pushError(node.id, error instanceof Error ? error.message : 'Method failed');
+    return undefined;
+  }
+}
+
+function findMethodPortByPath(
+  type: EntityType,
+  path: string
+): { method: TypeMethodDefinition; direction: 'input' | 'output'; port: TransformPort } | null {
+  const match = /^methods\.([^.]+)\.(inputs|outputs)\.(.+)$/.exec(path);
+  if (!match) return null;
+
+  const [, methodId, portGroup, portName] = match;
+  const method = type.methods?.find(candidate => candidate.id === methodId);
+  if (!method) return null;
+
+  const direction = portGroup === 'inputs' ? 'input' : 'output';
+  const ports = direction === 'input' ? method.inputs : method.outputs;
+  const port = ports.find(candidate => candidate.name === portName);
+  return port ? { method, direction, port } : null;
+}
+
+function methodPortPath(method: TypeMethodDefinition, direction: 'input' | 'output', port: TransformPort): string {
+  return `methods.${method.id}.${direction === 'input' ? 'inputs' : 'outputs'}.${port.name}`;
+}
+
+function methodPortNameFromPath(path: string): string {
+  return /^methods\.[^.]+\.(?:inputs|outputs)\.(.+)$/.exec(path)?.[1] ?? path;
+}
+
+function collectEntityProps(
+  node: EntityGraphNode,
+  type: EntityType,
+  context: NodeRuntimeContext,
+  resolveIncoming: (target: NodeGraphPortRef, targetType?: NodeValueType) => NodeRuntimeValue
+): Record<string, NodeRuntimeValue> {
+  const props: Record<string, NodeRuntimeValue> = {};
+
+  for (const path of collectSchemaPaths(type.children)) {
+    const child = findSchemaChildByPath(type.children, path);
+    if (!child || child.kind === 'section') continue;
+
+    const key = path.replace(/^props\./, '');
+    if (child.computed) {
+      const wired = resolveIncoming({ nodeId: node.id, path, label: `${node.title}.${key}` }, schemaChildValueType(child));
+      assignPropValue(props, key, wired !== undefined ? wired : entityFieldValue(node, type, child, path, context));
+    } else {
+      assignPropValue(props, key, entityFieldValue(node, type, child, path, context));
+    }
+  }
+
+  return props;
+}
+
+function assignPropValue(props: Record<string, NodeRuntimeValue>, key: string, value: NodeRuntimeValue) {
+  props[key] = value;
+
+  const segments = key.split('.').filter(Boolean);
+  if (segments.length < 2 || segments.some(segment => !isSafeIdentifier(segment))) return;
+
+  let cursor: Record<string, NodeRuntimeValue> = props;
+  for (const segment of segments.slice(0, -1)) {
+    const existing = cursor[segment];
+    if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
+      cursor[segment] = {};
+    }
+    cursor = cursor[segment] as Record<string, NodeRuntimeValue>;
+  }
+
+  cursor[segments[segments.length - 1]] = value;
+}
+
+function collectPropWriteRules(children: SchemaChild[], pathPrefix = 'props'): Record<string, PropWriteRule> {
+  const rules: Record<string, PropWriteRule> = {};
+
+  for (const child of children) {
+    const path = `${pathPrefix}.${child.name || child.kind}`;
+    if (child.kind === 'section') {
+      Object.assign(rules, collectPropWriteRules(child.children, path));
+      continue;
+    }
+
+    rules[path.replace(/^props\./, '')] = { computed: child.computed };
+  }
+
+  return rules;
+}
+
+function validatePropWrites(
+  expression: string,
+  propRules?: Record<string, PropWriteRule>
+): TransformPreviewDiagnostic[] {
+  if (!propRules) return [];
+
+  const diagnostics: TransformPreviewDiagnostic[] = [];
+  const seen = new Set<string>();
+  const assignmentPattern = /(?:^|[^\w$.])((?:scope\.)?props|target\.props)((?:\.[A-Za-z_$][\w$]*)+)\s*(?:\*\*|[-+*/%&|^])?=(?!=|>)/g;
+
+  for (const match of expression.matchAll(assignmentPattern)) {
+    const key = normalizePropWritePath(match[2]);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+
+    const rule = propRules[key];
+    if (!rule) {
+      diagnostics.push({
+        level: 'error',
+        message: `Cannot assign props.${key}; it is not a field on this type.`,
+      });
+      continue;
+    }
+
+    if (!rule.computed) {
+      diagnostics.push({
+        level: 'error',
+        message: `Cannot assign props.${key}; it is user-editable. Mark the field computed before writing it in method code.`,
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+function normalizePropWritePath(dottedPath: string): string {
+  return dottedPath.split('.').filter(Boolean).join('.');
+}
+
 function resolveTransformPort(
   node: TransformGraphNode,
   path: string,
-  resolveIncoming: (target: NodeGraphPortRef) => NodeRuntimeValue,
+  resolveIncoming: (target: NodeGraphPortRef, targetType?: NodeValueType) => NodeRuntimeValue,
   pushError: (nodeId: string, message: string) => void,
   definitions: TransformDefinition[]
 ): NodeRuntimeValue {
@@ -259,7 +482,7 @@ function resolveTransformPort(
   const inputValues: Record<string, NodeRuntimeValue> = {};
 
   for (const input of spec.inputs) {
-    inputValues[input.name] = resolveIncoming({ nodeId: node.id, path: input.name, label: `${node.title}.${input.name}` });
+    inputValues[input.name] = resolveIncoming({ nodeId: node.id, path: input.name, label: `${node.title}.${input.name}` }, input.valueType);
   }
 
   try {
@@ -271,12 +494,29 @@ function resolveTransformPort(
   }
 }
 
-export function executeTransformExpression(expression: string, inputs: Record<string, NodeRuntimeValue>): any {
-  const names = Object.keys(inputs).filter(isSafeIdentifier);
-  const args = names.map(name => inputs[name]);
-  const source = hasExplicitReturn(expression) ? expression : `return (${expression});`;
-  const fn = new Function(...names, source);
-  return fn(...args);
+export function executeTransformExpression(
+  expression: string,
+  inputs: Record<string, NodeRuntimeValue>,
+  context: Partial<FunctionScriptContext> = {}
+): any {
+  const props = context.props ?? context.target?.props ?? {};
+  const scriptContext: FunctionScriptContext = {
+    inputs,
+    outputs: context.outputs ?? {},
+    props,
+    target: context.target,
+  };
+  if (!hasExplicitReturn(expression)) {
+    throw new Error('JavaScript must include a return statement.');
+  }
+  const fn = new Function('scope', 'inputs', 'outputs', 'props', 'target', expression);
+  return fn(
+    scriptContext,
+    scriptContext.inputs,
+    scriptContext.outputs,
+    scriptContext.props,
+    scriptContext.target
+  );
 }
 
 function resolveTransformOutputValue(result: any, path: string, outputs: TransformPort[]): NodeRuntimeValue {
@@ -402,19 +642,6 @@ function collectSchemaPaths(children: SchemaChild[], pathPrefix = 'props'): stri
   return paths;
 }
 
-function findSchemaChild(children: SchemaChild[], path: string, pathPrefix = 'props'): SchemaChild | null {
-  for (const child of children) {
-    const childPath = `${pathPrefix}.${child.name || child.kind}`;
-    if (childPath === path) return child;
-    if (child.kind === 'section') {
-      const found = findSchemaChild(child.children, path, childPath);
-      if (found) return found;
-    }
-  }
-
-  return null;
-}
-
 function boundValue(
   type: EntityType,
   binding: EntityGraphNode['binding'],
@@ -451,12 +678,39 @@ function boundValue(
   return undefined;
 }
 
+function flattenIncomingArray(values: NodeRuntimeValue[]): NodeRuntimeValue[] {
+  const next: NodeRuntimeValue[] = [];
+  for (const value of values) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) next.push(...value);
+    else next.push(value);
+  }
+  return next;
+}
+
 function isSafeIdentifier(value: string): boolean {
   return /^[A-Za-z_$][\w$]*$/.test(value);
 }
 
 function hasExplicitReturn(expression: string): boolean {
   return /\breturn\b/.test(expression);
+}
+
+function returnRequirementMessage(outputs: TransformPort[]): string {
+  if (outputs.length === 1) {
+    const outputName = outputs[0].name.trim() || 'output';
+    return `JavaScript must include a return statement. With one output, return the value directly or return { ${formatObjectKey(outputName)}: value }.`;
+  }
+
+  if (outputs.length > 1) {
+    return `JavaScript must include a return statement that returns an object with output keys.`;
+  }
+
+  return 'JavaScript must include a return statement.';
+}
+
+function formatObjectKey(name: string): string {
+  return isSafeIdentifier(name) ? name : JSON.stringify(name);
 }
 
 function isOutputObject(value: any): value is Record<string, NodeRuntimeValue> {

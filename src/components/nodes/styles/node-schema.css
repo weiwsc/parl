@@ -38,6 +38,20 @@
 
 .ne-schema-divider { height: 1px; background: var(--line-soft); }
 
+.ne-type-methods {
+  background: var(--bg-deeper);
+}
+.ne-type-methods .ne-transform-editor {
+  min-height: min(560px, calc(100vh - 260px));
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+.ne-type-methods .ne-transform-list-head {
+  padding: 8px 10px;
+}
+.ne-type-methods .ne-transform-detail {
+  padding: 12px;
+}
+
 .ne-schema-editor {
   padding: 10px 12px;
   display: flex;

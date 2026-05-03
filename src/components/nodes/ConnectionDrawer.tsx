@@ -1,4 +1,4 @@
-import type { NodeGraph } from '../../game/nodes/types';
+import type { NodeConnectionMode, NodeGraph } from '../../game/nodes/types';
 
 interface ConnectionDrawerProps {
   graph: NodeGraph;
@@ -6,6 +6,7 @@ interface ConnectionDrawerProps {
   open: boolean;
   onToggle: () => void;
   onDeleteConnection: (id: string) => void;
+  onUpdateConnection: (id: string, patch: { mode?: NodeConnectionMode; amount?: number }) => void;
 }
 
 export function ConnectionDrawer({
@@ -14,6 +15,7 @@ export function ConnectionDrawer({
   open,
   onToggle,
   onDeleteConnection,
+  onUpdateConnection,
 }: ConnectionDrawerProps) {
   return (
     <div className="ne-connection-list">
@@ -25,11 +27,29 @@ export function ConnectionDrawer({
       )}
       {open && graph.connections.map(connection => (
         <div key={connection.id} className="ne-connection-item">
-          <span>{connection.from.label}</span>
-          <b>{connection.mode === 'take' ? `take ${connection.amount ?? 0}` : 'read'}</b>
-          <span>{connection.to.label}</span>
+          <span title={connection.from.label}>{connection.from.label}</span>
+          <div className="ne-connection-controls">
+            <select
+              value={connection.mode}
+              disabled={!canEdit}
+              onChange={event => onUpdateConnection(connection.id, { mode: event.target.value as NodeConnectionMode })}
+            >
+              <option value="read">read</option>
+              <option value="take">take</option>
+            </select>
+            {connection.mode === 'take' && (
+              <input
+                type="number"
+                min="0"
+                value={connection.amount ?? 0}
+                disabled={!canEdit}
+                onChange={event => onUpdateConnection(connection.id, { amount: Number(event.target.value) || 0 })}
+              />
+            )}
+          </div>
+          <span title={connection.to.label}>{connection.to.label}</span>
           {canEdit && (
-            <button className="clause-btn clause-del" onClick={() => onDeleteConnection(connection.id)}>x</button>
+            <button className="ne-connection-delete" title="Delete wire" onClick={() => onDeleteConnection(connection.id)}>x</button>
           )}
         </div>
       ))}

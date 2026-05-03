@@ -200,6 +200,7 @@ export interface EntityType {
   builtIn: boolean;
   entityClass?: string;
   children: SchemaChild[];
+  methods?: TypeMethodDefinition[];
 }
 
 export interface NodeGraphPortRef {
@@ -251,6 +252,8 @@ export interface TransformDefinition {
   expression: string;
 }
 
+export type TypeMethodDefinition = TransformDefinition;
+
 export interface TransformGraphNode {
   kind: 'transform';
   id: string;
@@ -268,6 +271,10 @@ export type NodeGraphNode = EntityGraphNode | TransformGraphNode;
 export interface NodeGraph {
   nodes: NodeGraphNode[];
   connections: NodeGraphConnection[];
+}
+
+export interface NodeEditorConfig {
+  fontScale: number;
 }
 
 export interface NodeEditorState {
@@ -294,6 +301,7 @@ export interface AppState {
     language : Language;
     theme: string;
     factionExpanded: Record<string, boolean>;
+    nodeEditor: NodeEditorConfig;
   };
   map: { regions: MapRegion[] };
   laws: Law[];

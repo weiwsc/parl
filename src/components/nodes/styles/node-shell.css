@@ -210,12 +210,29 @@
   position: relative;
 }
 
+.ne-editor-content--types {
+  align-items: center;
+  background: var(--bg-deeper);
+  overflow: auto;
+  padding: 12px 14px 18px;
+}
+
+.ne-editor-content--types .ne-schema-panel {
+  width: min(1080px, 100%);
+  flex: 0 0 auto;
+}
+
 /* Legacy panel overrides for types/schema panels */
 .ne-type-panel .panel-body,
 .ne-schema-panel .panel-body,
 .ne-graph-panel .panel-body {
   padding: 0;
   overflow: auto;
+}
+
+.ne-editor-content--types .ne-schema-panel .panel-body {
+  max-height: none;
+  overflow: visible;
 }
 
 /* Type list */

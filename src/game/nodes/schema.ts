@@ -246,7 +246,7 @@ export function createTransformGraphNode(x: number, y: number): TransformGraphNo
     y,
     inputs: [{ id: nodeUid('in'), name: 'input', valueType: anyValueType() }],
     outputs: [{ id: nodeUid('out'), name: 'output', valueType: anyValueType() }],
-    expression: 'return { output: input };',
+    expression: 'return inputs.input;',
   };
 }
 
@@ -268,6 +268,25 @@ export function referenceValueType(typeId = ''): NodeValueType {
 
 export function arrayValueType(item: SchemaArray['item'] = { kind: 'primitive', valueType: 'number' }): NodeValueType {
   return { kind: 'array', item };
+}
+
+export function schemaChildValueType(child: Exclude<SchemaChild, SchemaSection>): NodeValueType {
+  if (child.kind === 'primitive') return primitiveValueType(child.valueType);
+  if (child.kind === 'reference') return referenceValueType(child.typeId);
+  return arrayValueType(child.item);
+}
+
+export function findSchemaChildByPath(children: SchemaChild[], path: string, pathPrefix = 'props'): SchemaChild | null {
+  for (const child of children) {
+    const childPath = `${pathPrefix}.${child.name || child.kind}`;
+    if (childPath === path) return child;
+    if (child.kind === 'section') {
+      const found = findSchemaChildByPath(child.children, path, childPath);
+      if (found) return found;
+    }
+  }
+
+  return null;
 }
 
 export function collectSchemaPorts(children: SchemaChild[], pathPrefix = 'props'): SchemaPort[] {

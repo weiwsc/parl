@@ -17,8 +17,10 @@ export type {
   EntityGraphNode,
   TransformPort,
   TransformDefinition,
+  TypeMethodDefinition,
   TransformGraphNode,
   NodeGraphNode,
   NodeGraph,
+  NodeEditorConfig,
   NodeEditorState,
 } from '../../models/types';

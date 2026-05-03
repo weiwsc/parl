@@ -1,17 +1,28 @@
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useAppContext, uid } from '../../store';
 import { useAuth } from '../../context/AuthContext';
 import { Panel } from '../ui/Panel';
 import { EmptyState } from '../ui/EmptyState';
 import { EditorField } from '../ui/EditorField';
 import { TabBar, type TabItem } from '../ui/TabBar';
-import type { EntityType, NodeGraph, SchemaChild, TransformDefinition } from '../../game/nodes/types';
+import type { EntityType, NodeEditorConfig, NodeGraph, SchemaChild, TransformDefinition, TypeMethodDefinition } from '../../game/nodes/types';
+import {
+  DEFAULT_NODE_EDITOR_CONFIG,
+  NODE_EDITOR_FONT_SCALE_MAX,
+  NODE_EDITOR_FONT_SCALE_MIN,
+  NODE_EDITOR_FONT_SCALE_STEP,
+  clampFontScale,
+} from '../../game/nodes/config';
+import { collectSchemaPorts } from '../../game/nodes/schema';
 import { SchemaEditor } from './SchemaEditor';
 import { NodeCanvas } from './NodeCanvas';
 import { TransformLibraryEditor } from './TransformLibraryEditor';
 import { CanvasPalette } from './CanvasPalette';
 import { countSchemaFields, ensureNodeState, removeTypeFromNodeState } from './nodeEditorUtils';
 import './node-editor.css';
+
+type NodeEditorMode = 'types' | 'canvas' | 'transforms' | 'config';
 
 export function NodeEditorPage() {
   const { state, updateState } = useAppContext();
@@ -20,16 +31,19 @@ export function NodeEditorPage() {
   const types = nodeState.types;
   const graph = nodeState.graph;
   const transforms = nodeState.transforms;
+  const config = state.ui.nodeEditor;
 
-  const [mode, setMode] = useState<'types' | 'canvas' | 'transforms'>('types');
+  const [mode, setMode] = useState<NodeEditorMode>('types');
   const [selectedId, setSelectedId] = useState<string | null>(types[0]?.id ?? null);
   const selected = types.find(t => t.id === selectedId) ?? null;
 
-  const tabs: TabItem<'types' | 'canvas' | 'transforms'>[] = [
+  const tabs: TabItem<NodeEditorMode>[] = [
     { id: 'types', label: 'Type Editor', badge: types.length },
     { id: 'canvas', label: 'Node Canvas', badge: graph.nodes.length },
     { id: 'transforms', label: 'Transforms', badge: transforms.length },
+    { id: 'config', label: 'Config', badge: `${Math.round(config.fontScale * 100)}%` },
   ];
+  const pageStyle = nodeEditorStyle(config.fontScale);
 
   const updateType = (updated: EntityType) => {
     updateState(s => {
@@ -41,12 +55,20 @@ export function NodeEditorPage() {
     });
   };
 
+  const updateTypeMethods = (type: EntityType, methods: TypeMethodDefinition[]) => {
+    updateType({ ...type, methods: methods.length > 0 ? methods : undefined });
+  };
+
   const updateGraph = (updated: NodeGraph) => {
     updateState(s => ({ ...s, nodes: { ...ensureNodeState(s.nodes), graph: updated } }));
   };
 
   const updateTransforms = (updated: TransformDefinition[]) => {
     updateState(s => ({ ...s, nodes: { ...ensureNodeState(s.nodes), transforms: updated } }));
+  };
+
+  const updateConfig = (config: NodeEditorConfig) => {
+    updateState(s => ({ ...s, ui: { ...s.ui, nodeEditor: config } }));
   };
 
   const addType = () => {
@@ -70,7 +92,7 @@ export function NodeEditorPage() {
   };
 
   return (
-    <div className={`ne-page${mode === 'canvas' ? ' ne-page--canvas' : ''}`}>
+    <div className={`ne-page${mode === 'canvas' ? ' ne-page--canvas' : ''}`} style={pageStyle}>
       <div className="ne-topbar">
         <span className="ne-topbar-title">NODE EDITOR</span>
         <TabBar active={mode} items={tabs} onChange={setMode} />
@@ -106,6 +128,13 @@ export function NodeEditorPage() {
               />
             </Panel>
           </div>
+        ) : mode === 'config' ? (
+          <div className="ne-editor-content ne-editor-content--config">
+            <NodeEditorConfigPanel
+              config={config}
+              onChange={updateConfig}
+            />
+          </div>
         ) : (
           <>
             <div className="ne-editor-sidebar">
@@ -137,7 +166,7 @@ export function NodeEditorPage() {
                 </div>
               </div>
             </div>
-            <div className="ne-editor-content">
+            <div className="ne-editor-content ne-editor-content--types">
               {selected ? (
                 <Panel
                   title="SCHEMA"
@@ -183,6 +212,28 @@ export function NodeEditorPage() {
                     readOnly={!canEdit}
                     onChange={(children: SchemaChild[]) => updateType({ ...selected, children })}
                   />
+                  <div className="ne-schema-divider" />
+                  <div className="ne-type-methods">
+                    <TransformLibraryEditor
+                      transforms={selected.methods ?? []}
+                      types={types}
+                      canEdit={canEdit}
+                      onChange={methods => updateTypeMethods(selected, methods)}
+                      listLabel="METHODS"
+                      addLabel="+ Method"
+                      emptyLabel="No methods defined."
+                      emptySelectionLabel="Select or create a method."
+                      deleteLabel="Delete Method"
+                      newItemName="New Method"
+                      idPrefix="method"
+                      methodTargetType={selected}
+                      fieldCompletions={collectSchemaPorts(selected.children).map(port => ({
+                        name: port.label,
+                        detail: port.typeLabel,
+                        computed: port.acceptsInput,
+                      }))}
+                    />
+                  </div>
                 </Panel>
               ) : (
                 <div className="ne-empty-pane">
@@ -194,5 +245,82 @@ export function NodeEditorPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function nodeEditorStyle(fontScale: number): CSSProperties {
+  return {
+    '--ne-font-scale': fontScale,
+    '--ne-font-7': scaledFontSize(7, fontScale),
+    '--ne-font-8': scaledFontSize(8, fontScale),
+    '--ne-font-9': scaledFontSize(9, fontScale),
+    '--ne-font-10': scaledFontSize(10, fontScale),
+    '--ne-font-11': scaledFontSize(11, fontScale),
+    '--ne-font-12': scaledFontSize(12, fontScale),
+    '--ne-font-13': scaledFontSize(13, fontScale),
+  } as CSSProperties;
+}
+
+function scaledFontSize(size: number, scale: number): string {
+  return `${Math.round(size * scale * 100) / 100}px`;
+}
+
+function NodeEditorConfigPanel({
+  config,
+  onChange,
+}: {
+  config: NodeEditorConfig;
+  onChange: (config: NodeEditorConfig) => void;
+}) {
+  const setFontScale = (fontScale: number) => {
+    onChange({ ...config, fontScale: clampFontScale(fontScale) });
+  };
+
+  return (
+    <Panel title="CONFIG" subtitle="node editor" className="ne-config-panel">
+      <div className="ne-config-body">
+        <div className="ne-config-row">
+          <div className="ne-config-label">
+            <span>UI TEXT SIZE</span>
+            <code>{Math.round(config.fontScale * 100)}%</code>
+          </div>
+          <div className="ne-config-control">
+            <button
+              className="clause-btn"
+              aria-label="Decrease UI text size"
+              onClick={() => setFontScale(config.fontScale - NODE_EDITOR_FONT_SCALE_STEP)}
+              disabled={config.fontScale <= NODE_EDITOR_FONT_SCALE_MIN}
+            >
+              -
+            </button>
+            <input
+              className="ne-config-range"
+              type="range"
+              min={NODE_EDITOR_FONT_SCALE_MIN}
+              max={NODE_EDITOR_FONT_SCALE_MAX}
+              step={NODE_EDITOR_FONT_SCALE_STEP}
+              value={config.fontScale}
+              onInput={event => setFontScale(Number(event.currentTarget.value))}
+              onChange={event => setFontScale(Number(event.currentTarget.value))}
+            />
+            <button
+              className="clause-btn"
+              aria-label="Increase UI text size"
+              onClick={() => setFontScale(config.fontScale + NODE_EDITOR_FONT_SCALE_STEP)}
+              disabled={config.fontScale >= NODE_EDITOR_FONT_SCALE_MAX}
+            >
+              +
+            </button>
+          </div>
+          <button
+            className="small ghost"
+            onClick={() => onChange(DEFAULT_NODE_EDITOR_CONFIG)}
+            disabled={config.fontScale === DEFAULT_NODE_EDITOR_CONFIG.fontScale}
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </Panel>
   );
 }

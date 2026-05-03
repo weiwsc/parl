@@ -11,6 +11,7 @@ interface CanvasToolbarProps {
   onZoomOut: () => void;
   onZoomIn: () => void;
   onFitToView: () => void;
+  connectionMessage?: string | null;
 }
 
 export function CanvasToolbar({
@@ -24,6 +25,7 @@ export function CanvasToolbar({
   onZoomOut,
   onZoomIn,
   onFitToView,
+  connectionMessage,
 }: CanvasToolbarProps) {
   return (
     <div className="ne-canvas-overlay-toolbar">
@@ -49,6 +51,7 @@ export function CanvasToolbar({
         <button className="ne-zoom-btn" onClick={onZoomIn}>+</button>
         <button className="ne-zoom-btn" title="Fit to view" onClick={onFitToView}>⊡</button>
       </div>
+      {connectionMessage && <span className="ne-connection-warning">{connectionMessage}</span>}
     </div>
   );
 }

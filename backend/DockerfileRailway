@@ -31,6 +31,7 @@ EXPOSE 8080
 
 ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080}
 ENV DATA_PATH=/data/state.json
+ENV DATABASE_PATH=/data/parl.db
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "ParliamentApi.dll"]

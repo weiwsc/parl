@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { uid } from '../../store';
 import type { EntityType, TransformDefinition, TransformPort } from '../../game/nodes/types';
-import { createTransformPort } from '../../game/nodes/schema';
+import { createTransformPort, describeNodeValueType } from '../../game/nodes/schema';
 import { previewTransformDefinition, type NodeRuntimeValue, type TransformPreviewResult } from '../../game/nodes/runtime';
 import { EmptyState } from '../ui/EmptyState';
 import { EditorField } from '../ui/EditorField';
+import { JsCodeEditor } from './JsCodeEditor';
+import type { JsCodeCompletionItem } from './JsCodeEditor';
 import { NodeValueTypeEditor } from './NodeValueTypeEditor';
 
 interface TransformLibraryEditorProps {
@@ -12,13 +14,56 @@ interface TransformLibraryEditorProps {
   types: EntityType[];
   canEdit: boolean;
   onChange: (transforms: TransformDefinition[]) => void;
+  listLabel?: string;
+  addLabel?: string;
+  emptyLabel?: string;
+  emptySelectionLabel?: string;
+  deleteLabel?: string;
+  newItemName?: string;
+  idPrefix?: string;
+  fieldCompletions?: JsCodeCompletionItem[];
+  methodTargetType?: EntityType;
 }
 
-export function TransformLibraryEditor({ transforms, types, canEdit, onChange }: TransformLibraryEditorProps) {
+export function TransformLibraryEditor({
+  transforms,
+  types,
+  canEdit,
+  onChange,
+  listLabel = 'LIBRARY',
+  addLabel = '+ Transform',
+  emptyLabel = 'No transforms defined.',
+  emptySelectionLabel = 'Select or create a transform.',
+  deleteLabel = 'Delete Transform',
+  newItemName = 'New Transform',
+  idPrefix = 'transform',
+  fieldCompletions,
+  methodTargetType,
+}: TransformLibraryEditorProps) {
   const [selectedId, setSelectedId] = useState<string | null>(transforms[0]?.id ?? null);
   const selected = transforms.find(transform => transform.id === selectedId) ?? transforms[0] ?? null;
-  const preview = useMemo(() => selected ? previewTransformDefinition(selected) : null, [selected]);
+  const previewProps = useMemo(() => (
+    fieldCompletions?.length ? sampleFieldProps(fieldCompletions) : undefined
+  ), [fieldCompletions]);
+  const previewPropRules = useMemo(() => (
+    fieldCompletions?.length ? propRulesFromFields(fieldCompletions) : undefined
+  ), [fieldCompletions]);
+  const previewTarget = useMemo(() => (
+    methodTargetType
+      ? { typeId: methodTargetType.id, props: previewProps ?? {} }
+      : undefined
+  ), [methodTargetType, previewProps]);
+  const preview = useMemo(() => (
+    selected
+      ? previewTransformDefinition(selected, { props: previewProps, propRules: previewPropRules, target: previewTarget })
+      : null
+  ), [previewPropRules, previewProps, previewTarget, selected]);
   const previewStatus = preview ? transformPreviewStatus(preview) : null;
+
+  useEffect(() => {
+    if (selectedId && transforms.some(transform => transform.id === selectedId)) return;
+    setSelectedId(transforms[0]?.id ?? null);
+  }, [selectedId, transforms]);
 
   const updateTransform = (updated: TransformDefinition) => {
     onChange(transforms.map(transform => transform.id === updated.id ? updated : transform));
@@ -26,12 +71,12 @@ export function TransformLibraryEditor({ transforms, types, canEdit, onChange }:
 
   const addTransform = () => {
     const transform: TransformDefinition = {
-      id: uid('transform'),
-      name: 'New Transform',
+      id: uid(idPrefix),
+      name: newItemName,
       description: '',
       inputs: [createTransformPort('in', 'input')],
       outputs: [createTransformPort('out', 'output')],
-      expression: 'return { output: input };',
+      expression: 'return inputs.input;',
     };
     onChange([...transforms, transform]);
     setSelectedId(transform.id);
@@ -47,11 +92,11 @@ export function TransformLibraryEditor({ transforms, types, canEdit, onChange }:
     <div className="ne-transform-editor">
       <div className="ne-transform-list">
         <div className="ne-transform-list-head">
-          <span>LIBRARY</span>
-          {canEdit && <button className="small ghost" onClick={addTransform}>+ Transform</button>}
+          <span>{listLabel}</span>
+          {canEdit && <button className="small ghost" onClick={addTransform}>{addLabel}</button>}
         </div>
         {transforms.length === 0 ? (
-          <EmptyState>No transforms defined.</EmptyState>
+          <EmptyState>{emptyLabel}</EmptyState>
         ) : transforms.map(transform => (
           <button
             key={transform.id}
@@ -107,7 +152,7 @@ export function TransformLibraryEditor({ transforms, types, canEdit, onChange }:
             />
           </div>
 
-          <EditorField label="JAVASCRIPT" optional={transformReturnHint(selected)}>
+          <EditorField label="JAVASCRIPT" optional={transformReturnHint(selected, !!fieldCompletions?.length)}>
             <div className={`ne-transform-js-editor ne-transform-js-editor-${previewStatus?.level ?? 'info'}`}>
               <div className="ne-transform-js-toolbar">
                 {previewStatus && (
@@ -119,12 +164,18 @@ export function TransformLibraryEditor({ transforms, types, canEdit, onChange }:
                   {preview?.availableVariables.length ? preview.availableVariables.join(', ') : 'no input variables'}
                 </span>
               </div>
-              <textarea
-                className="ne-transform-library-code"
+              <JsCodeEditor
                 value={selected.expression}
                 disabled={!canEdit}
-                spellCheck={false}
-                onChange={event => updateTransform({ ...selected, expression: event.target.value })}
+                minLines={10}
+                ariaLabel={`${selected.name} JavaScript`}
+                className="ne-transform-library-code-editor"
+                completionContext={{
+                  inputs: selected.inputs.map(transformPortCompletion),
+                  outputs: selected.outputs.map(transformPortCompletion),
+                  fields: fieldCompletions,
+                }}
+                onChange={expression => updateTransform({ ...selected, expression })}
               />
             </div>
           </EditorField>
@@ -133,15 +184,59 @@ export function TransformLibraryEditor({ transforms, types, canEdit, onChange }:
 
           {canEdit && (
             <div className="ne-transform-detail-actions">
-              <button className="small ghost danger" onClick={() => deleteTransform(selected.id)}>Delete Transform</button>
+              <button className="small ghost danger" onClick={() => deleteTransform(selected.id)}>{deleteLabel}</button>
             </div>
           )}
         </div>
       ) : (
-        <div className="ne-empty-pane"><EmptyState>Select or create a transform.</EmptyState></div>
+        <div className="ne-empty-pane"><EmptyState>{emptySelectionLabel}</EmptyState></div>
       )}
     </div>
   );
+}
+
+function transformPortCompletion(port: TransformPort): JsCodeCompletionItem {
+  return {
+    name: port.name,
+    detail: describeNodeValueType(port.valueType),
+  };
+}
+
+function sampleFieldProps(fields: JsCodeCompletionItem[]): Record<string, NodeRuntimeValue> {
+  const props: Record<string, NodeRuntimeValue> = {};
+  for (const field of fields) {
+    assignPreviewPropValue(props, field.name, sampleFieldValue(field.detail));
+  }
+  return props;
+}
+
+function propRulesFromFields(fields: JsCodeCompletionItem[]) {
+  return Object.fromEntries(fields.map(field => [field.name, { computed: !!field.computed }]));
+}
+
+function assignPreviewPropValue(props: Record<string, NodeRuntimeValue>, key: string, value: NodeRuntimeValue) {
+  props[key] = value;
+
+  const segments = key.split('.').filter(Boolean);
+  if (segments.length < 2 || segments.some(segment => !isIdentifier(segment))) return;
+
+  let cursor: Record<string, NodeRuntimeValue> = props;
+  for (const segment of segments.slice(0, -1)) {
+    const existing = cursor[segment];
+    if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
+      cursor[segment] = {};
+    }
+    cursor = cursor[segment] as Record<string, NodeRuntimeValue>;
+  }
+
+  cursor[segments[segments.length - 1]] = value;
+}
+
+function sampleFieldValue(detail?: string): NodeRuntimeValue {
+  if (detail === 'string') return 'sample';
+  if (detail?.startsWith('array')) return [];
+  if (detail?.startsWith('ref:')) return { typeId: detail.slice(4), nodeId: 'sample', values: {} };
+  return 10;
 }
 
 function TransformJsFeedback({ preview }: { preview: TransformPreviewResult }) {
@@ -219,8 +314,8 @@ function TransformDefinitionPorts({
   return (
     <div className="ne-transform-def-port-section ne-port-section">
       <div className="ne-port-group-title">
-        {title}
-        {canEdit && <button className="clause-btn" onClick={onAdd}>+</button>}
+        <span>{title}</span>
+        {canEdit && <button type="button" className="ne-port-add-btn" onClick={onAdd}>+</button>}
       </div>
       {ports.map(port => (
         <div key={port.id} className={`ne-transform-port-unified ne-transform-port-unified-${direction}`}>
@@ -259,19 +354,24 @@ function transformPreviewStatus(preview: TransformPreviewResult): { level: 'erro
   return { level: 'info', label: 'preview ok' };
 }
 
-function transformReturnHint(definition: TransformDefinition): string {
+function transformReturnHint(definition: TransformDefinition, hasProps = false): string {
+  const scopeHint = hasProps ? 'inputs/props' : 'inputs';
   const outputNames = definition.outputs.map(port => port.name.trim()).filter(Boolean);
-  if (outputNames.length === 0) return 'return value';
+  if (outputNames.length === 0) return `return required; ${scopeHint}`;
 
   if (outputNames.length === 1) {
-    return `return value or { ${formatObjectKey(outputNames[0])}: value }`;
+    return `return required; ${scopeHint}; value or { ${formatObjectKey(outputNames[0])}: value }`;
   }
 
-  return `return { ${outputNames.map(name => `${formatObjectKey(name)}: value`).join(', ')} }`;
+  return `return required; ${scopeHint}; { ${outputNames.map(name => `${formatObjectKey(name)}: value`).join(', ')} }`;
 }
 
 function formatObjectKey(name: string): string {
-  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
+  return isIdentifier(name) ? name : JSON.stringify(name);
+}
+
+function isIdentifier(value: string): boolean {
+  return /^[A-Za-z_$][\w$]*$/.test(value);
 }
 
 function formatPreviewValue(value: NodeRuntimeValue): string {

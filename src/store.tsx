@@ -15,7 +15,9 @@ import type {
   TransformDefinition,
   TransformPort,
   TransformValueType,
+  TypeMethodDefinition,
 } from './models/types';
+import { DEFAULT_NODE_EDITOR_CONFIG, normalizeNodeEditorConfig } from './game/nodes/config';
 import { defaultEntityTypes } from './game/nodes/schema';
 
 export const STORAGE_KEY = 'parliamentState_v3';
@@ -57,11 +59,21 @@ export function defaultState(): AppState {
     history: [],
     alliances: [],
     trash: { strata: [], factions: [], alliances: [] },
-    ui: { tab: 'sim', language : 'cn', theme: 'gold', factionExpanded: {} },
+    ui: {
+      tab: 'sim',
+      language : 'cn',
+      theme: 'gold',
+      factionExpanded: {},
+      nodeEditor: DEFAULT_NODE_EDITOR_CONFIG,
+    },
     map: { regions: [] },
     laws: [],
     lawHistory: [],
-    nodes: { types: defaultEntityTypes(), graph: { nodes: [], connections: [] }, transforms: defaultTransformDefinitions() },
+    nodes: {
+      types: defaultEntityTypes(),
+      graph: { nodes: [], connections: [] },
+      transforms: defaultTransformDefinitions(),
+    },
     senate: { autoAssign: false, strataAssign: false, factionSeats: {}, history: [] },
   };
 }
@@ -103,7 +115,8 @@ export function normalizeState(p: any): AppState {
       tab: (p.ui && p.ui.tab) || 'sim',
       language: (p.language && p.language || 'en'),
       theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
-      factionExpanded: (p.ui && p.ui.factionExpanded) || {}
+      factionExpanded: (p.ui && p.ui.factionExpanded) || {},
+      nodeEditor: normalizeNodeEditorConfig(p.ui?.nodeEditor ?? p.nodes?.config),
     },
     laws: Array.isArray(p.laws) ? p.laws.map((x: any) => ({
       ...x,
@@ -179,7 +192,7 @@ function defaultTransformDefinitions(): TransformDefinition[] {
     description: 'Return the input value unchanged.',
     inputs: [{ id: 'builtin-pass-input', name: 'input', valueType: { kind: 'any' } }],
     outputs: [{ id: 'builtin-pass-output', name: 'output', valueType: { kind: 'any' } }],
-    expression: 'return { output: input };',
+    expression: 'return inputs.input;',
   }];
 }
 
@@ -201,7 +214,28 @@ function ensureBuiltinTypes(types: EntityType[], defaults: EntityType[]): Entity
       builtIn: true,
       entityClass: builtin.entityClass,
       children: mergeBuiltinChildren(builtin.children, existing.children),
+      methods: mergeBuiltinMethods(builtin.methods, existing.methods),
     };
+  }
+
+  return next;
+}
+
+function mergeBuiltinMethods(
+  defaults: TypeMethodDefinition[] = [],
+  existing: TypeMethodDefinition[] = [],
+): TypeMethodDefinition[] | undefined {
+  if (defaults.length === 0) return existing.length > 0 ? existing : undefined;
+
+  const next = [...existing];
+  for (const defaultMethod of defaults) {
+    const index = next.findIndex(method => method.id === defaultMethod.id);
+    if (index < 0) {
+      next.push(defaultMethod);
+      continue;
+    }
+
+    next[index] = { ...defaultMethod, ...next[index] };
   }
 
   return next;
@@ -232,6 +266,8 @@ function mergeBuiltinChildren(defaults: SchemaChild[], existing: SchemaChild[]):
 }
 
 function normalizeEntityType(value: any): EntityType {
+  const methods = normalizeTypeMethodDefinitions(value?.methods);
+
   return {
     id: stringOr(value?.id, uid('type')),
     name: stringOr(value?.name, 'Type'),
@@ -239,7 +275,13 @@ function normalizeEntityType(value: any): EntityType {
     builtIn: !!value?.builtIn,
     entityClass: optionalString(value?.entityClass),
     children: Array.isArray(value?.children) ? normalizeSchemaChildren(value.children) : [],
+    ...(methods.length > 0 ? { methods } : {}),
   };
+}
+
+function normalizeTypeMethodDefinitions(value: any): TypeMethodDefinition[] {
+  if (!Array.isArray(value)) return [];
+  return value.map(normalizeTransformDefinition);
 }
 
 function normalizeSchemaChildren(value: any[]): SchemaChild[] {
@@ -325,7 +367,7 @@ function normalizeGraphNode(value: any): NodeGraphNode[] {
       transformId: optionalString(value?.transformId),
       inputs: normalizeTransformPorts(value?.inputs, 'input'),
       outputs: normalizeTransformPorts(value?.outputs, 'output'),
-      expression: stringOr(value?.expression, 'return {};'),
+      expression: normalizeTransformExpression(value?.expression, 'return {};'),
     }];
   }
 
@@ -373,8 +415,14 @@ function normalizeTransformDefinition(value: any): TransformDefinition {
     description: optionalString(value?.description),
     inputs: normalizeTransformPorts(value?.inputs, 'input'),
     outputs: normalizeTransformPorts(value?.outputs, 'output'),
-    expression: stringOr(value?.expression, 'return {};'),
+    expression: normalizeTransformExpression(value?.expression, 'return {};'),
   };
+}
+
+function normalizeTransformExpression(value: any, fallback: string): string {
+  const expression = stringOr(value, fallback);
+  if (expression.trim() === 'return { output: input };') return 'return inputs.input;';
+  return expression;
 }
 
 function normalizeTransformPorts(value: any, fallbackName: string): TransformPort[] {

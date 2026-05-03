@@ -80,22 +80,38 @@
   border: 1px solid var(--line-soft);
   background: rgba(0,0,0,0.10);
 }
-.ne-transform-library-code {
-  width: 100%;
-  min-height: 180px;
-  resize: vertical;
-  background: var(--bg-input);
+.ne-transform-library-code-editor {
   border: none;
   border-top: 1px solid var(--line-soft);
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  line-height: 1.5;
-  padding: 9px;
-  outline: none;
 }
-.ne-transform-library-code:focus {
-  background: rgba(0,0,0,0.22);
+.ne-transform-library-code-editor.ne-js-code-static {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+.ne-transform-library-code-editor .cm-editor {
+  min-height: calc(var(--ne-code-min-lines, 10) * 1.55em + 18px);
+}
+.ne-transform-library-code-editor .cm-scroller,
+.ne-transform-library-code-editor .ne-js-code-static-body,
+.ne-transform-library-code-editor .ne-js-code-static-gutter {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ne-transform-library-code-editor .cm-content {
+  padding: 9px 0;
+}
+.ne-transform-library-code-editor .cm-line {
+  padding: 0 10px;
+}
+.ne-transform-library-code-editor .cm-lineNumbers .cm-gutterElement {
+  min-width: 22px;
+  padding: 0 6px 0 2px;
+}
+.ne-transform-library-code-editor .ne-js-code-static-gutter {
+  padding: 9px 5px 9px 0;
+}
+.ne-transform-library-code-editor .ne-js-code-static-body {
+  min-height: calc(var(--ne-code-min-lines, 10) * 1.55em);
+  padding: 9px 10px;
 }
 .ne-transform-js-editor {
   border: 1px solid var(--line-soft);
@@ -278,8 +294,8 @@
   grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr) auto;
   align-items: center;
   gap: 7px;
-  min-width: 320px;
-  padding: 4px 6px;
+  min-width: 420px;
+  padding: 3px 5px;
   background: var(--bg-input);
   border: 1px solid var(--line-soft);
   font-family: 'JetBrains Mono', monospace;
@@ -294,4 +310,48 @@
 .ne-connection-item b {
   color: var(--accent);
   font-weight: 600;
+}
+.ne-connection-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ne-connection-controls select,
+.ne-connection-controls input {
+  min-width: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-soft);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 2px 4px;
+  outline: none;
+}
+.ne-connection-controls select {
+  width: 58px;
+}
+.ne-connection-controls input {
+  width: 52px;
+}
+.ne-connection-controls select:focus,
+.ne-connection-controls input:focus {
+  border-color: var(--cyan);
+}
+.ne-connection-delete {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line-soft);
+  color: var(--text-mute);
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 0;
+}
+.ne-connection-delete:hover {
+  border-color: var(--danger);
+  color: var(--danger);
 }
