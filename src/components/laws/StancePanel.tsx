@@ -18,7 +18,7 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFac
     ? entries.find(entry => entry.faction.id === editableFactionId)
     : null;
   const playerStance = editableFactionId ? (law.factionStances[editableFactionId] ?? 'abstain') : null;
-  const showPlayerMobileVote = !canEdit && !!editableFactionId && !!playerEntry;
+  const showPlayerVote = !canEdit && !!editableFactionId && !!playerEntry;
 
   const grouped = useMemo(() => {
     const support: ProjectionEntry[] = [], abstain: ProjectionEntry[] = [], against: ProjectionEntry[] = [];
@@ -40,7 +40,7 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFac
 
   return (
     <>
-      {showPlayerMobileVote && (
+      {showPlayerVote && (
         <div className="player-mobile-vote" aria-label="Your faction vote">
           <div className="player-mobile-vote__meta">
             <span className="player-mobile-vote__label">YOUR VOTE</span>
@@ -53,6 +53,7 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFac
             {columns.map(column => (
               <button
                 key={column.key}
+                data-ro-allow
                 type="button"
                 className={`player-vote-btn player-vote-btn--${column.key}${playerStance === column.key ? ' active' : ''}`}
                 aria-pressed={playerStance === column.key}

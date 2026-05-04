@@ -243,7 +243,8 @@
   .chip-seats { color: var(--text-mute); font-size: 9px; flex-shrink: 0; }
 
   .player-mobile-vote {
-    display: none;
+    display: flex;
+    flex-direction: column;
     background: var(--bg-panel);
     border: 1px solid var(--line);
     padding: 10px;
@@ -318,7 +319,6 @@
   }
 
   @media (max-width: 760px) {
-    .player-mobile-vote { display: flex; flex-direction: column; }
     .stance-panel { grid-template-columns: 1fr; }
   }
 
