@@ -6,11 +6,14 @@ interface StancePanelProps {
   entries: ProjectionEntry[];
   onUpdateStance: (factionId: string, stance: FactionStance) => void;
   canEdit: boolean;
+  editableFactionId?: string | null;
 }
 
-export function StancePanel({ law, entries, onUpdateStance, canEdit }: StancePanelProps) {
+export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFactionId }: StancePanelProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<FactionStance | null>(null);
+  const hasEditableFaction = canEdit || !!editableFactionId;
+  const canDragFaction = (factionId: string) => canEdit || editableFactionId === factionId;
 
   const grouped = useMemo(() => {
     const support: ProjectionEntry[] = [], abstain: ProjectionEntry[] = [], against: ProjectionEntry[] = [];
@@ -36,11 +39,11 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit }: StancePan
         <div
           key={column.key}
           className={`stance-col${dropTarget === column.key ? ' drop-active' : ''}`}
-          onDragOver={canEdit ? e => { e.preventDefault(); setDropTarget(column.key); } : undefined}
-          onDragLeave={canEdit ? () => setDropTarget(null) : undefined}
-          onDrop={canEdit ? e => {
+          onDragOver={hasEditableFaction ? e => { e.preventDefault(); setDropTarget(column.key); } : undefined}
+          onDragLeave={hasEditableFaction ? () => setDropTarget(null) : undefined}
+          onDrop={hasEditableFaction ? e => {
             e.preventDefault();
-            if (draggingId) onUpdateStance(draggingId, column.key);
+            if (draggingId && canDragFaction(draggingId)) onUpdateStance(draggingId, column.key);
             setDraggingId(null);
             setDropTarget(null);
           } : undefined}
@@ -50,19 +53,22 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit }: StancePan
             <span className="stance-col-count">{column.entries.reduce((sum, entry) => sum + entry.seats, 0)} seats</span>
           </div>
           <div className="stance-chips">
-            {column.entries.map(entry => (
-              <div
-                key={entry.faction.id}
-                className={`stance-chip${draggingId === entry.faction.id ? ' dragging' : ''}${canEdit ? ' draggable' : ''}`}
-                draggable={canEdit}
-                onDragStart={() => setDraggingId(entry.faction.id)}
-                onDragEnd={() => { setDraggingId(null); setDropTarget(null); }}
-              >
-                <span className="chip-dot" style={{ background: entry.faction.color }} />
-                <span className="chip-name">{entry.faction.name}</span>
-                <span className="chip-seats">{entry.seats}</span>
-              </div>
-            ))}
+            {column.entries.map(entry => {
+              const canDrag = canDragFaction(entry.faction.id);
+              return (
+                <div
+                  key={entry.faction.id}
+                  className={`stance-chip${draggingId === entry.faction.id ? ' dragging' : ''}${canDrag ? ' draggable' : ' locked'}`}
+                  draggable={canDrag}
+                  onDragStart={canDrag ? () => setDraggingId(entry.faction.id) : undefined}
+                  onDragEnd={canDrag ? () => { setDraggingId(null); setDropTarget(null); } : undefined}
+                >
+                  <span className="chip-dot" style={{ background: entry.faction.color }} />
+                  <span className="chip-name">{entry.faction.name}</span>
+                  <span className="chip-seats">{entry.seats}</span>
+                </div>
+              );
+            })}
             {column.entries.length === 0 && <div className="stance-col-empty">drop here</div>}
           </div>
         </div>

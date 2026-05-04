@@ -12,6 +12,7 @@ interface FloorTabProps {
   entries: ProjectionEntry[];
   totalSeats: number;
   canEdit: boolean;
+  editableFactionId?: string | null;
   chamber: 'parliament' | 'senate';
   onActivate: (id: string) => void;
   onConclude: (status: LawStatus) => void;
@@ -19,7 +20,7 @@ interface FloorTabProps {
   onEditLaw: (law: Law) => void;
 }
 
-export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, chamber, onActivate, onConclude, onUpdateStance, onEditLaw }: FloorTabProps) {
+export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, editableFactionId, chamber, onActivate, onConclude, onUpdateStance, onEditLaw }: FloorTabProps) {
   // Create a view of the law with the correct chamber's stances
   const effectiveLaw = useMemo(() => {
     if (!activeLaw) return null;
@@ -49,7 +50,13 @@ export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, chambe
         {effectiveLaw
           ? <>
               <VoteChart breakdown={breakdown} totalSeats={totalSeats} />
-              <StancePanel law={effectiveLaw} entries={entries} onUpdateStance={onUpdateStance} canEdit={canEdit} />
+              <StancePanel
+                law={effectiveLaw}
+                entries={entries}
+                onUpdateStance={onUpdateStance}
+                canEdit={canEdit}
+                editableFactionId={editableFactionId}
+              />
             </>
           : <div className="law-no-floor">
               <span className="law-no-floor-icon">⚖</span>

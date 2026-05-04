@@ -1,24 +1,112 @@
-import { useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useAppContext, THEMES } from '../store';
 import { normalizeState } from '../store';
 import { useAuth } from '../context/AuthContext';
 import { useLang, LANGUAGES } from '../utils/localization';
+import { API_BASE } from '../config';
 import { Panel } from './ui/Panel';
+
+interface PlayerAccount {
+  id: string;
+  username: string;
+  factionId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function SettingsPanel() {
   const { state, updateState, showToast } = useAppContext();
-  const { isAdmin, canEdit, mode, login, logout } = useAuth();
+  const { isAdmin, isPlayer, canEdit, mode, token, username, factionId, login, logout } = useAuth();
   const t = useLang();
 
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [accounts, setAccounts] = useState<PlayerAccount[]>([]);
+  const [accountsVersion, setAccountsVersion] = useState(0);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsError, setAccountsError] = useState('');
+  const [playerUser, setPlayerUser] = useState('');
+  const [playerPass, setPlayerPass] = useState('');
+  const [playerFactionId, setPlayerFactionId] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
 
   const themeColors: Record<string, string> = {
     gold: '#d4a14a', green: '#5dee7b', cyan: '#5fc8ff', crimson: '#ff5b5b',
+  };
+
+  useEffect(() => {
+    if (mode !== 'hosted' || !isAdmin || !token) return;
+    let active = true;
+    setAccountsLoading(true);
+    setAccountsError('');
+
+    fetch(`${API_BASE}/player-accounts`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json() as Promise<PlayerAccount[]>;
+      })
+      .then(nextAccounts => {
+        if (active) setAccounts(nextAccounts);
+      })
+      .catch(() => {
+        if (active) setAccountsError('Could not load player accounts');
+      })
+      .finally(() => {
+        if (active) setAccountsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [accountsVersion, isAdmin, mode, token]);
+
+  const handleCreatePlayer = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    const selectedFactionId = playerFactionId || state.factions[0]?.id || '';
+    setAccountsError('');
+    try {
+      const res = await fetch(`${API_BASE}/player-accounts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username: playerUser,
+          password: playerPass,
+          factionId: selectedFactionId,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setPlayerUser('');
+      setPlayerPass('');
+      setPlayerFactionId('');
+      setAccountsVersion(v => v + 1);
+      showToast('Player account created');
+    } catch (err) {
+      setAccountsError(err instanceof Error && err.message ? err.message : 'Could not create account');
+    }
+  };
+
+  const handleDeletePlayer = async (accountId: string) => {
+    if (!token) return;
+    if (!window.confirm('Delete this player account?')) return;
+    setAccountsError('');
+    try {
+      const res = await fetch(`${API_BASE}/player-accounts/${accountId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setAccountsVersion(v => v + 1);
+      showToast('Player account deleted');
+    } catch {
+      setAccountsError('Could not delete account');
+    }
   };
 
   const handleExport = () => {
@@ -48,21 +136,24 @@ export function SettingsPanel() {
     e.target.value = '';
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError('');
     setLoginLoading(true);
     try {
-      await login(loginUser, loginPass);
+      const session = await login(loginUser, loginPass);
       setLoginUser('');
       setLoginPass('');
-      showToast('Logged in as admin');
+      showToast(session.role === 'admin' ? 'Logged in as admin' : 'Logged in as player');
     } catch {
       setLoginError('Invalid credentials');
     } finally {
       setLoginLoading(false);
     }
   };
+
+  const factionName = (id: string | null | undefined) =>
+    state.factions.find(faction => faction.id === id)?.name ?? 'Unknown faction';
 
   return (
     <div className="settings-panel">
@@ -115,8 +206,62 @@ export function SettingsPanel() {
             <div className="settings-section">
               <div className="settings-section-title">{t("account")}</div>
               {isAdmin ? (
-                <div className="settings-row">
-                  <span className="auth-badge auth-badge--admin">◈ {t("admin")}</span>
+                <>
+                  <div className="settings-row">
+                    <span className="auth-badge auth-badge--admin">◈ {t("admin")}</span>
+                    <button data-ro-allow className="small ghost" onClick={logout}>{t("logout")}</button>
+                  </div>
+
+                  <div className="player-account-admin">
+                    <div className="settings-section-title">Player Accounts</div>
+                    <form className="player-account-form" onSubmit={handleCreatePlayer}>
+                      <input
+                        type="text"
+                        placeholder="Username"
+                        value={playerUser}
+                        onChange={e => setPlayerUser(e.target.value)}
+                        autoComplete="off"
+                      />
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        value={playerPass}
+                        onChange={e => setPlayerPass(e.target.value)}
+                        autoComplete="new-password"
+                      />
+                      <select
+                        value={playerFactionId || state.factions[0]?.id || ''}
+                        onChange={e => setPlayerFactionId(e.target.value)}
+                        disabled={state.factions.length === 0}
+                      >
+                        {state.factions.map(faction => (
+                          <option key={faction.id} value={faction.id}>{faction.name}</option>
+                        ))}
+                      </select>
+                      <button type="submit" className="primary small" disabled={state.factions.length === 0}>Create</button>
+                    </form>
+
+                    {accountsError && <div className="login-error">{accountsError}</div>}
+
+                    <div className="player-account-list">
+                      {accountsLoading && <div className="player-account-empty">Loading accounts...</div>}
+                      {!accountsLoading && accounts.length === 0 && (
+                        <div className="player-account-empty">No player accounts.</div>
+                      )}
+                      {!accountsLoading && accounts.map(account => (
+                        <div className="player-account-row" key={account.id}>
+                          <span className="player-account-name">{account.username}</span>
+                          <span className="player-account-faction">{factionName(account.factionId)}</span>
+                          <button className="small ghost" onClick={() => handleDeletePlayer(account.id)}>Delete</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : isPlayer ? (
+                <div className="settings-row settings-row--account">
+                  <span className="auth-badge auth-badge--player">◇ {username}</span>
+                  <span className="settings-account-faction">{factionName(factionId)}</span>
                   <button data-ro-allow className="small ghost" onClick={logout}>{t("logout")}</button>
                 </div>
               ) : (

@@ -4,6 +4,7 @@ import { computeProjection } from '../utils/compute';
 import { computeSenateProjection } from '../game/senate';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext, uid } from '../store';
+import { API_BASE } from '../config';
 import type { FactionStance, Law, LawStatus, ProjectionEntry } from '../models/types';
 import { AppHeader } from './ui/AppHeader';
 import { TabBar, type TabItem } from './ui/TabBar';
@@ -16,7 +17,7 @@ type LawTab = 'floor' | 'senate' | 'laws' | 'constitution' | 'history';
 
 export function LawPage() {
   const { state, updateState, showToast } = useAppContext();
-  const { canEdit } = useAuth();
+  const { canEdit, factionId: playerFactionId, token } = useAuth();
 
   const [lawTab, setLawTab]                               = useState<LawTab>('floor');
   const [parlActiveLawId, setParlActiveLawId]             = useState<string | null>(null);
@@ -34,19 +35,55 @@ export function LawPage() {
   const parlActiveLaw   = useMemo(() => state.laws.find(l => l.id === parlActiveLawId)   ?? null, [state.laws, parlActiveLawId]);
   const senateActiveLaw = useMemo(() => state.laws.find(l => l.id === senateActiveLawId) ?? null, [state.laws, senateActiveLawId]);
 
+  const submitPlayerStance = useCallback(async (
+    lawId: string,
+    chamber: 'parliament' | 'senate',
+    factionId: string,
+    stance: FactionStance,
+  ) => {
+    if (!token || factionId !== playerFactionId) return;
+    try {
+      const res = await fetch(`${API_BASE}/law-stance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          lawId,
+          chamber,
+          stance,
+          mutationId: uid('stance'),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      showToast('Vote submitted');
+    } catch {
+      showToast('Vote failed', 'error');
+    }
+  }, [playerFactionId, showToast, token]);
+
   // Parliament stances
   const handleParlUpdateStance = useCallback((factionId: string, stance: FactionStance) => {
     if (!parlActiveLawId) return;
+    if (!canEdit) {
+      void submitPlayerStance(parlActiveLawId, 'parliament', factionId, stance);
+      return;
+    }
     updateState(s => {
       const law = s.laws.find(l => l.id === parlActiveLawId);
       if (law) law.factionStances[factionId] = stance;
       return s;
     });
-  }, [parlActiveLawId, updateState]);
+  }, [canEdit, parlActiveLawId, submitPlayerStance, updateState]);
 
   // Senate stances stored separately
   const handleSenateUpdateStance = useCallback((factionId: string, stance: FactionStance) => {
     if (!senateActiveLawId) return;
+    if (!canEdit) {
+      void submitPlayerStance(senateActiveLawId, 'senate', factionId, stance);
+      return;
+    }
     updateState(s => {
       const law = s.laws.find(l => l.id === senateActiveLawId);
       if (law) {
@@ -55,7 +92,7 @@ export function LawPage() {
       }
       return s;
     });
-  }, [senateActiveLawId, updateState]);
+  }, [canEdit, senateActiveLawId, submitPlayerStance, updateState]);
 
   const makeConcludeHandler = useCallback(
     (
@@ -161,6 +198,7 @@ export function LawPage() {
           entries={entries}
           totalSeats={totalSeats}
           canEdit={canEdit}
+          editableFactionId={playerFactionId}
           chamber="parliament"
           onActivate={id => setParlActiveLawId(prev => prev === id ? null : id)}
           onConclude={handleParlConclude}
@@ -176,6 +214,7 @@ export function LawPage() {
           entries={senateEntries}
           totalSeats={senateTotalSeats}
           canEdit={canEdit}
+          editableFactionId={playerFactionId}
           chamber="senate"
           onActivate={id => setSenateActiveLawId(prev => prev === id ? null : id)}
           onConclude={handleSenateConclude}

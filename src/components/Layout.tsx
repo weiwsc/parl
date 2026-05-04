@@ -12,14 +12,16 @@ interface HeaderProps {
 
 export function Header({ onElection }: Pick<HeaderProps, 'onElection'>) {
   const { state, updateState } = useAppContext();
-  const { isAdmin, mode } = useAuth();
+  const { isAdmin, isPlayer, mode, username } = useAuth();
   const t = useLang();
+  const authKind = isAdmin ? 'admin' : isPlayer ? 'player' : 'guest';
+  const authLabel = isAdmin ? t("admin") : isPlayer ? (username ?? 'Player') : t("guest");
 
   return (
     <AppHeader title={t("parliament")} subtitle="// LEGISLATIVE PROJECTION SYSTEM · v3.0 //">
       {mode === 'hosted' && (
-        <span className={`auth-badge auth-badge--${isAdmin ? 'admin' : 'guest'}`}>
-          {isAdmin ? `◈ ${t("admin")}` : `◌ ${t("guest")}`}
+        <span className={`auth-badge auth-badge--${authKind}`}>
+          {isAdmin ? '◈' : isPlayer ? '◇' : '◌'} {authLabel}
         </span>
       )}
 

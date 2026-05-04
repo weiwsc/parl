@@ -6,6 +6,7 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
 {
     public DbSet<SyncDocument> Documents => Set<SyncDocument>();
     public DbSet<SyncMutation> Mutations => Set<SyncMutation>();
+    public DbSet<PlayerAccount> PlayerAccounts => Set<PlayerAccount>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,18 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
             .WithMany(x => x.Mutations)
             .HasForeignKey(x => x.DocumentId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        var player = modelBuilder.Entity<PlayerAccount>();
+        player.ToTable("player_accounts");
+        player.HasKey(x => x.Id);
+        player.Property(x => x.Id).HasColumnName("id").HasMaxLength(64);
+        player.Property(x => x.Username).HasColumnName("username").HasMaxLength(64).IsRequired();
+        player.Property(x => x.NormalizedUsername).HasColumnName("normalized_username").HasMaxLength(64).IsRequired();
+        player.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
+        player.Property(x => x.FactionId).HasColumnName("faction_id").HasMaxLength(128).IsRequired();
+        player.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        player.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+        player.HasIndex(x => x.NormalizedUsername).IsUnique();
     }
 }
 
@@ -60,4 +73,15 @@ public sealed class SyncMutation
     public string OperationJson { get; set; } = "{}";
     public DateTimeOffset CreatedAt { get; set; }
     public SyncDocument? Document { get; set; }
+}
+
+public sealed class PlayerAccount
+{
+    public string Id { get; set; } = "";
+    public string Username { get; set; } = "";
+    public string NormalizedUsername { get; set; } = "";
+    public string PasswordHash { get; set; } = "";
+    public string FactionId { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }

@@ -24,6 +24,7 @@
     border: 1px solid currentColor;
   }
   .auth-badge--admin { color: var(--accent-hot); border-color: var(--accent); }
+  .auth-badge--player { color: var(--cyan); border-color: var(--cyan); }
   .auth-badge--guest { color: var(--text-mute); border-color: var(--line); }
 
   /* ==== SETTINGS PANEL ==== */
@@ -46,6 +47,7 @@
   }
   .settings-row--buttons { flex-wrap: wrap; }
   .settings-row--buttons button { min-width: 120px; }
+  .settings-row--account { flex-wrap: wrap; }
   .settings-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
@@ -68,4 +70,65 @@
   .lang-btn.active {
     border-color: var(--accent); color: var(--accent-hot);
     background: linear-gradient(180deg, var(--grid-glow-2), transparent);
+  }
+
+  .settings-account-faction {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .player-account-admin {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .player-account-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(120px, 1fr) auto;
+    gap: 8px;
+  }
+  .player-account-form input,
+  .player-account-form select {
+    min-width: 0;
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 7px 9px;
+    outline: none;
+  }
+  .player-account-form input:focus,
+  .player-account-form select:focus { border-color: var(--cyan); }
+  .player-account-list {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .player-account-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 7px 8px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--line-soft);
+  }
+  .player-account-name,
+  .player-account-faction,
+  .player-account-empty {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+  .player-account-name,
+  .player-account-faction {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .player-account-name { color: var(--text); }
+  .player-account-faction,
+  .player-account-empty { color: var(--text-mute); }
+
+  @media (max-width: 760px) {
+    .player-account-form,
+    .player-account-row { grid-template-columns: 1fr; }
   }
