@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../../store';
+import { useLang } from '../../utils/localization';
 import { ProjectionChart } from '../Projection';
 import type { SenateHistoryEntry } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
@@ -8,6 +9,7 @@ import { Panel } from '../ui/Panel';
 
 export function SenateHistoryPanel() {
   const { state, updateState, showToast } = useAppContext();
+  const t = useLang();
   const history: SenateHistoryEntry[] = state.senate.history;
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
 
@@ -16,13 +18,13 @@ export function SenateHistoryPanel() {
   const deleteItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     updateState(s => { s.senate.history = s.senate.history.filter(record => record.id !== id); return s; });
-    showToast('Record deleted');
+    showToast(t('record_deleted'));
   };
 
   const clearAll = () => {
-    if (!window.confirm('Clear entire senate history?')) return;
+    if (!window.confirm(t('clear_senate_history_confirm'))) return;
     updateState(s => { s.senate.history = []; return s; });
-    showToast('History cleared');
+    showToast(t('history_cleared'));
   };
 
   const setName = (id: string, name: string) => {
@@ -35,13 +37,13 @@ export function SenateHistoryPanel() {
 
   return (
     <Panel
-      title="Senate Election Archive"
+      title={t('senate_archive')}
       bodyClassName="no-scroll"
-      actions={<button className="ghost small" onClick={clearAll}>Clear All</button>}
+      actions={<button className="ghost small" onClick={clearAll}>{t('clear_all')}</button>}
     >
       <ListSurface className="history-list">
         {history.length === 0 ? (
-          <EmptyState>No senate elections recorded.</EmptyState>
+          <EmptyState>{t('no_senate_elections')}</EmptyState>
         ) : history.map((h) => {
           const groupsMap = new Map<string, { id: string; name: string; color: string; seats: number; share: number }>();
           h.projection.entries.forEach(e => {
@@ -69,7 +71,7 @@ export function SenateHistoryPanel() {
                   {groups.length > 4 && <span className="pill" style={{ color: '#8a9bb8' }}>...</span>}
                 </div>
                 <div className="h-actions">
-                  <button className="danger" onClick={(e) => deleteItem(h.id, e)}>DEL</button>
+                  <button className="danger" onClick={(e) => deleteItem(h.id, e)}>{t('delete_short')}</button>
                 </div>
               </div>
               <div className="h-body" style={{ display: openItems[h.id] ? 'grid' : 'none' }}>
@@ -78,7 +80,7 @@ export function SenateHistoryPanel() {
                     className="history-name-input"
                     value={h.name ?? ''}
                     onChange={e => setName(h.id, e.target.value)}
-                    placeholder="Name this election…"
+                    placeholder={t('name_this_election')}
                     onClick={e => e.stopPropagation()}
                   />
                 </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { evaluateLawVote, type VoteBreakdown } from '../../game/laws/voting';
+import { lawStatusLabel, useLang, voteConclusionLabel } from '../../utils/localization';
 import type { Law, LawStatus } from '../../models/types';
 import { Panel, PanelCorners } from '../ui/Panel';
 import { renderMarkdown } from './markdown';
@@ -15,6 +16,7 @@ interface LawDetailPanelProps {
 }
 
 export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: LawDetailPanelProps) {
+  const t = useLang();
   const [clausesExpanded, setClausesExpanded] = useState(false);
   const [concludeOpen, setConcludeOpen] = useState(false);
   const [pickedStatus, setPickedStatus] = useState<LawStatus | null>(null);
@@ -25,8 +27,8 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
         <PanelCorners />
         <div className="law-detail-empty">
           <span className="law-detail-empty-icon">⚖</span>
-          <span className="law-detail-empty-lbl">NO BILL ON FLOOR</span>
-          <span className="law-detail-empty-sub">Select a bill from the queue to begin debate</span>
+          <span className="law-detail-empty-lbl">{t('no_bill_on_floor')}</span>
+          <span className="law-detail-empty-sub">{t('select_bill_debate')}</span>
         </div>
       </div>
     );
@@ -55,26 +57,26 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
       bodyClassName="law-detail-body"
       title={law.name}
       subtitle={law.subtitle}
-      actions={canEdit && <button className="ghost small" onClick={onEdit}>✎ Edit</button>}
+      actions={canEdit && <button className="ghost small" onClick={onEdit}>✎ {t('edit')}</button>}
     >
       <div className="law-status-row">
-        <span className={`law-status-badge law-status-${law.status}`}>{law.status.toUpperCase()}</span>
+        <span className={`law-status-badge law-status-${law.status}`}>{lawStatusLabel(t, law.status).toUpperCase()}</span>
         <span className="law-vote-summary" style={{ color: net > 0 ? 'var(--good)' : net < 0 ? 'var(--danger)' : 'var(--neutral)' }}>
-          {net > 0 ? `+${net}` : net < 0 ? `${net}` : '±0'} net seats
+          {net > 0 ? `+${net}` : net < 0 ? `${net}` : '±0'} {t('net_seats')}
         </span>
       </div>
 
       {law.description && (
         <div className="law-detail-section">
-          <div className="law-detail-sec-hd">PREAMBLE</div>
-          <div className="law-md-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(law.description) }} />
+          <div className="law-detail-sec-hd">{t('preamble')}</div>
+          <div className="law-md-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(law.description, t('no_description')) }} />
         </div>
       )}
 
       {law.clauses.length > 0 && (
         <div className="law-detail-section">
           <div className="law-detail-sec-hd law-detail-sec-hd--toggle" onClick={() => setClausesExpanded(v => !v)}>
-            CLAUSES <span>{clausesExpanded ? '▲' : '▼'}</span>
+            {t('clauses')} <span>{clausesExpanded ? '▲' : '▼'}</span>
           </div>
           {clausesExpanded && (
             <ol className="law-clauses-list">
@@ -92,10 +94,10 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
         <div className="law-conclude-area">
           <div className="law-conclude-info">
             <span style={{ color: 'var(--good)' }}>{supportSeats}✓</span>
-            {' vs '}
+            {` ${t('vs')} `}
             <span style={{ color: 'var(--danger)' }}>{againstSeats}✗</span>
             {' · '}
-            <span style={{ color: 'var(--neutral)' }}>{abstainSeats} abstain</span>
+            <span style={{ color: 'var(--neutral)' }}>{abstainSeats} {t('abstain').toLowerCase()}</span>
           </div>
 
           {!concludeOpen ? (
@@ -103,11 +105,11 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
               className={`law-conclude-btn ${evaluation.outcome === 'passed' ? 'pass' : 'fail'}`}
               onClick={openDropdown}
             >
-              ⊟ CONCLUDE VOTING — {evaluation.conclusionLabel}
+              ⊟ {t('conclude_voting').toUpperCase()} — {voteConclusionLabel(t, evaluation.conclusionLabel).toUpperCase()}
             </button>
           ) : (
             <div className="law-conclude-dropdown">
-              <div className="law-conclude-dropdown-label">SET FINAL STATUS</div>
+              <div className="law-conclude-dropdown-label">{t('set_final_status')}</div>
               <div className="law-conclude-status-grid">
                 {ALL_STATUSES.map(s => (
                   <button
@@ -115,16 +117,16 @@ export function LawDetailPanel({ law, breakdown, onConclude, onEdit, canEdit }: 
                     className={`law-status-pick-btn law-status-${s}${selectedStatus === s ? ' selected' : ''}`}
                     onClick={() => setPickedStatus(s)}
                   >
-                    {s.toUpperCase()}
+                    {lawStatusLabel(t, s).toUpperCase()}
                   </button>
                 ))}
               </div>
               <div className="law-conclude-row">
                 <button className="ghost small" onClick={() => { setConcludeOpen(false); setPickedStatus(null); }}>
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button className="primary small" onClick={handleApply}>
-                  Apply →
+                  {t('apply')} →
                 </button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { stanceLabel, useLang } from '../../utils/localization';
 import type { FactionStance, Law, ProjectionEntry } from '../../models/types';
 
 interface StancePanelProps {
@@ -10,6 +11,7 @@ interface StancePanelProps {
 }
 
 export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFactionId }: StancePanelProps) {
+  const t = useLang();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<FactionStance | null>(null);
   const hasEditableFaction = canEdit || !!editableFactionId;
@@ -33,17 +35,17 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFac
   }, [law.factionStances, entries]);
 
   const columns: { key: FactionStance; label: string; color: string; entries: ProjectionEntry[] }[] = [
-    { key: 'support', label: 'SUPPORT', color: 'var(--good)', entries: grouped.support },
-    { key: 'abstain', label: 'ABSTAIN', color: 'var(--neutral)', entries: grouped.abstain },
-    { key: 'against', label: 'AGAINST', color: 'var(--danger)', entries: grouped.against },
+    { key: 'support', label: stanceLabel(t, 'support').toUpperCase(), color: 'var(--good)', entries: grouped.support },
+    { key: 'abstain', label: stanceLabel(t, 'abstain').toUpperCase(), color: 'var(--neutral)', entries: grouped.abstain },
+    { key: 'against', label: stanceLabel(t, 'against').toUpperCase(), color: 'var(--danger)', entries: grouped.against },
   ];
 
   return (
     <>
       {showPlayerVote && (
-        <div className="player-mobile-vote" aria-label="Your faction vote">
+        <div className="player-mobile-vote" aria-label={t('your_vote')}>
           <div className="player-mobile-vote__meta">
-            <span className="player-mobile-vote__label">YOUR VOTE</span>
+            <span className="player-mobile-vote__label">{t('your_vote').toUpperCase()}</span>
             <span className="player-mobile-vote__faction">
               <span className="chip-dot" style={{ background: playerEntry.faction.color }} />
               {playerEntry.faction.name}
@@ -82,7 +84,7 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFac
           >
             <div className="stance-col-hd" style={{ borderBottomColor: column.color }}>
               <span style={{ color: column.color }}>{column.label}</span>
-              <span className="stance-col-count">{column.entries.reduce((sum, entry) => sum + entry.seats, 0)} seats</span>
+              <span className="stance-col-count">{column.entries.reduce((sum, entry) => sum + entry.seats, 0)} {t('seats').toLowerCase()}</span>
             </div>
             <div className="stance-chips">
               {column.entries.map(entry => {
@@ -101,7 +103,7 @@ export function StancePanel({ law, entries, onUpdateStance, canEdit, editableFac
                   </div>
                 );
               })}
-              {column.entries.length === 0 && <div className="stance-col-empty">drop here</div>}
+              {column.entries.length === 0 && <div className="stance-col-empty">{t('drop_here')}</div>}
             </div>
           </div>
         ))}

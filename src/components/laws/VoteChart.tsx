@@ -1,5 +1,6 @@
 import { arrangeSeats } from '../../game/parliament/seating';
 import { evaluateLawVote, type VoteBreakdown, type VoteGroup } from '../../game/laws/voting';
+import { stanceLabel, useLang, voteStatusLabel } from '../../utils/localization';
 import type { FactionStance } from '../../models/types';
 
 interface VoteChartProps {
@@ -8,6 +9,7 @@ interface VoteChartProps {
 }
 
 export function VoteChart({ breakdown, totalSeats }: VoteChartProps) {
+  const t = useLang();
   const seats = arrangeSeats(totalSeats);
   const NEUTRAL = '#6b7e9e';
 
@@ -44,9 +46,9 @@ export function VoteChart({ breakdown, totalSeats }: VoteChartProps) {
     }
     cursor += count;
   };
-  addSection('SUPPORT', 'var(--good)', supportSeats);
-  addSection('ABSTAIN', 'var(--neutral)', abstainSeats);
-  addSection('AGAINST', 'var(--danger)', againstSeats);
+  addSection(stanceLabel(t, 'support').toUpperCase(), 'var(--good)', supportSeats);
+  addSection(stanceLabel(t, 'abstain').toUpperCase(), 'var(--neutral)', abstainSeats);
+  addSection(stanceLabel(t, 'against').toUpperCase(), 'var(--danger)', againstSeats);
 
   const arcLabel = ({ label, color, start, end, count }: Section) => {
     if (count < 1) return null;
@@ -98,34 +100,34 @@ export function VoteChart({ breakdown, totalSeats }: VoteChartProps) {
 
         <text x="0" y="2" textAnchor="middle" fontSize="2.8"
           fontFamily="'JetBrains Mono',monospace" fill="var(--text-mute)">
-          {totalSeats} SEATS
+          {totalSeats} {t('seats').toUpperCase()}
         </text>
       </svg>
 
       <div className="vote-stats-bar">
         <div className="vote-stat">
           <span className="vote-stat-val" style={{color:'var(--good)'}}>{supportSeats}</span>
-          <span className="vote-stat-lbl">SUPPORT</span>
+          <span className="vote-stat-lbl">{stanceLabel(t, 'support').toUpperCase()}</span>
         </div>
         <div className="vote-stat-sep" />
         <div className="vote-stat">
           <span className="vote-stat-val" style={{color:'var(--neutral)'}}>{abstainSeats}</span>
-          <span className="vote-stat-lbl">ABSTAIN</span>
+          <span className="vote-stat-lbl">{stanceLabel(t, 'abstain').toUpperCase()}</span>
         </div>
         <div className="vote-stat-sep" />
         <div className="vote-stat">
           <span className="vote-stat-val" style={{color:'var(--danger)'}}>{againstSeats}</span>
-          <span className="vote-stat-lbl">AGAINST</span>
+          <span className="vote-stat-lbl">{stanceLabel(t, 'against').toUpperCase()}</span>
         </div>
         <div className="vote-stat-sep" />
         <div className="vote-stat">
           <span className="vote-stat-val">{evaluation.votingRateLabel}</span>
-          <span className="vote-stat-lbl">VOTING RATE</span>
+          <span className="vote-stat-lbl">{t('voting_rate').toUpperCase()}</span>
         </div>
         <div className="vote-stat-sep" />
         <div className="vote-stat">
-          <span className="vote-stat-val vote-status" style={{color: statusColor}}>{evaluation.statusLabel}</span>
-          <span className="vote-stat-lbl">STATUS</span>
+          <span className="vote-stat-val vote-status" style={{color: statusColor}}>{voteStatusLabel(t, evaluation.statusLabel).toUpperCase()}</span>
+          <span className="vote-stat-lbl">{t('status').toUpperCase()}</span>
         </div>
       </div>
     </div>

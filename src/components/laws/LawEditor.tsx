@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { uid } from '../../store';
+import { useLang } from '../../utils/localization';
 import type { Law, LawClause } from '../../models/types';
 import { renderMarkdown } from './markdown';
 import { EditorField } from '../ui/EditorField';
@@ -10,6 +11,7 @@ interface ClauseEditorProps {
 }
 
 function ClauseEditor({ clauses, onChange }: ClauseEditorProps) {
+  const t = useLang();
   const update = (index: number, clause: LawClause) => {
     const next = [...clauses];
     next[index] = clause;
@@ -32,8 +34,8 @@ function ClauseEditor({ clauses, onChange }: ClauseEditorProps) {
     <div className="clause-editor">
       {clauses.map((clause, index) => (
         <div key={clause.id} className="clause-row" style={{ paddingLeft: `${clause.level * 18 + 4}px` }}>
-          <button className="clause-btn" onClick={() => indent(index,-1)} title="Outdent" disabled={clause.level === 0}>←</button>
-          <button className="clause-btn" onClick={() => indent(index,+1)} title="Indent" disabled={clause.level === 3}>→</button>
+          <button className="clause-btn" onClick={() => indent(index,-1)} title={t('outdent')} disabled={clause.level === 0}>←</button>
+          <button className="clause-btn" onClick={() => indent(index,+1)} title={t('indent')} disabled={clause.level === 3}>→</button>
           <span className="clause-bullet">{'◦●◈◆'[clause.level]}</span>
           <input
             className="clause-input"
@@ -53,14 +55,14 @@ function ClauseEditor({ clauses, onChange }: ClauseEditorProps) {
                 del(index);
               }
             }}
-            placeholder="Clause text…"
+            placeholder={t('clause_text_placeholder')}
           />
           <button className="clause-btn" onClick={() => move(index,-1)} disabled={index === 0}>↑</button>
           <button className="clause-btn" onClick={() => move(index,+1)} disabled={index === clauses.length - 1}>↓</button>
           <button className="clause-btn clause-del" onClick={() => del(index)}>✕</button>
         </div>
       ))}
-      <button className="clause-add-btn" onClick={addClause}>+ Add Clause</button>
+      <button className="clause-add-btn" onClick={addClause}>+ {t('add_clause')}</button>
     </div>
   );
 }
@@ -72,6 +74,7 @@ interface LawEditorProps {
 }
 
 export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
+  const t = useLang();
   const [name, setName] = useState(initial.name ?? '');
   const [subtitle, setSubtitle] = useState(initial.subtitle ?? '');
   const [description, setDescription] = useState(initial.description ?? '');
@@ -99,40 +102,40 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
   return (
     <div className="law-editor">
       <div className="law-editor-hd">
-        <span className="law-editor-title">{initial.id ? 'EDIT BILL' : 'NEW BILL'}</span>
+        <span className="law-editor-title">{initial.id ? t('edit_bill').toUpperCase() : t('new_bill').toUpperCase()}</span>
       </div>
       <div className="law-editor-body">
-        <EditorField label="TITLE">
-          <input className="law-field-input" value={name} onChange={event => setName(event.target.value)} placeholder="Bill title…" autoFocus />
+        <EditorField label={t('title').toUpperCase()}>
+          <input className="law-field-input" value={name} onChange={event => setName(event.target.value)} placeholder={t('bill_title_placeholder')} autoFocus />
         </EditorField>
-        <EditorField label="SUBTITLE" optional="(optional)">
-          <input className="law-field-input" value={subtitle} onChange={event => setSubtitle(event.target.value)} placeholder="Short description…" />
+        <EditorField label={t('subtitle').toUpperCase()} optional={t('optional')}>
+          <input className="law-field-input" value={subtitle} onChange={event => setSubtitle(event.target.value)} placeholder={t('short_description_placeholder')} />
         </EditorField>
         <EditorField
-          label="DESCRIPTION"
-          optional="(markdown)"
-          actions={<button className="law-preview-btn" onClick={() => setPreview(current => !current)}>{preview ? '✎ EDIT' : '◉ PREVIEW'}</button>}
+          label={t('description').toUpperCase()}
+          optional={t('markdown')}
+          actions={<button className="law-preview-btn" onClick={() => setPreview(current => !current)}>{preview ? `✎ ${t('edit').toUpperCase()}` : `◉ ${t('preview').toUpperCase()}`}</button>}
         >
           {preview
-            ? <div className="law-md-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(description) }} />
-            : <textarea className="law-field-textarea" value={description} onChange={event => setDescription(event.target.value)} rows={6} placeholder={"Use **bold**, *italic*, # Heading, - list item…"} />
+            ? <div className="law-md-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(description, t('no_description')) }} />
+            : <textarea className="law-field-textarea" value={description} onChange={event => setDescription(event.target.value)} rows={6} placeholder={t('markdown_placeholder')} />
           }
         </EditorField>
-        <EditorField label="CLAUSES">
+        <EditorField label={t('clauses').toUpperCase()}>
           <ClauseEditor clauses={clauses} onChange={setClauses} />
         </EditorField>
         <EditorField inline>
-          <label className="toggle law-constitution-toggle" title="Constitutional laws are displayed separately in the Constitution tab">
+          <label className="toggle law-constitution-toggle" title={t('constitutional_law_hint')}>
             <input type="checkbox" checked={isConstitution} onChange={event => setIsConstitution(event.target.checked)} />
             <span className="switch" />
-            <span className="toggle-label">⚖ Constitutional Law</span>
+            <span className="toggle-label">⚖ {t('constitutional_law')}</span>
           </label>
         </EditorField>
       </div>
       <div className="law-editor-foot">
-        <button className="btn ghost small" onClick={onCancel}>Cancel</button>
+        <button className="btn ghost small" onClick={onCancel}>{t('cancel')}</button>
         <button className="btn primary small" onClick={save} disabled={!name.trim()}>
-          {initial.id ? 'Save Changes' : 'Create Bill'}
+          {initial.id ? t('save_changes') : t('create_bill')}
         </button>
       </div>
     </div>

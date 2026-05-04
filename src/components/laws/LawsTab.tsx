@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { lawStatusLabel, useLang } from '../../utils/localization';
 import type { Law, LawStatus } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
 import { GridSurface } from '../ui/ListSurface';
-import { LawCard, STATUS_LABELS } from './LawCard';
+import { LawCard } from './LawCard';
 import { LawEditor } from './LawEditor';
 
 export type LawsFilter = LawStatus | 'all';
@@ -24,6 +25,7 @@ interface LawsTabProps {
 const FILTER_ORDER: LawsFilter[] = ['all', 'effect', 'draft', 'failed', 'abolished'];
 
 export function LawsTab({ laws, editingLaw, isNew, canEdit, onAdd, onEdit, onSave, onCancelEdit, onDelete, onStatusChange, onToggleConstitution }: LawsTabProps) {
+  const t = useLang();
   const [filter, setFilter] = useState<LawsFilter>('all');
 
   if (editingLaw || isNew) {
@@ -50,17 +52,17 @@ export function LawsTab({ laws, editingLaw, isNew, canEdit, onAdd, onEdit, onSav
             const count = item === 'all' ? billLaws.length : billLaws.filter(law => law.status === item).length;
             return (
               <button key={item} className={`law-filter-btn${filter === item ? ' active' : ''}`} onClick={() => setFilter(item)}>
-                {item === 'all' ? 'ALL' : STATUS_LABELS[item]}
+                {item === 'all' ? t('all').toUpperCase() : lawStatusLabel(t, item)}
                 {' '}<span className="badge">{count}</span>
               </button>
             );
           })}
         </div>
-        {canEdit && <button className="primary small" onClick={onAdd}>+ New Bill</button>}
+        {canEdit && <button className="primary small" onClick={onAdd}>+ {t('new_bill')}</button>}
       </div>
 
       <GridSurface className="law-registry-list">
-        {sorted.length === 0 && <EmptyState>No bills in this category.</EmptyState>}
+        {sorted.length === 0 && <EmptyState>{t('no_bills_category')}</EmptyState>}
         {sorted.map(law => (
           <LawCard
             key={law.id}

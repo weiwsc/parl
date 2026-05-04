@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../../store';
+import { useLang } from '../../utils/localization';
 import type { Alliance, Faction, ProjectionEntry } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
 import { Panel } from '../ui/Panel';
@@ -17,6 +18,7 @@ interface SenateFactionRowProps {
 function SenateFactionRow({
   faction, entry, autoSeats, manualSeats, totalSeats, showAuto, onSetManual,
 }: SenateFactionRowProps) {
+  const t = useLang();
   const [open, setOpen] = useState(false);
   const seats = entry?.seats ?? 0;
   const pct = totalSeats > 0 ? (seats / totalSeats) * 100 : 0;
@@ -40,12 +42,12 @@ function SenateFactionRow({
         <div className="fr-detail">
           {showAuto && (
             <div className="senate-seat-auto-row">
-              <span className="senate-seat-label">AUTO (controlled regions)</span>
+              <span className="senate-seat-label">{t('auto_controlled_regions').toUpperCase()}</span>
               <span className="senate-seat-auto-val" style={{ color: faction.color }}>{autoSeats}</span>
             </div>
           )}
           <div className="senate-seat-input-row">
-            <span className="senate-seat-label">{showAuto ? 'MANUAL EXTRA' : 'SEATS'}</span>
+            <span className="senate-seat-label">{showAuto ? t('manual_extra').toUpperCase() : t('seats').toUpperCase()}</span>
             <input
               type="number"
               min="0"
@@ -75,6 +77,7 @@ interface SenateAllianceBlockProps {
 function SenateAllianceBlock({
   alliance, factions, autoSeats, factionSeats, totalSeats, showAuto, entries, onSetManual,
 }: SenateAllianceBlockProps) {
+  const t = useLang();
   const [collapsed, setCollapsed] = useState(false);
   const totalAllianceSeats = entries.reduce((s, e) => s + e.seats, 0);
   const totalShare = totalSeats > 0 ? totalAllianceSeats / totalSeats : 0;
@@ -98,7 +101,7 @@ function SenateAllianceBlock({
       {!collapsed && (
         <div className="ag-body">
           {alliance.factionIds.length === 0 ? (
-            <div className="ag-drop-hint">No factions in this alliance</div>
+            <div className="ag-drop-hint">{t('no_factions_alliance')}</div>
           ) : alliance.factionIds.map(fid => {
             const f = factions.find(x => x.id === fid);
             if (!f) return null;
@@ -131,6 +134,7 @@ interface SenateFactionListProps {
 
 export function SenateFactionsList({ totalSeats, autoSeats, showAuto, entries }: SenateFactionListProps) {
   const { state, updateState } = useAppContext();
+  const t = useLang();
   const { factions, alliances } = state;
   const factionSeats = state.senate.factionSeats;
 
@@ -141,9 +145,9 @@ export function SenateFactionsList({ totalSeats, autoSeats, showAuto, entries }:
   const unallied = factions.filter(f => !alliances.some(a => a.factionIds.includes(f.id)));
 
   return (
-    <Panel title="FACTIONS" subtitle={`${totalSeats} seats total`} bodyClassName="no-scroll">
+    <Panel title={t('factions').toUpperCase()} subtitle={`${totalSeats} ${t('seats_total')}`} bodyClassName="no-scroll">
       {factions.length === 0 ? (
-        <EmptyState>No factions defined. Add factions in the Parliament page.</EmptyState>
+        <EmptyState>{t('no_factions_senate')}</EmptyState>
       ) : (
         <div className="factions-register">
           {alliances.map(alliance => (

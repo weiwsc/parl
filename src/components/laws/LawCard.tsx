@@ -1,13 +1,10 @@
 import { useState } from 'react';
+import { lawStatusLabel, useLang } from '../../utils/localization';
 import type { Law, LawStatus } from '../../models/types';
 import { renderMarkdown } from './markdown';
 
 const ROMAN = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X',
   'XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
-
-export const STATUS_LABELS: Record<LawStatus, string> = {
-  draft: 'Draft', voting: 'Voting', effect: 'In Effect', abolished: 'Abolished', failed: 'Failed'
-};
 
 interface LawCardProps {
   law: Law;
@@ -21,6 +18,7 @@ interface LawCardProps {
 }
 
 export function LawCard({ law, articleNum, isConstitution, canEdit, onEdit, onToggleConstitution, onStatusChange, onDelete }: LawCardProps) {
+  const t = useLang();
   const [collapsed, setCollapsed] = useState(false);
   let topLevelIndex = 0;
 
@@ -44,17 +42,17 @@ export function LawCard({ law, articleNum, isConstitution, canEdit, onEdit, onTo
               {onStatusChange && (
                 <select className="law-status-select" value={law.status}
                   onChange={event => onStatusChange(event.target.value as LawStatus)}>
-                  <option value="draft">◫ DRAFT</option>
-                  <option value="voting">⊡ VOTING</option>
-                  <option value="effect">◈ IN EFFECT</option>
-                  <option value="failed">✗ FAILED</option>
-                  <option value="abolished">— ABOLISHED</option>
+                  <option value="draft">◫ {lawStatusLabel(t, 'draft').toUpperCase()}</option>
+                  <option value="voting">⊡ {lawStatusLabel(t, 'voting').toUpperCase()}</option>
+                  <option value="effect">◈ {lawStatusLabel(t, 'effect').toUpperCase()}</option>
+                  <option value="failed">✗ {lawStatusLabel(t, 'failed').toUpperCase()}</option>
+                  <option value="abolished">— {lawStatusLabel(t, 'abolished').toUpperCase()}</option>
                 </select>
               )}
-              {onEdit && <button className="ghost small" onClick={onEdit} title="Edit">✎</button>}
+              {onEdit && <button className="ghost small" onClick={onEdit} title={t('edit')}>✎</button>}
               {onToggleConstitution && (
                 <button className="ghost small" onClick={onToggleConstitution}
-                  title={isConstitution ? 'Remove from Constitution' : 'Move to Constitution'}>
+                  title={isConstitution ? t('remove_from_constitution') : t('move_to_constitution')}>
                   {isConstitution ? '⊖' : '⚖'}
                 </button>
               )}
@@ -77,14 +75,14 @@ export function LawCard({ law, articleNum, isConstitution, canEdit, onEdit, onTo
 
           {law.description && (
             <div className="law-card-section">
-              {isConstitution && <div className="law-const-sec-hd">◈ PREAMBLE</div>}
-              <div className="law-md-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(law.description) }} />
+              {isConstitution && <div className="law-const-sec-hd">◈ {t('preamble').toUpperCase()}</div>}
+              <div className="law-md-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(law.description, t('no_description')) }} />
             </div>
           )}
 
           {law.clauses.length > 0 && (
             <div className="law-card-section">
-              {isConstitution && <div className="law-const-sec-hd">◦ PROVISIONS</div>}
+              {isConstitution && <div className="law-const-sec-hd">◦ {t('clauses').toUpperCase()}</div>}
               <div className="law-clauses-list">
                 {law.clauses.map(clause => {
                   if (clause.level === 0) topLevelIndex++;

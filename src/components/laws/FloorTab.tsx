@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { computeVoteBreakdown } from '../../game/laws/voting';
+import { useLang } from '../../utils/localization';
 import type { FactionStance, Law, LawStatus, ProjectionEntry } from '../../models/types';
 import { LawDetailPanel } from './LawDetailPanel';
 import { LawListPanel } from './LawListPanel';
@@ -21,6 +22,8 @@ interface FloorTabProps {
 }
 
 export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, editableFactionId, chamber, onActivate, onConclude, onUpdateStance, onEditLaw }: FloorTabProps) {
+  const t = useLang();
+
   // Create a view of the law with the correct chamber's stances
   const effectiveLaw = useMemo(() => {
     if (!activeLaw) return null;
@@ -60,8 +63,8 @@ export function FloorTab({ activeLaw, laws, entries, totalSeats, canEdit, editab
             </>
           : <div className="law-no-floor">
               <span className="law-no-floor-icon">⚖</span>
-              <span className="law-no-floor-txt">No bill on the floor</span>
-              <span className="law-no-floor-sub">Select a bill from the queue on the left</span>
+              <span className="law-no-floor-txt">{t('no_bill_on_floor')}</span>
+              <span className="law-no-floor-sub">{t('select_bill_queue')}</span>
             </div>
         }
       </div>

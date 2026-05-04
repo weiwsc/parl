@@ -3,6 +3,7 @@ import type { Alliance, Faction, MapRegion } from '../../models/types';
 import { MAP_PATTERN_SIZE, MAP_VIEWBOX_HEIGHT, MAP_VIEWBOX_WIDTH } from '../../game/map/constants';
 import { getControlEntries } from '../../game/map/control';
 import { fitRegionsToViewport, pointsToSvg } from '../../game/map/geometry';
+import { useLang } from '../../utils/localization';
 import type { ViewMode } from '../../game/map/types';
 
 const MODES: ViewMode[] = ['faction', 'alliance'];
@@ -17,6 +18,7 @@ interface StaticMapViewProps {
 }
 
 export function StaticMapView({ regions, factions, alliances, defaultMode = 'faction' }: StaticMapViewProps) {
+  const t = useLang();
   const [viewMode, setViewMode] = useState<ViewMode>(defaultMode);
 
   const viewport = useMemo(
@@ -35,10 +37,10 @@ export function StaticMapView({ regions, factions, alliances, defaultMode = 'fac
             className={`small${viewMode === mode ? '' : ' ghost'}`}
             onClick={() => setViewMode(mode)}
           >
-            {mode.toUpperCase()}
+            {mode === 'faction' ? t('faction').toUpperCase() : t('alliance').toUpperCase()}
           </button>
         ))}
-        {regions.length === 0 && <span className="static-map-hint">No regions</span>}
+        {regions.length === 0 && <span className="static-map-hint">{t('no_regions')}</span>}
       </div>
 
       <div className="map-canvas-wrap static-map-canvas-wrap">

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useLang } from '../../utils/localization';
 import type { Law, LawStatus } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
 import { GridSurface } from '../ui/ListSurface';
@@ -13,6 +14,7 @@ interface ConstitutionTabProps {
 }
 
 export function ConstitutionTab({ laws, canEdit, onEdit, onUnmark, onStatusChange }: ConstitutionTabProps) {
+  const t = useLang();
   const constitutionalLaws = useMemo(
     () => [...laws].filter(law => law.isConstitution).sort((a, b) => a.createdAt - b.createdAt),
     [laws]
@@ -24,9 +26,9 @@ export function ConstitutionTab({ laws, canEdit, onEdit, onUnmark, onStatusChang
         <ConstitutionHeader count={0} />
         <EmptyState className="constitution-empty">
           <div className="constitution-empty-icon">◈</div>
-          <div>No constitutional laws defined.</div>
+          <div>{t('no_constitutional_laws')}</div>
           <div className="constitution-empty-hint">
-            In the <strong>BILLS</strong> tab, press the <strong>⚖</strong> button on any law.
+            {t('constitution_empty_hint')}
           </div>
         </EmptyState>
       </div>
@@ -55,12 +57,14 @@ export function ConstitutionTab({ laws, canEdit, onEdit, onUnmark, onStatusChang
 }
 
 function ConstitutionHeader({ count }: { count: number }) {
+  const t = useLang();
+
   return (
     <div className="constitution-header">
       <span className="constitution-icon">⚖</span>
       <div>
-        <div className="constitution-title">CONSTITUTIONAL LAWS</div>
-        <div className="constitution-sub">{count} article{count !== 1 ? 's' : ''}</div>
+        <div className="constitution-title">{t('constitutional_laws').toUpperCase()}</div>
+        <div className="constitution-sub">{count} {count === 1 ? t('article') : t('articles')}</div>
       </div>
     </div>
   );

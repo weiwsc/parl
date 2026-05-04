@@ -5,6 +5,7 @@ import { computeSenateProjection } from '../game/senate';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext, uid } from '../store';
 import { API_BASE } from '../config';
+import { lawStatusLabel, useLang } from '../utils/localization';
 import type { FactionStance, Law, LawStatus, ProjectionEntry } from '../models/types';
 import { AppHeader } from './ui/AppHeader';
 import { TabBar, type TabItem } from './ui/TabBar';
@@ -18,6 +19,7 @@ type LawTab = 'floor' | 'senate' | 'laws' | 'constitution' | 'history';
 export function LawPage() {
   const { state, updateState, showToast } = useAppContext();
   const { canEdit, factionId: playerFactionId, token } = useAuth();
+  const t = useLang();
 
   const [lawTab, setLawTab]                               = useState<LawTab>('floor');
   const [parlActiveLawId, setParlActiveLawId]             = useState<string | null>(null);
@@ -57,11 +59,11 @@ export function LawPage() {
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      showToast('Vote submitted');
+      showToast(t('vote_submitted'));
     } catch {
-      showToast('Vote failed', 'error');
+      showToast(t('vote_failed'), 'error');
     }
-  }, [playerFactionId, showToast, token]);
+  }, [playerFactionId, showToast, t, token]);
 
   // Parliament stances
   const handleParlUpdateStance = useCallback((factionId: string, stance: FactionStance) => {
@@ -123,9 +125,9 @@ export function LawPage() {
       if (chamber === 'senate') setSenateActiveLawId(null);
       else setParlActiveLawId(null);
       setLawTab('history');
-      showToast(`Bill concluded: ${activeLaw.name}`);
+      showToast(`${t('bill_concluded')}: ${activeLaw.name}`);
     },
-    [updateState, showToast],
+    [updateState, showToast, t],
   );
 
   const handleParlConclude   = useMemo(() => makeConcludeHandler(parlActiveLaw,   entries,       totalSeats,      'parliament'), [makeConcludeHandler, parlActiveLaw,   entries,       totalSeats]);
@@ -140,21 +142,21 @@ export function LawPage() {
     });
     setEditingLaw(null);
     setIsNewLaw(false);
-    showToast(isNewLaw ? 'Bill created' : 'Bill updated');
-  }, [updateState, showToast, isNewLaw]);
+    showToast(isNewLaw ? t('bill_created') : t('bill_updated'));
+  }, [updateState, showToast, isNewLaw, t]);
 
   const handleDeleteLaw = useCallback((id: string) => {
-    if (!window.confirm('Delete this bill permanently?')) return;
+    if (!window.confirm(t('delete_bill_confirm'))) return;
     updateState(s => { s.laws = s.laws.filter(l => l.id !== id); return s; });
     if (parlActiveLawId   === id) setParlActiveLawId(null);
     if (senateActiveLawId === id) setSenateActiveLawId(null);
-    showToast('Bill deleted');
-  }, [updateState, parlActiveLawId, senateActiveLawId, showToast]);
+    showToast(t('bill_deleted'));
+  }, [updateState, parlActiveLawId, senateActiveLawId, showToast, t]);
 
   const handleStatusChange = useCallback((id: string, status: LawStatus) => {
     updateState(s => { const law = s.laws.find(l => l.id === id); if (law) law.status = status; return s; });
-    showToast(`Status → ${status}`);
-  }, [updateState, showToast]);
+    showToast(`${t('status_changed')} → ${lawStatusLabel(t, status)}`);
+  }, [updateState, showToast, t]);
 
   const handleToggleConstitution = useCallback((id: string) => {
     updateState(s => { const law = s.laws.find(l => l.id === id); if (law) law.isConstitution = !law.isConstitution; return s; });
@@ -165,27 +167,27 @@ export function LawPage() {
   const histCount  = state.lawHistory.length;
 
   const lawTabs: TabItem<LawTab>[] = [
-    { id: 'floor',        label: 'Parliament Floor' },
-    { id: 'senate',       label: 'Senate Floor' },
-    { id: 'laws',         label: 'Bills',          badge: lawCount  },
-    { id: 'constitution', label: '⚖ Constitution', badge: constCount },
-    { id: 'history',      label: 'Vote History',   badge: histCount },
+    { id: 'floor',        label: t('parliament_floor') },
+    { id: 'senate',       label: t('senate_floor') },
+    { id: 'laws',         label: t('bills'),        badge: lawCount  },
+    { id: 'constitution', label: `⚖ ${t('constitution')}`, badge: constCount },
+    { id: 'history',      label: t('vote_history'), badge: histCount },
   ];
 
   return (
     <div className="law-page">
-      <AppHeader title="LEGISLATURE" subtitle="// LEGISLATIVE CHAMBER · v1.0 //" className="law-header">
+      <AppHeader title={t('legislature')} subtitle={`// ${t('legislative_chamber')} · v1.0 //`} className="law-header">
         {(parlActiveLaw || senateActiveLaw) && (
           <div className="law-active-indicator">
             <span className="law-active-icon">⊟</span>
             <span className="law-active-name">{(parlActiveLaw ?? senateActiveLaw)!.name}</span>
-            <span className="law-active-sub">ON FLOOR</span>
+            <span className="law-active-sub">{t('on_floor')}</span>
           </div>
         )}
         <div className="law-header-stats">
-          <span>{totalSeats} parl</span>
-          <span>{senateTotalSeats} senate</span>
-          <span>{state.factions.length} factions</span>
+          <span>{totalSeats} {t('parliament_short')}</span>
+          <span>{senateTotalSeats} {t('senate_short')}</span>
+          <span>{state.factions.length} {t('factions')}</span>
         </div>
       </AppHeader>
 

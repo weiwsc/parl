@@ -1,7 +1,7 @@
-export function renderMarkdown(text: string): string {
-  if (!text.trim()) return '<p class="md-empty">No description.</p>';
+export function renderMarkdown(text: string, emptyText = 'No description.'): string {
   const esc = (s: string) =>
     s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (!text.trim()) return `<p class="md-empty">${esc(emptyText)}</p>`;
   const inline = (s: string) =>
     esc(s)
       .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')

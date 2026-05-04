@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useAppContext, uid, clone } from '../store';
 import { useAuth } from '../context/AuthContext';
 import { computeSenateProjection } from '../game/senate';
+import { useLang } from '../utils/localization';
 import { AppHeader } from './ui/AppHeader';
 import { TabBar } from './ui/TabBar';
 import { Panel } from './ui/Panel';
@@ -16,6 +17,7 @@ type SenateTab = 'sim' | 'hist';
 export function SenatePage() {
   const { state, updateState, showToast } = useAppContext();
   const { canEdit } = useAuth();
+  const t = useLang();
   const [tab, setTab] = useState<SenateTab>('sim');
 
   const { projection, autoSeats, totalSeats } = useMemo(
@@ -50,32 +52,32 @@ export function SenatePage() {
       return s;
     });
     setTab('hist');
-    showToast('Senate election recorded!');
+    showToast(t('senate_election_recorded'));
   };
 
   return (
     <div className="senate-page">
-      <AppHeader title="SENATE" subtitle="// UPPER CHAMBER · v0.1 //">
-        <label className="toggle senate-auto-toggle" title="Auto-assign seats from 100%-controlled regions">
+      <AppHeader title={t('senate')} subtitle={`// ${t('upper_chamber')} · v0.1 //`}>
+        <label className="toggle senate-auto-toggle" title={t('auto_assign_title')}>
           <input type="checkbox" checked={autoAssign} onChange={toggleAutoAssign} />
           <span className="switch" />
-          <span className="toggle-label">AUTO-ASSIGN</span>
+          <span className="toggle-label">{t('auto_assign').toUpperCase()}</span>
         </label>
-        <label className="toggle senate-auto-toggle" title="Assign seats for uncontrolled regions by strata composition">
+        <label className="toggle senate-auto-toggle" title={t('strata_assign_title')}>
           <input type="checkbox" checked={strataAssign} onChange={toggleStrataAssign} />
           <span className="switch" />
-          <span className="toggle-label">STRATA-ASSIGN</span>
+          <span className="toggle-label">{t('strata_assign').toUpperCase()}</span>
         </label>
         {canEdit && (
-          <button className="primary small" onClick={recordElection}>⬡ Record Election</button>
+          <button className="primary small" onClick={recordElection}>⬡ {t('record_election')}</button>
         )}
       </AppHeader>
 
       <TabBar
         active={tab}
         items={[
-          { id: 'sim', label: 'Simulation' },
-          { id: 'hist', label: 'History', badge: histCount || undefined },
+          { id: 'sim', label: t('simulation') },
+          { id: 'hist', label: t('history'), badge: histCount || undefined },
         ]}
         onChange={setTab}
       />
@@ -91,7 +93,7 @@ export function SenatePage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <ProjectionChart projection={projection} />
-            <Panel title="MAP" bodyClassName="no-scroll senate-map-body">
+            <Panel title={t('map').toUpperCase()} bodyClassName="no-scroll senate-map-body">
               <StaticMapView
                 regions={state.map.regions}
                 factions={state.factions}

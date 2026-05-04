@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { computeVoteBreakdown, getFloorLawEntries } from '../../game/laws/voting';
+import { useLang } from '../../utils/localization';
 import type { Law, ProjectionEntry } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
 import { Panel } from '../ui/Panel';
@@ -15,12 +16,15 @@ interface LawListPanelProps {
 }
 
 export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivate }: LawListPanelProps) {
+  const t = useLang();
   const floorLaws = useMemo(() => getFloorLawEntries(laws, entries), [laws, entries]);
 
   return (
-    <Panel className="law-list-panel" title="Bills Queue" subtitle={`${floorLaws.length} bills`}>
+    <Panel className="law-list-panel" title={t('bill_queue')} subtitle={`${floorLaws.length} ${t('bill_count')}`}>
       {floorLaws.length === 0 && (
-        <EmptyState>No draft bills. Create laws in the <strong>LAWS</strong> tab.</EmptyState>
+        <EmptyState>
+          {t('no_draft_bills')} {t('create_laws_hint')}
+        </EmptyState>
       )}
       {floorLaws.map(({ law, net }) => {
         const breakdown = computeVoteBreakdown(law, entries, totalSeats);
@@ -43,7 +47,7 @@ export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivat
             </div>
             <LawSupportBar sup={breakdown.supportSeats} abs={breakdown.abstainSeats} ag={breakdown.againstSeats} total={totalSeats} />
             <div className={`law-floor-btn${isActive ? ' active' : ''}`}>
-              {isActive ? '▶ ON FLOOR' : '⊳ BRING TO FLOOR'}
+              {isActive ? `▶ ${t('on_floor')}` : `⊳ ${t('bring_to_floor')}`}
             </div>
           </div>
         );

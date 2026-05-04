@@ -3,6 +3,7 @@ import type { Alliance, Faction, MapRegion } from '../../models/types';
 import { MAP_PATTERN_SIZE, MAP_VIEWBOX_HEIGHT, MAP_VIEWBOX_WIDTH } from '../../game/map/constants';
 import { getControlEntries, getRegionFill } from '../../game/map/control';
 import { fitRegionsToViewport, pointsToSvg } from '../../game/map/geometry';
+import { useLang } from '../../utils/localization';
 import type { ViewMode } from '../../game/map/types';
 
 interface MiniMapProps {
@@ -12,6 +13,7 @@ interface MiniMapProps {
 }
 
 export function MiniMap({ regions, factions, alliances }: MiniMapProps) {
+  const t = useLang();
   const [viewMode, setViewMode] = useState<ViewMode>('faction');
 
   const viewport = useMemo(
@@ -28,7 +30,7 @@ export function MiniMap({ regions, factions, alliances }: MiniMapProps) {
   return (
     <div className="senate-minimap-wrap">
       <div className="senate-map-toolbar">
-        <span className="senate-map-label">MAP VIEW</span>
+        <span className="senate-map-label">{t('map_view').toUpperCase()}</span>
         <div className="map-view-btns">
           {(['faction', 'alliance'] as ViewMode[]).map(mode => (
             <button
@@ -36,11 +38,11 @@ export function MiniMap({ regions, factions, alliances }: MiniMapProps) {
               className={`small${viewMode === mode ? ' primary' : ' ghost'}`}
               onClick={() => setViewMode(mode)}
             >
-              {mode.toUpperCase()}
+              {mode === 'faction' ? t('faction').toUpperCase() : t('alliance').toUpperCase()}
             </button>
           ))}
         </div>
-        {regions.length === 0 && <span className="senate-map-hint">No regions defined</span>}
+        {regions.length === 0 && <span className="senate-map-hint">{t('no_regions_defined')}</span>}
       </div>
       <svg
         className="senate-minimap"

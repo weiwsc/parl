@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { recordToBreakdown } from '../../game/laws/voting';
 import { useAppContext } from '../../store';
+import { stanceLabel, useLang } from '../../utils/localization';
 import type { LawVoteRecord } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
 import { VoteChart } from './VoteChart';
 
 export function HistoryTab({ history }: { history: LawVoteRecord[] }) {
+  const t = useLang();
   const [open, setOpen] = useState<Set<string>>(new Set());
   const { updateState, showToast } = useAppContext();
 
@@ -19,14 +21,14 @@ export function HistoryTab({ history }: { history: LawVoteRecord[] }) {
       state.lawHistory = state.lawHistory.filter(record => record.id !== id);
       return state;
     });
-    showToast('Record deleted');
+    showToast(t('record_deleted'));
   };
 
   const sorted = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
   return (
     <div className="law-tab-content">
-      {sorted.length === 0 && <EmptyState className="law-history-empty">No voting records yet.</EmptyState>}
+      {sorted.length === 0 && <EmptyState className="law-history-empty">{t('no_voting_records')}</EmptyState>}
       {sorted.map(record => {
         const isOpen = open.has(record.id);
         const dt = new Date(record.timestamp).toLocaleString();
@@ -34,7 +36,9 @@ export function HistoryTab({ history }: { history: LawVoteRecord[] }) {
           <div key={record.id} className={`hist-item law-hist-item${isOpen ? ' open' : ''}`}>
             <div className="hist-item-hd" onClick={() => toggle(record.id)}>
               <div className="hist-item-left">
-                <span className={`law-outcome-badge ${record.outcome}`}>{record.outcome === 'passed' ? '✓ PASSED' : '✗ FAILED'}</span>
+                <span className={`law-outcome-badge ${record.outcome}`}>
+                  {record.outcome === 'passed' ? `✓ ${t('passed').toUpperCase()}` : `✗ ${t('failed').toUpperCase()}`}
+                </span>
                 <span className={`law-chamber-badge law-chamber-${record.chamber ?? 'parliament'}`}>
                   {record.chamber === 'senate' ? 'SEN' : 'PARL'}
                 </span>
@@ -58,8 +62,8 @@ export function HistoryTab({ history }: { history: LawVoteRecord[] }) {
                     <div key={factionResult.factionId} className="law-hist-faction-row">
                       <span className="chip-dot" style={{ background: factionResult.color }} />
                       <span className="chip-name">{factionResult.name}</span>
-                      <span className={`hist-stance-badge stance-${factionResult.stance}`}>{factionResult.stance}</span>
-                      <span className="chip-seats">{factionResult.seats} seats</span>
+                      <span className={`hist-stance-badge stance-${factionResult.stance}`}>{stanceLabel(t, factionResult.stance)}</span>
+                      <span className="chip-seats">{factionResult.seats} {t('seats').toLowerCase()}</span>
                     </div>
                   ))}
                 </div>
