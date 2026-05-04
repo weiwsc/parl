@@ -20,7 +20,8 @@ export function SenatePage() {
   const t = useLang();
   const [tab, setTab] = useState<SenateTab>('sim');
 
-  const { projection, autoSeats, totalSeats } = useMemo(
+  const hideUnassignedSeats = state.senate.hideUnassignedSeats;
+  const { projection, autoSeats, displayTotalSeats } = useMemo(
     () => computeSenateProjection(state),
     [state],
   );
@@ -37,13 +38,20 @@ export function SenatePage() {
     updateState(s => { s.senate.strataAssign = !s.senate.strataAssign; return s; });
   };
 
+  const toggleHideUnassignedSeats = () => {
+    updateState(s => {
+      s.senate.hideUnassignedSeats = !s.senate.hideUnassignedSeats;
+      return s;
+    });
+  };
+
   const recordElection = () => {
     const snap = computeSenateProjection(state);
     updateState(s => {
       s.senate.history.unshift({
         id: uid('se'),
         timestamp: Date.now(),
-        totalSeats: snap.totalSeats,
+        totalSeats: snap.displayTotalSeats,
         autoAssign: s.senate.autoAssign,
         factions: clone(state.factions.map(f => ({ id: f.id, name: f.name, color: f.color }))),
         alliances: clone(state.alliances),
@@ -67,6 +75,11 @@ export function SenatePage() {
           <input type="checkbox" checked={strataAssign} onChange={toggleStrataAssign} />
           <span className="switch" />
           <span className="toggle-label">{t('strata_assign').toUpperCase()}</span>
+        </label>
+        <label className="toggle senate-auto-toggle" title={t('assigned_only_title')}>
+          <input data-ro-allow type="checkbox" checked={hideUnassignedSeats} onChange={toggleHideUnassignedSeats} />
+          <span className="switch" />
+          <span className="toggle-label">{t('assigned_only').toUpperCase()}</span>
         </label>
         {canEdit && (
           <button className="primary small" onClick={recordElection}>⬡ {t('record_election')}</button>
@@ -103,7 +116,7 @@ export function SenatePage() {
           </div>
 
           <SenateFactionsList
-            totalSeats={totalSeats}
+            totalSeats={displayTotalSeats}
             autoSeats={autoSeats}
             showAuto={autoAssign}
             entries={projection.entries}

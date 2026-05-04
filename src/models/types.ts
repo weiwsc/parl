@@ -135,6 +135,7 @@ export interface SenateHistoryEntry {
 export interface SenateState {
   autoAssign: boolean;
   strataAssign: boolean;
+  hideUnassignedSeats: boolean;
   factionSeats: Record<string, number>;
   history: SenateHistoryEntry[];
 }

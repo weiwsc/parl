@@ -5,11 +5,17 @@ export interface SenateProjection {
   projection: ProjectionResult;
   autoSeats: Record<string, number>;
   totalSeats: number;
+  displayTotalSeats: number;
   assignedSeats: number;
 }
 
-export function computeSenateProjection(state: AppState): SenateProjection {
+interface SenateProjectionOptions {
+  hideUnassignedSeats?: boolean;
+}
+
+export function computeSenateProjection(state: AppState, options: SenateProjectionOptions = {}): SenateProjection {
   const { factions, alliances, strata, map: { regions }, senate } = state;
+  const hideUnassignedSeats = options.hideUnassignedSeats ?? senate.hideUnassignedSeats;
 
   const totalSeats = regions.reduce((s, r) => s + (r.seatings || 0), 0);
 
@@ -36,7 +42,7 @@ export function computeSenateProjection(state: AppState): SenateProjection {
     }
   }
 
-  const entries: ProjectionEntry[] = factions.map(f => {
+  const baseEntries: ProjectionEntry[] = factions.map(f => {
     const auto = autoSeats[f.id] || 0;
     const manual = senate.factionSeats[f.id] || 0;
     const seats = auto + manual;
@@ -46,9 +52,16 @@ export function computeSenateProjection(state: AppState): SenateProjection {
       alliance,
       power: seats,
       seats,
-      share: totalSeats > 0 ? seats / totalSeats : 0,
+      share: 0,
     };
   });
+
+  const assignedSeats = baseEntries.reduce((s, e) => s + e.seats, 0);
+  const displayTotalSeats = hideUnassignedSeats ? assignedSeats : totalSeats;
+  const entries = baseEntries.map(entry => ({
+    ...entry,
+    share: displayTotalSeats > 0 ? entry.seats / displayTotalSeats : 0,
+  }));
 
   // Sort consistent with how ProjectionChart expects: alliances grouped, by seats
   const sorted = [...entries].sort((a, b) => {
@@ -62,18 +75,17 @@ export function computeSenateProjection(state: AppState): SenateProjection {
     return b.seats - a.seats;
   });
 
-  const assignedSeats = sorted.reduce((s, e) => s + e.seats, 0);
-
   return {
     projection: {
       entries: sorted,
-      total: totalSeats,
-      totalSeats,
+      total: displayTotalSeats,
+      totalSeats: displayTotalSeats,
       factionsCount: factions.length,
       timestamp: Date.now(),
     },
     autoSeats,
     totalSeats,
+    displayTotalSeats,
     assignedSeats,
   };
 }

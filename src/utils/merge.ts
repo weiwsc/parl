@@ -168,6 +168,11 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
     senate: {
       autoAssign:    sc(local.senate?.autoAssign,    base.senate?.autoAssign,    remote.senate?.autoAssign)    as boolean,
       strataAssign:  sc(local.senate?.strataAssign,  base.senate?.strataAssign,  remote.senate?.strataAssign)  as boolean,
+      hideUnassignedSeats: sc(
+        local.senate?.hideUnassignedSeats,
+        base.senate?.hideUnassignedSeats,
+        remote.senate?.hideUnassignedSeats,
+      ) as boolean,
       factionSeats: mergeRecord(
         (base.senate?.factionSeats  ?? {}) as Rec,
         (local.senate?.factionSeats ?? {}) as Rec,

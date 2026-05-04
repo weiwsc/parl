@@ -132,6 +132,8 @@ const translations: Record<string, Record<Language, string>> = {
   auto_assign_title:      { en: 'Auto-assign seats from 100%-controlled regions', cn: '从100%控制的地区自动分配席位' },
   strata_assign:          { en: 'Strata-Assign',        cn: '阶层分配' },
   strata_assign_title:    { en: 'Assign seats for uncontrolled regions by strata composition', cn: '未完全控制地区按阶层构成分配席位' },
+  assigned_only:          { en: 'Assigned Only',        cn: '仅已分配' },
+  assigned_only_title:    { en: 'Hide seats with no faction from Senate charts and percentage calculations', cn: '在参议院图表和百分比计算中隐藏无派系席位' },
   record_election:        { en: 'Record Election',      cn: '记录选举' },
   senate_election_recorded: { en: 'Senate election recorded!', cn: '参议院选举已记录！' },
   regions:                { en: 'Regions',              cn: '地区' },

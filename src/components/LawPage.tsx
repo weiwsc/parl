@@ -32,7 +32,7 @@ export function LawPage() {
   const totalSeats        = state.totalSeats;
   const senateProjection  = useMemo(() => computeSenateProjection(state), [state]);
   const senateEntries     = senateProjection.projection.entries;
-  const senateTotalSeats  = senateProjection.totalSeats;
+  const senateTotalSeats  = senateProjection.displayTotalSeats;
 
   const parlActiveLaw   = useMemo(() => state.laws.find(l => l.id === parlActiveLawId)   ?? null, [state.laws, parlActiveLawId]);
   const senateActiveLaw = useMemo(() => state.laws.find(l => l.id === senateActiveLawId) ?? null, [state.laws, senateActiveLawId]);

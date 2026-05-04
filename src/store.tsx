@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type {
   AppState,
   EntityType,
+  Language,
   NodeEditorState,
   NodeEntityBinding,
   NodeGraph,
@@ -25,6 +26,7 @@ export const SCHEMA_VERSION = 3;
 export const UNALIGNED_COLOR = '#6b7e9e';
 
 export const THEMES = ['gold', 'green', 'cyan', 'crimson'];
+const SUPPORTED_LANGUAGES: Language[] = ['en', 'cn'];
 
 export function uid(prefix: string): string { 
   return prefix + Math.random().toString(36).slice(2, 9); 
@@ -34,7 +36,18 @@ export function clone<T>(o: T): T {
   return JSON.parse(JSON.stringify(o)); 
 }
 
-export function defaultState(): AppState {
+function normalizeLanguage(value: unknown): Language | null {
+  return SUPPORTED_LANGUAGES.includes(value as Language) ? value as Language : null;
+}
+
+function browserDefaultLanguage(): Language {
+  if (typeof navigator === 'undefined') return 'en';
+  const candidates = navigator.languages?.length ? navigator.languages : [navigator.language];
+  const primary = candidates.find(Boolean)?.toLowerCase().replace('_', '-') ?? '';
+  return primary.startsWith('zh') || primary.startsWith('cn') ? 'cn' : 'en';
+}
+
+export function defaultState(language: Language = browserDefaultLanguage()): AppState {
   return {
     schemaVersion: SCHEMA_VERSION,
     totalSeats: 200,
@@ -61,8 +74,8 @@ export function defaultState(): AppState {
     trash: { strata: [], factions: [], alliances: [] },
     ui: {
       tab: 'sim',
-      language : 'cn',
-      theme: 'gold',
+      language,
+      theme: 'green',
       factionExpanded: {},
       nodeEditor: DEFAULT_NODE_EDITOR_CONFIG,
     },
@@ -74,7 +87,7 @@ export function defaultState(): AppState {
       graph: { nodes: [], connections: [] },
       transforms: defaultTransformDefinitions(),
     },
-    senate: { autoAssign: false, strataAssign: false, factionSeats: {}, history: [] },
+    senate: { autoAssign: false, strataAssign: false, hideUnassignedSeats: false, factionSeats: {}, history: [] },
   };
 }
 
@@ -113,7 +126,7 @@ export function normalizeState(p: any): AppState {
     },
     ui: {
       tab: (p.ui && p.ui.tab) || 'sim',
-      language: (p.language && p.language || 'en'),
+      language: normalizeLanguage(p.ui?.language) ?? normalizeLanguage(p.language) ?? d.ui.language,
       theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
       factionExpanded: (p.ui && p.ui.factionExpanded) || {},
       nodeEditor: normalizeNodeEditorConfig(p.ui?.nodeEditor ?? p.nodes?.config),
@@ -142,6 +155,7 @@ export function normalizeState(p: any): AppState {
     senate: {
       autoAssign: !!(p.senate && p.senate.autoAssign),
       strataAssign: !!(p.senate && p.senate.strataAssign),
+      hideUnassignedSeats: !!(p.senate?.hideUnassignedSeats ?? p.ui?.senateHideUnassignedSeats),
       factionSeats: (p.senate && typeof p.senate.factionSeats === 'object')
         ? p.senate.factionSeats
         : {},
