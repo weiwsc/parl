@@ -242,12 +242,84 @@
   .chip-name { flex: 1; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip-seats { color: var(--text-mute); font-size: 9px; flex-shrink: 0; }
 
+  .player-mobile-vote {
+    display: none;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    padding: 10px;
+    gap: 10px;
+  }
+  .player-mobile-vote__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .player-mobile-vote__label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-mute);
+  }
+  .player-mobile-vote__faction {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .player-mobile-vote__buttons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .player-vote-btn {
+    min-height: 42px;
+    padding: 9px 6px;
+    border: 1px solid var(--line);
+    background: var(--bg-input);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.13s, color 0.13s, background 0.13s, box-shadow 0.13s;
+  }
+  .player-vote-btn--support.active {
+    border-color: var(--good);
+    color: var(--good);
+    background: rgba(124,227,154,0.08);
+  }
+  .player-vote-btn--abstain.active {
+    border-color: var(--neutral);
+    color: var(--neutral);
+    background: rgba(160,160,170,0.08);
+  }
+  .player-vote-btn--against.active {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: rgba(255,91,110,0.08);
+  }
+  .player-vote-btn:active { transform: translateY(1px); }
+
   .stance-col-empty {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; color: var(--text-mute);
     padding: 12px; text-align: center; opacity: 0.5;
     border: 1px dashed var(--line-soft);
     margin: 4px;
+  }
+
+  @media (max-width: 760px) {
+    .player-mobile-vote { display: flex; flex-direction: column; }
+    .stance-panel { grid-template-columns: 1fr; }
   }
 
   /* ── Law detail panel ────────────────────────────────────────────────────── */
