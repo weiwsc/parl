@@ -22,7 +22,7 @@ import { ConnectionDrawer } from './ConnectionDrawer';
 import { ConnectionLayer } from './ConnectionLayer';
 import { EntityNodeView } from './EntityNodeView';
 import { TransformNodeView } from './TransformNodeView';
-import type { CanvasPoint, CanvasViewport, NodeDragState, PanDragState, RegisterPortAnchor, WireDragState } from './nodeCanvasTypes';
+import type { CanvasPoint, NodeDragState, RegisterPortAnchor, WireDragState } from './nodeCanvasTypes';
 import {
   CANVAS_MAX_ZOOM,
   CANVAS_MIN_ZOOM,
@@ -33,6 +33,7 @@ import {
   samePortRef,
   validateConnection,
 } from './nodeCanvasUtils';
+import { canvasViewportTransform, useCanvasViewport } from './useCanvasViewport';
 
 interface NodeCanvasProps {
   types: EntityType[];
@@ -52,6 +53,7 @@ interface NodeDragPreview {
 
 export function NodeCanvas({ types, graph, transforms, factions, regions, canEdit, onChange }: NodeCanvasProps) {
   const viewportDivRef = useRef<HTMLDivElement | null>(null);
+  const surfaceDivRef = useRef<HTMLDivElement | null>(null);
   const portElementsRef = useRef(new Map<string, HTMLElement>());
   const portResizeObserverRef = useRef<ResizeObserver | null>(null);
   const portMeasureFrameRef = useRef<number | null>(null);
@@ -61,15 +63,23 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
   const [portAnchors, setPortAnchors] = useState<Record<string, CanvasPoint>>({});
   const [nodeDrag, setNodeDrag] = useState<NodeDragState | null>(null);
   const [nodeDragPreview, setNodeDragPreview] = useState<NodeDragPreview | null>(null);
-  const [panDrag, setPanDrag] = useState<PanDragState | null>(null);
   const [wireDrag, setWireDrag] = useState<WireDragState | null>(null);
-  const [viewport, setViewport] = useState<CanvasViewport>({ panX: 40, panY: 40, zoom: 1 });
   const [mode, setMode] = useState<NodeConnectionMode>('read');
   const [amount, setAmount] = useState(1);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
   const [connectionMenu, setConnectionMenu] = useState<{ connectionId: string; x: number; y: number } | null>(null);
-  const viewportRef = useRef<CanvasViewport>(viewport);
+  const {
+    viewport,
+    viewportRef,
+    setViewport,
+    isPanning,
+    beginPan,
+    updatePan,
+    endPan,
+    getCanvasPoint,
+    zoomAtClientPoint,
+  } = useCanvasViewport(viewportDivRef, surfaceDivRef);
   const evaluation = useMemo(() => evaluateGraph({ graph, types, transforms, factions, regions }), [graph, types, transforms, factions, regions]);
   const typeById = useMemo(() => new Map(types.map(type => [type.id, type])), [types]);
   const displayedGraph = useMemo<NodeGraph>(() => {
@@ -83,21 +93,9 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     };
   }, [graph, nodeDragPreview]);
 
-  viewportRef.current = viewport;
   graphRef.current = graph;
 
   const updateGraph = useCallback((updater: (graph: NodeGraph) => NodeGraph) => onChange(updater(graph)), [graph, onChange]);
-
-  // Convert client coords to canvas (content) coords
-  const getCanvasPoint = useCallback((event: { clientX: number; clientY: number }): CanvasPoint => {
-    const rect = viewportDivRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
-    const { panX, panY, zoom } = viewportRef.current;
-    return {
-      x: (event.clientX - rect.left - panX) / zoom,
-      y: (event.clientY - rect.top - panY) / zoom,
-    };
-  }, []);
 
   const measurePortAnchors = useCallback(() => {
     const viewportElement = viewportDivRef.current;
@@ -178,23 +176,12 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     if (!el) return;
     const handler = (e: WheelEvent) => {
       e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const sx = e.clientX - rect.left;
-      const sy = e.clientY - rect.top;
       const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-      setViewport(v => {
-        const newZoom = Math.max(CANVAS_MIN_ZOOM, Math.min(CANVAS_MAX_ZOOM, v.zoom * factor));
-        if (Math.abs(newZoom - v.zoom) < 0.001) return v;
-        return {
-          panX: sx - (sx - v.panX) * (newZoom / v.zoom),
-          panY: sy - (sy - v.panY) * (newZoom / v.zoom),
-          zoom: newZoom,
-        };
-      });
+      zoomAtClientPoint(e.clientX, e.clientY, factor);
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
-  }, []);
+  }, [zoomAtClientPoint]);
 
   // Fit all nodes into view
   const fitToView = useCallback(() => {
@@ -408,22 +395,20 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     setConnectionMenu(null);
     if (event.button === 1) {
       event.preventDefault();
-      setPanDrag({ startX: event.clientX, startY: event.clientY, startPanX: viewport.panX, startPanY: viewport.panY });
+      event.currentTarget.setPointerCapture(event.pointerId);
+      beginPan(event.clientX, event.clientY);
     }
   };
 
   const handleViewportPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (panDrag) {
-      setViewport(v => ({
-        ...v,
-        panX: panDrag.startPanX + (event.clientX - panDrag.startX),
-        panY: panDrag.startPanY + (event.clientY - panDrag.startY),
-      }));
+    if (updatePan(event.clientX, event.clientY)) {
+      event.preventDefault();
     }
   };
 
-  const handleViewportPointerUp = () => {
-    setPanDrag(null);
+  const handleViewportPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    endPan();
   };
 
   const handleSurfaceDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -460,8 +445,7 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
     }
   };
 
-  const { panX, panY, zoom } = viewport;
-  const isPanning = !!panDrag;
+  const { zoom } = viewport;
   const nodeElements = useMemo(() => displayedGraph.nodes.map(node => node.kind === 'transform' ? (
     <TransformNodeView
       key={node.id}
@@ -539,6 +523,7 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
         onPointerDown={handleViewportPointerDown}
         onPointerMove={handleViewportPointerMove}
         onPointerUp={handleViewportPointerUp}
+        onPointerCancel={handleViewportPointerUp}
         onDragOver={event => {
           if (!canEdit) return;
           if (
@@ -558,8 +543,9 @@ export function NodeCanvas({ types, graph, transforms, factions, regions, canEdi
         )}
         {/* Transformed surface — all nodes live here in canvas coords */}
         <div
+          ref={surfaceDivRef}
           className="ne-canvas-surface"
-          style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}
+          style={{ transform: canvasViewportTransform(viewport), transformOrigin: '0 0' }}
         >
           <ConnectionLayer graph={displayedGraph} anchors={portAnchors} pendingWire={wireDrag} onConnectionLabelClick={openConnectionMenu} />
           {nodeElements}

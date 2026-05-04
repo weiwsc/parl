@@ -96,6 +96,7 @@
   overflow: visible;
   transform-origin: 0 0;
 }
+.ne-canvas-viewport.ne-pan-active .ne-canvas-surface { will-change: transform; }
 
 .ne-canvas-empty {
   position: absolute;
@@ -190,13 +191,12 @@
   stroke: var(--cyan);
   stroke-width: 1.5;
   stroke-opacity: 0.72;
-  filter: drop-shadow(0 0 4px var(--halo-cyan));
 }
 .ne-conn-take {
   stroke: var(--accent);
   stroke-dasharray: 6 4;
-  filter: drop-shadow(0 0 4px var(--halo));
 }
+.ne-canvas-viewport.ne-pan-active .ne-conn-line { stroke-opacity: 0.64; }
 .ne-conn-preview {
   stroke-dasharray: 4 4;
   opacity: 0.55;
