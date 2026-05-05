@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--ne-line-soft);
 }
 
 .ne-entity-class-row {
@@ -16,30 +16,30 @@
 .ne-entity-class-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   letter-spacing: 0.08em;
 }
 .ne-entity-class {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--cyan);
-  background: color-mix(in srgb, var(--cyan) 10%, transparent);
+  color: var(--ne-cyan);
+  background: color-mix(in srgb, var(--ne-cyan) 10%, transparent);
   padding: 1px 5px;
   border-radius: 2px;
 }
 .ne-entity-class-hint {
   font-size: 10px;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
 }
 .ne-entity-class-hint code {
-  color: var(--accent);
+  color: var(--ne-accent);
   font-family: 'JetBrains Mono', monospace;
 }
 
-.ne-schema-divider { height: 1px; background: var(--line-soft); }
+.ne-schema-divider { height: 1px; background: var(--ne-line-soft); }
 
 .ne-type-methods {
-  background: var(--bg-deeper);
+  background: var(--ne-bg-deeper);
 }
 .ne-type-methods .ne-transform-editor {
   min-height: min(560px, calc(100vh - 260px));
@@ -69,23 +69,23 @@
   align-items: center;
   justify-content: center;
   min-height: 24px;
-  border: 1px dashed var(--line-soft);
-  background: color-mix(in srgb, var(--cyan) 4%, transparent);
-  color: var(--text-mute);
+  border: 1px dashed var(--ne-line-soft);
+  background: color-mix(in srgb, var(--ne-cyan) 4%, transparent);
+  color: var(--ne-text-mute);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 .ne-drop-zone:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  background: color-mix(in srgb, var(--cyan) 8%, transparent);
+  border-color: var(--ne-cyan);
+  color: var(--ne-cyan);
+  background: color-mix(in srgb, var(--ne-cyan) 8%, transparent);
 }
 
 .ne-schema-empty {
   font-size: 11px;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   font-style: italic;
   padding: 8px 0 12px;
 }
@@ -107,33 +107,33 @@
   border-radius: 3px;
   border: 1px solid transparent;
 }
-.ne-node-head:focus-within { border-color: var(--line); }
+.ne-node-head:focus-within { border-color: var(--ne-line); }
 
 .ne-section > .ne-node-head {
-  background: color-mix(in srgb, var(--accent) 6%, var(--bg-panel-alt));
-  border-color: var(--line-soft);
-  border-left: 2px solid var(--accent-deep);
+  background: color-mix(in srgb, var(--ne-accent) 6%, var(--ne-bg-panel-alt));
+  border-color: var(--ne-line-soft);
+  border-left: 2px solid var(--ne-accent-deep);
 }
 .ne-primitive > .ne-node-head {
-  background: var(--bg-panel-alt);
-  border-left: 2px solid color-mix(in srgb, var(--cyan) 60%, transparent);
+  background: var(--ne-bg-panel-alt);
+  border-left: 2px solid color-mix(in srgb, var(--ne-cyan) 60%, transparent);
 }
 .ne-reference > .ne-node-head {
-  background: color-mix(in srgb, var(--cyan) 5%, var(--bg-panel-alt));
-  border-left: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--ne-cyan) 5%, var(--ne-bg-panel-alt));
+  border-left: 2px solid color-mix(in srgb, var(--ne-accent) 70%, transparent);
 }
 .ne-array > .ne-node-head {
-  background: color-mix(in srgb, var(--neutral) 10%, var(--bg-panel-alt));
-  border-left: 2px solid var(--neutral);
+  background: color-mix(in srgb, var(--ne-neutral) 10%, var(--ne-bg-panel-alt));
+  border-left: 2px solid var(--ne-neutral);
 }
 .ne-computed-view > .ne-node-head {
-  background: color-mix(in srgb, var(--good) 7%, var(--bg-panel-alt));
-  border-left: 2px solid color-mix(in srgb, var(--good) 70%, var(--cyan));
+  background: color-mix(in srgb, var(--ne-good) 7%, var(--ne-bg-panel-alt));
+  border-left: 2px solid color-mix(in srgb, var(--ne-good) 70%, var(--ne-cyan));
 }
 
 .ne-expand-btn { flex-shrink: 0; width: 18px; }
 .ne-drag-handle {
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0;
@@ -154,44 +154,44 @@
   font-weight: 700;
   flex-shrink: 0;
 }
-.ne-kind-sec { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
-.ne-kind-prim { color: var(--cyan); background: color-mix(in srgb, var(--cyan) 15%, transparent); }
-.ne-kind-ref { color: var(--accent-hot); background: color-mix(in srgb, var(--accent) 15%, transparent); }
-.ne-kind-arr { color: var(--neutral); background: color-mix(in srgb, var(--neutral) 22%, transparent); }
-.ne-kind-view { color: var(--good); background: color-mix(in srgb, var(--good) 17%, transparent); }
+.ne-kind-sec { color: var(--ne-accent); background: color-mix(in srgb, var(--ne-accent) 15%, transparent); }
+.ne-kind-prim { color: var(--ne-cyan); background: color-mix(in srgb, var(--ne-cyan) 15%, transparent); }
+.ne-kind-ref { color: var(--ne-accent-hot); background: color-mix(in srgb, var(--ne-accent) 15%, transparent); }
+.ne-kind-arr { color: var(--ne-neutral); background: color-mix(in srgb, var(--ne-neutral) 22%, transparent); }
+.ne-kind-view { color: var(--ne-good); background: color-mix(in srgb, var(--ne-good) 17%, transparent); }
 
 .ne-port-dot {
   font-size: 10px;
-  color: var(--accent-hot);
+  color: var(--ne-accent-hot);
   flex-shrink: 0;
   cursor: default;
 }
 
 .ne-name-input {
-  background: var(--bg-input);
-  border: 1px solid var(--line-soft);
+  background: var(--ne-bg-input);
+  border: 1px solid var(--ne-line-soft);
   border-radius: 2px;
-  color: var(--text);
+  color: var(--ne-text);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 3px 6px;
   width: 110px;
   flex-shrink: 0;
 }
-.ne-name-input:focus { outline: none; border-color: var(--cyan); }
+.ne-name-input:focus { outline: none; border-color: var(--ne-cyan); }
 .ne-name-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .ne-type-select {
-  background: var(--bg-input);
-  border: 1px solid var(--line-soft);
+  background: var(--ne-bg-input);
+  border: 1px solid var(--ne-line-soft);
   border-radius: 2px;
-  color: var(--text-dim);
+  color: var(--ne-text-dim);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   padding: 3px 4px;
   flex-shrink: 0;
 }
-.ne-type-select:focus { outline: none; border-color: var(--cyan); }
+.ne-type-select:focus { outline: none; border-color: var(--ne-cyan); }
 .ne-ref-select {
   max-width: 150px;
 }
@@ -201,15 +201,15 @@
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   cursor: pointer;
   flex-shrink: 0;
   white-space: nowrap;
 }
 .ne-computed-label input { cursor: pointer; }
-.ne-computed-label:has(input:checked) { color: var(--accent-hot); }
+.ne-computed-label:has(input:checked) { color: var(--ne-accent-hot); }
 .ne-computed-label-static {
-  color: var(--good);
+  color: var(--ne-good);
   cursor: default;
 }
 
@@ -217,14 +217,14 @@
   flex: 1;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--text-mute);
+  border-bottom: 1px solid var(--ne-line-soft);
+  color: var(--ne-text-mute);
   font-size: 10px;
   padding: 2px 4px;
   min-width: 60px;
 }
-.ne-desc-input:focus { outline: none; border-color: var(--line); color: var(--text-dim); }
-.ne-desc-input::placeholder { color: var(--text-mute); opacity: 0.6; }
+.ne-desc-input:focus { outline: none; border-color: var(--ne-line); color: var(--ne-text-dim); }
+.ne-desc-input::placeholder { color: var(--ne-text-mute); opacity: 0.6; }
 
 .ne-node-actions {
   display: flex;
@@ -244,7 +244,7 @@
 .ne-path-hint {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: var(--accent);
+  color: var(--ne-accent);
   opacity: 0.6;
   white-space: nowrap;
   flex-shrink: 0;
@@ -252,9 +252,9 @@
 .ne-type-pill {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: var(--text-dim);
-  border: 1px solid var(--line-soft);
-  background: var(--bg-input);
+  color: var(--ne-text-dim);
+  border: 1px solid var(--ne-line-soft);
+  background: var(--ne-bg-input);
   padding: 1px 5px;
   white-space: nowrap;
   flex-shrink: 0;
@@ -264,7 +264,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  border-left: 1px dashed var(--line-soft);
+  border-left: 1px dashed var(--ne-line-soft);
   margin-left: 10px;
   padding-top: 3px;
   padding-bottom: 3px;
@@ -278,7 +278,7 @@
 }
 .ne-root-add {
   margin-top: 6px;
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid var(--ne-line-soft);
   padding-top: 8px;
 }
 

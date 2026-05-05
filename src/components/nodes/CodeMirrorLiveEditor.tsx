@@ -117,16 +117,16 @@ export function CodeMirrorLiveEditor({
 }
 
 const nodeEditorHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: 'var(--ne-code-keyword, var(--accent-hot))', fontWeight: '600' },
-  { tag: [tags.string, tags.character], color: 'var(--ne-code-string, var(--good))' },
-  { tag: [tags.number, tags.bool, tags.null, tags.atom], color: 'var(--ne-code-literal, var(--cyan))' },
-  { tag: tags.comment, color: 'var(--ne-code-comment, var(--text-mute))', fontStyle: 'italic' },
-  { tag: tags.propertyName, color: 'var(--ne-code-property, var(--accent))' },
-  { tag: tags.definition(tags.variableName), color: 'var(--ne-code-definition, var(--text))' },
-  { tag: [tags.variableName, tags.name], color: 'var(--ne-code-variable, var(--text-dim))' },
-  { tag: tags.function(tags.variableName), color: 'var(--ne-code-function, var(--cyan))' },
-  { tag: [tags.operator, tags.punctuation, tags.bracket], color: 'var(--ne-code-punctuation, var(--text-mute))' },
-  { tag: tags.invalid, color: 'var(--danger)' },
+  { tag: tags.keyword, color: 'var(--ne-code-keyword, var(--ne-accent-hot))', fontWeight: '600' },
+  { tag: [tags.string, tags.character], color: 'var(--ne-code-string, var(--ne-good))' },
+  { tag: [tags.number, tags.bool, tags.null, tags.atom], color: 'var(--ne-code-literal, var(--ne-cyan))' },
+  { tag: tags.comment, color: 'var(--ne-code-comment, var(--ne-text-mute))', fontStyle: 'italic' },
+  { tag: tags.propertyName, color: 'var(--ne-code-property, var(--ne-accent))' },
+  { tag: tags.definition(tags.variableName), color: 'var(--ne-code-definition, var(--ne-text))' },
+  { tag: [tags.variableName, tags.name], color: 'var(--ne-code-variable, var(--ne-text-dim))' },
+  { tag: tags.function(tags.variableName), color: 'var(--ne-code-function, var(--ne-cyan))' },
+  { tag: [tags.operator, tags.punctuation, tags.bracket], color: 'var(--ne-code-punctuation, var(--ne-text-mute))' },
+  { tag: tags.invalid, color: 'var(--ne-danger)' },
 ]);
 
 function completeStructuralScope(

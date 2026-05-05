@@ -28,6 +28,7 @@ export type {
   TransformGraphNode,
   NodeGraphNode,
   NodeGraph,
+  NodeEditorTheme,
   NodeEditorConfig,
   NodeEditorState,
 } from '../../models/types';

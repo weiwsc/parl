@@ -710,9 +710,9 @@ function sampleValueForPort(port: TransformPort, index: number): NodeRuntimeValu
     return {
       title: port.valueType.chart === 'pie' ? 'Vote share' : 'Queue',
       data: [
-        { label: 'Draft', value: ordinal * 8, color: 'var(--cyan)' },
-        { label: 'Review', value: ordinal * 5, color: 'var(--accent)' },
-        { label: 'Passed', value: ordinal * 3, color: 'var(--good)' },
+        { label: 'Draft', value: ordinal * 8, color: 'var(--ne-cyan)' },
+        { label: 'Review', value: ordinal * 5, color: 'var(--ne-accent)' },
+        { label: 'Passed', value: ordinal * 3, color: 'var(--ne-good)' },
       ],
     };
   }
@@ -730,12 +730,12 @@ function sampleValueForPort(port: TransformPort, index: number): NodeRuntimeValu
 }
 
 const CHART_SCRIPT_PALETTE = [
-  'var(--cyan)',
-  'var(--accent)',
-  'var(--accent-hot)',
-  'var(--neutral)',
-  'var(--good)',
-  'var(--danger)',
+  'var(--ne-cyan)',
+  'var(--ne-accent)',
+  'var(--ne-accent-hot)',
+  'var(--ne-neutral)',
+  'var(--ne-good)',
+  'var(--ne-danger)',
   '#8bbcff',
   '#f5d56f',
 ];

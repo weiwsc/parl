@@ -23,12 +23,12 @@ interface PieBlock {
 }
 
 const PALETTE = [
-  'var(--cyan)',
-  'var(--accent)',
-  'var(--accent-hot)',
-  'var(--neutral)',
-  'var(--good)',
-  'var(--danger)',
+  'var(--ne-cyan)',
+  'var(--ne-accent)',
+  'var(--ne-accent-hot)',
+  'var(--ne-neutral)',
+  'var(--ne-good)',
+  'var(--ne-danger)',
   '#8bbcff',
   '#f5d56f',
 ];
@@ -343,7 +343,7 @@ function colorAt(index: number): string {
 }
 
 function pieGradient(segments: ChartItem[], total: number): string {
-  if (total <= 0) return 'var(--line-soft) 0 100%';
+  if (total <= 0) return 'var(--ne-line-soft) 0 100%';
 
   let cursor = 0;
   return segments.map(segment => {

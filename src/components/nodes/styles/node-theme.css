@@ -1,0 +1,108 @@
+/* Node editor theme contract.
+   Defaults intentionally mirror the current compact studio look. */
+.ne-page,
+.cm-tooltip.cm-tooltip-autocomplete {
+  --ne-bg-deep: var(--ui-bg-deep);
+  --ne-bg-deeper: var(--ui-bg-deeper);
+  --ne-bg-panel: var(--ui-bg-panel);
+  --ne-bg-panel-alt: var(--ui-bg-panel-alt);
+  --ne-bg-input: var(--ui-bg-input);
+  --ne-line: var(--ui-line);
+  --ne-line-soft: var(--ui-line-soft);
+  --ne-line-strong: var(--ui-line-strong);
+
+  --ne-accent: var(--ui-accent);
+  --ne-accent-hot: var(--ui-accent-hot);
+  --ne-accent-deep: var(--ui-accent-deep);
+  --ne-cyan: var(--ui-cyan);
+  --ne-cyan-soft: var(--cyan-soft);
+  --ne-cyan-deep: var(--cyan-deep);
+  --ne-danger: var(--ui-danger);
+  --ne-good: var(--ui-good);
+  --ne-neutral: var(--ui-neutral);
+
+  --ne-text: var(--ui-text);
+  --ne-text-dim: var(--ui-text-dim);
+  --ne-text-mute: var(--ui-text-mute);
+  --ne-warning: #ffba49;
+  --ne-error-hot: #ff7a7a;
+
+  --ne-grid-glow-1: var(--grid-glow-1);
+  --ne-grid-glow-2: var(--grid-glow-2);
+  --ne-halo: var(--halo);
+  --ne-halo-cyan: var(--halo-cyan);
+
+  --ne-canvas-bg: var(--ui-canvas-bg);
+  --ne-canvas-grid: var(--ui-canvas-grid);
+  --ne-canvas-grid-size: var(--ui-compact-grid-size);
+
+  --ne-float-bg: color-mix(in srgb, var(--ne-bg-panel) 90%, transparent);
+  --ne-float-bg-dense: color-mix(in srgb, var(--ne-bg-panel) 88%, transparent);
+  --ne-float-bg-strong: color-mix(in srgb, var(--ne-bg-panel) 96%, transparent);
+  --ne-panel-header-bg: rgba(0,0,0,0.14);
+  --ne-topbar-shadow: 0 8px 24px rgba(0,0,0,0.32);
+  --ne-palette-shadow: 0 10px 30px rgba(0,0,0,0.36);
+  --ne-popover-shadow: 0 12px 28px rgba(0,0,0,0.42);
+  --ne-inset-shadow: rgba(0,0,0,0.24);
+
+  --ne-node-width: var(--ui-compact-wide-width);
+  --ne-node-compact-width: var(--ui-compact-width);
+  --ne-node-min-height: 138px;
+  --ne-node-bg: var(--ui-compact-bg);
+  --ne-node-border: var(--ui-compact-border);
+  --ne-node-border-soft: var(--ui-compact-border-soft);
+  --ne-node-shadow: var(--ui-compact-shadow);
+  --ne-node-head-bg: var(--ui-compact-head-bg);
+  --ne-node-row-border: var(--ui-compact-row-border);
+  --ne-node-section-bg: var(--ui-compact-section-bg);
+  --ne-node-section-bg-soft: rgba(0,0,0,0.08);
+  --ne-node-code-bg: rgba(0,0,0,0.06);
+  --ne-node-hover-bg: rgba(255,255,255,0.035);
+  --ne-list-bg: rgba(0,0,0,0.16);
+  --ne-editor-section-bg: rgba(0,0,0,0.10);
+  --ne-toolbar-bg: rgba(0,0,0,0.18);
+  --ne-preview-row-border: rgba(255,255,255,0.04);
+  --ne-code-gutter-bg: var(--ne-panel-header-bg);
+  --ne-code-active-line-bg: rgba(255,255,255,0.035);
+
+  --ne-port-bg: #04131b;
+  --ne-port-section-bg: rgba(150, 160, 172, 0.18);
+  --ne-port-section-glow: 0 0 4px rgba(150, 160, 172, 0.32);
+  --ne-swatch-border: rgba(255,255,255,0.16);
+  --ne-binding-color-border: rgba(255,255,255,0.25);
+  --ne-hit-transparent: rgba(3, 8, 16, 0.01);
+
+  --ne-status-info-border: rgba(88, 196, 221, 0.42);
+  --ne-status-warning-border: rgba(255, 186, 73, 0.46);
+  --ne-status-error-border: rgba(255, 122, 122, 0.46);
+  --ne-diagnostic-warning-border: rgba(255, 186, 73, 0.38);
+  --ne-diagnostic-error-border: rgba(255, 122, 122, 0.44);
+  --ne-editor-error-border: rgba(255, 92, 92, 0.62);
+  --ne-editor-warning-border: rgba(255, 186, 73, 0.58);
+
+  --ne-code-keyword: var(--ne-accent-hot);
+  --ne-code-string: var(--ne-good);
+  --ne-code-literal: var(--ne-cyan);
+  --ne-code-comment: var(--ne-text-mute);
+  --ne-code-property: var(--ne-accent);
+  --ne-code-variable: var(--ne-text-dim);
+  --ne-code-definition: var(--ne-text);
+  --ne-code-function: var(--ne-cyan);
+  --ne-code-punctuation: var(--ne-text-mute);
+  --ne-code-selection: rgba(95, 216, 255, 0.36);
+  --ne-code-selection-focused: rgba(95, 216, 255, 0.46);
+}
+
+body[data-theme="green"] .ne-page {
+  --ne-code-keyword: var(--gold-hot);
+  --ne-code-string: #89e99f;
+  --ne-code-literal: #8bd4ff;
+  --ne-code-comment: #7aa08a;
+  --ne-code-property: #d8ee84;
+  --ne-code-variable: #adc2b8;
+  --ne-code-definition: #e3f2e7;
+  --ne-code-function: #72e6d0;
+  --ne-code-punctuation: #7d9b8a;
+  --ne-code-selection: rgba(121, 176, 255, 0.38);
+  --ne-code-selection-focused: rgba(121, 176, 255, 0.52);
+}

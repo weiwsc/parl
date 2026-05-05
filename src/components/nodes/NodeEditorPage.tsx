@@ -141,7 +141,11 @@ export function NodeEditorPage() {
   };
 
   return (
-    <div className={`ne-page${mode === 'canvas' ? ' ne-page--canvas' : ''}`} style={pageStyle}>
+    <div
+      className={`ne-page${mode === 'canvas' ? ' ne-page--canvas' : ''}`}
+      data-node-editor-theme={config.theme}
+      style={pageStyle}
+    >
       <div className="ne-topbar">
         <span className="ne-topbar-title">NODE EDITOR</span>
         <TabBar active={mode} items={tabs} onChange={setMode} />
@@ -334,6 +338,8 @@ function NodeEditorConfigPanel({
   canImport: boolean;
 }) {
   const importRef = useRef<HTMLInputElement>(null);
+  const isDefaultConfig = config.fontScale === DEFAULT_NODE_EDITOR_CONFIG.fontScale
+    && config.theme === DEFAULT_NODE_EDITOR_CONFIG.theme;
 
   const setFontScale = (fontScale: number) => {
     onChange({ ...config, fontScale: clampFontScale(fontScale) });
@@ -378,7 +384,7 @@ function NodeEditorConfigPanel({
           <button
             className="small ghost"
             onClick={() => onChange(DEFAULT_NODE_EDITOR_CONFIG)}
-            disabled={config.fontScale === DEFAULT_NODE_EDITOR_CONFIG.fontScale}
+            disabled={isDefaultConfig}
           >
             Reset
           </button>

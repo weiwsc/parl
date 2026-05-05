@@ -20,12 +20,13 @@ import type {
 } from './models/types';
 import { DEFAULT_NODE_EDITOR_CONFIG, normalizeNodeEditorConfig } from './game/nodes/config';
 import { defaultEntityTypes } from './game/nodes/schema';
+import { THEMES, isThemeId } from './theme';
+export { THEMES };
 
 export const STORAGE_KEY = 'parliamentState_v3';
 export const SCHEMA_VERSION = 3;
 export const UNALIGNED_COLOR = '#6b7e9e';
 
-export const THEMES = ['gold', 'green', 'cyan', 'crimson'];
 const SUPPORTED_LANGUAGES: Language[] = ['en', 'cn'];
 
 export function uid(prefix: string): string { 
@@ -127,7 +128,7 @@ export function normalizeState(p: any): AppState {
     ui: {
       tab: (p.ui && p.ui.tab) || 'sim',
       language: normalizeLanguage(p.ui?.language) ?? normalizeLanguage(p.language) ?? d.ui.language,
-      theme: (p.ui && THEMES.includes(p.ui.theme)) ? p.ui.theme : 'gold',
+      theme: isThemeId(p.ui?.theme) ? p.ui.theme : 'gold',
       factionExpanded: (p.ui && p.ui.factionExpanded) || {},
       nodeEditor: normalizeNodeEditorConfig(p.ui?.nodeEditor ?? p.nodes?.config),
     },

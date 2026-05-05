@@ -25,7 +25,7 @@
     right: 8%;
     width: auto;
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent) 50%, transparent);
+    background: linear-gradient(90deg, transparent, var(--ne-accent) 50%, transparent);
   }
 
   .app.app--nodes .sidebar-nav,
@@ -41,7 +41,7 @@
 
   .app.app--nodes .sidebar-foot {
     border-top: none;
-    border-left: 1px solid var(--line-soft);
+    border-left: 1px solid var(--ne-line-soft);
     align-items: stretch;
   }
 
@@ -55,7 +55,7 @@
   .app.app--nodes .sidebar-item:hover,
   .app.app--nodes .sidebar-item.active {
     border-left-color: transparent;
-    border-bottom-color: var(--accent);
+    border-bottom-color: var(--ne-accent);
   }
 
   .app.app--nodes .sidebar-label {
@@ -125,7 +125,7 @@
   .ne-transform-list {
     max-height: 190px;
     border-right: none;
-    border-bottom: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--ne-line-soft);
   }
 
   .ne-connection-list {

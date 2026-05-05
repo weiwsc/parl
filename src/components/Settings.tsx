@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
-import { useAppContext, THEMES } from '../store';
-import { normalizeState } from '../store';
+import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
+import { normalizeState, useAppContext } from '../store';
 import { useAuth } from '../context/AuthContext';
 import { useLang, LANGUAGES } from '../utils/localization';
 import { API_BASE } from '../config';
 import { Panel } from './ui/Panel';
+import { THEME_DEFINITIONS } from '../theme';
 
 interface PlayerAccount {
   id: string;
@@ -32,10 +32,6 @@ export function SettingsPanel() {
   const [playerPass, setPlayerPass] = useState('');
   const [playerFactionId, setPlayerFactionId] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
-
-  const themeColors: Record<string, string> = {
-    gold: '#d4a14a', green: '#5dee7b', cyan: '#5fc8ff', crimson: '#ff5b5b',
-  };
 
   useEffect(() => {
     if (mode !== 'hosted' || !isAdmin || !token) return;
@@ -166,12 +162,19 @@ export function SettingsPanel() {
             <div className="settings-row">
               <span className="settings-label">{t("theme")}</span>
               <div className="theme-switch" data-ro-allow>
-                {THEMES.map(theme => (
-                  <button key={theme} data-ro-allow
-                    className={state.ui.theme === theme ? 'active' : ''}
-                    onClick={() => updateState({ ui: { ...state.ui, theme } })}
-                    title={theme}>
-                    <span className="swatch" style={{ background: themeColors[theme], color: themeColors[theme] }} />
+                {THEME_DEFINITIONS.map(theme => (
+                  <button key={theme.id} data-ro-allow
+                    className={state.ui.theme === theme.id ? 'active' : ''}
+                    onClick={() => updateState({ ui: { ...state.ui, theme: theme.id } })}
+                    title={theme.label}
+                    aria-label={theme.label}>
+                    <span
+                      className="swatch"
+                      style={{
+                        '--theme-swatch': theme.swatch,
+                        '--theme-swatch-glow': theme.accent,
+                      } as CSSProperties}
+                    />
                   </button>
                 ))}
               </div>

@@ -241,9 +241,9 @@ function sampleFieldValue(detail?: string): NodeRuntimeValue {
     return {
       title: detail === 'pie chart' ? 'Vote share' : 'Queue',
       data: [
-        { label: 'Draft', value: 42, color: 'var(--cyan)' },
-        { label: 'Review', value: 28, color: 'var(--accent)' },
-        { label: 'Passed', value: 19, color: 'var(--good)' },
+        { label: 'Draft', value: 42, color: 'var(--ne-cyan)' },
+        { label: 'Review', value: 28, color: 'var(--ne-accent)' },
+        { label: 'Passed', value: 19, color: 'var(--ne-good)' },
       ],
     };
   }

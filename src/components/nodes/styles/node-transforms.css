@@ -2,12 +2,12 @@
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
   min-height: min(720px, calc(100vh - 220px));
-  background: var(--bg-deeper);
+  background: var(--ne-bg-deeper);
 }
 .ne-transform-list {
   min-width: 0;
-  border-right: 1px solid var(--line-soft);
-  background: rgba(0,0,0,0.16);
+  border-right: 1px solid var(--ne-line-soft);
+  background: var(--ne-list-bg);
   overflow: auto;
 }
 .ne-transform-list-head {
@@ -16,8 +16,8 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px;
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--accent);
+  border-bottom: 1px solid var(--ne-line-soft);
+  color: var(--ne-accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 1.5px;
@@ -30,21 +30,21 @@
   gap: 6px;
   padding: 7px 10px 7px 8px;
   border: none;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--ne-line-soft);
   background: transparent;
-  color: var(--text-dim);
+  color: var(--ne-text-dim);
   text-align: left;
   letter-spacing: 0;
   text-transform: none;
 }
 .ne-transform-item:hover,
 .ne-transform-item.active {
-  background: var(--bg-panel-alt);
+  background: var(--ne-bg-panel-alt);
   box-shadow: none;
 }
 .ne-transform-item.active {
-  border-left: 2px solid var(--accent);
-  color: var(--text);
+  border-left: 2px solid var(--ne-accent);
+  color: var(--ne-text);
 }
 .ne-transform-item-name {
   flex: 1;
@@ -57,7 +57,7 @@
 }
 .ne-transform-item-count {
   flex-shrink: 0;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 0;
@@ -77,12 +77,12 @@
 }
 /* Port section in library editor — reuses .ne-port-section + .ne-transform-port-unified */
 .ne-transform-def-port-section {
-  border: 1px solid var(--line-soft);
-  background: rgba(0,0,0,0.10);
+  border: 1px solid var(--ne-line-soft);
+  background: var(--ne-editor-section-bg);
 }
 .ne-transform-library-code-editor {
   border: none;
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid var(--ne-line-soft);
 }
 .ne-transform-library-code-editor.ne-js-code-static {
   grid-template-columns: 30px minmax(0, 1fr);
@@ -114,17 +114,17 @@
   padding: 9px 10px;
 }
 .ne-transform-js-editor {
-  border: 1px solid var(--line-soft);
-  background: var(--bg-input);
+  border: 1px solid var(--ne-line-soft);
+  background: var(--ne-bg-input);
 }
 .ne-transform-js-editor:focus-within {
-  border-color: var(--cyan);
+  border-color: var(--ne-cyan);
 }
 .ne-transform-js-editor-error {
-  border-color: rgba(255, 92, 92, 0.62);
+  border-color: var(--ne-editor-error-border);
 }
 .ne-transform-js-editor-warning {
-  border-color: rgba(255, 186, 73, 0.58);
+  border-color: var(--ne-editor-warning-border);
 }
 .ne-transform-js-toolbar {
   min-height: 30px;
@@ -133,7 +133,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 6px 8px;
-  background: rgba(0,0,0,0.18);
+  background: var(--ne-toolbar-bg);
 }
 .ne-transform-js-status,
 .ne-transform-js-vars {
@@ -144,28 +144,28 @@
 .ne-transform-js-status {
   flex-shrink: 0;
   padding: 2px 6px;
-  border: 1px solid var(--line-soft);
-  color: var(--text-dim);
+  border: 1px solid var(--ne-line-soft);
+  color: var(--ne-text-dim);
   text-transform: uppercase;
 }
 .ne-transform-js-status-info {
-  color: var(--cyan);
-  border-color: rgba(88, 196, 221, 0.42);
+  color: var(--ne-cyan);
+  border-color: var(--ne-status-info-border);
 }
 .ne-transform-js-status-warning {
-  color: #ffba49;
-  border-color: rgba(255, 186, 73, 0.46);
+  color: var(--ne-warning);
+  border-color: var(--ne-status-warning-border);
 }
 .ne-transform-js-status-error {
-  color: #ff7a7a;
-  border-color: rgba(255, 122, 122, 0.46);
+  color: var(--ne-error-hot);
+  border-color: var(--ne-status-error-border);
 }
 .ne-transform-js-vars {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
 }
 .ne-transform-js-feedback {
   display: grid;
@@ -181,8 +181,8 @@
   align-items: start;
   gap: 8px;
   padding: 7px 8px;
-  border: 1px solid var(--line-soft);
-  background: rgba(0,0,0,0.12);
+  border: 1px solid var(--ne-line-soft);
+  background: var(--ne-node-section-bg);
 }
 .ne-transform-diagnostic span {
   font-family: 'JetBrains Mono', monospace;
@@ -192,24 +192,24 @@
 }
 .ne-transform-diagnostic p {
   margin: 0;
-  color: var(--text-dim);
+  color: var(--ne-text-dim);
   font-size: 11px;
   line-height: 1.45;
 }
 .ne-transform-diagnostic-info span {
-  color: var(--cyan);
+  color: var(--ne-cyan);
 }
 .ne-transform-diagnostic-warning {
-  border-color: rgba(255, 186, 73, 0.38);
+  border-color: var(--ne-diagnostic-warning-border);
 }
 .ne-transform-diagnostic-warning span {
-  color: #ffba49;
+  color: var(--ne-warning);
 }
 .ne-transform-diagnostic-error {
-  border-color: rgba(255, 122, 122, 0.44);
+  border-color: var(--ne-diagnostic-error-border);
 }
 .ne-transform-diagnostic-error span {
-  color: #ff7a7a;
+  color: var(--ne-error-hot);
 }
 .ne-transform-preview-grid {
   display: grid;
@@ -218,13 +218,13 @@
 }
 .ne-transform-preview-panel {
   min-width: 0;
-  border: 1px solid var(--line-soft);
-  background: rgba(0,0,0,0.12);
+  border: 1px solid var(--ne-line-soft);
+  background: var(--ne-node-section-bg);
 }
 .ne-transform-preview-title {
   padding: 6px 8px;
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--accent);
+  border-bottom: 1px solid var(--ne-line-soft);
+  color: var(--ne-accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 1px;
@@ -234,7 +234,7 @@
   grid-template-columns: minmax(72px, 0.45fr) minmax(0, 1fr);
   gap: 6px;
   padding: 7px 8px;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid var(--ne-preview-row-border);
 }
 .ne-transform-preview-row:first-of-type {
   border-top: none;
@@ -242,7 +242,7 @@
 .ne-transform-preview-row span,
 .ne-transform-preview-empty {
   min-width: 0;
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   overflow: hidden;
@@ -253,7 +253,7 @@
 .ne-transform-preview-code {
   min-width: 0;
   margin: 0;
-  color: var(--text);
+  color: var(--ne-text);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   line-height: 1.45;
@@ -272,18 +272,18 @@
 
 .ne-connection-list {
   border-bottom: none;
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid var(--ne-line-soft);
   align-items: stretch;
 }
 .ne-connection-list-title {
-  color: var(--accent);
+  color: var(--ne-accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 2px;
   align-self: center;
 }
 .ne-connection-empty {
-  color: var(--text-mute);
+  color: var(--ne-text-mute);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-style: italic;
@@ -296,19 +296,19 @@
   gap: 7px;
   min-width: 420px;
   padding: 3px 5px;
-  background: var(--bg-input);
-  border: 1px solid var(--line-soft);
+  background: var(--ne-bg-input);
+  border: 1px solid var(--ne-line-soft);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
 }
 .ne-connection-item span {
-  color: var(--text-dim);
+  color: var(--ne-text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ne-connection-item b {
-  color: var(--accent);
+  color: var(--ne-accent);
   font-weight: 600;
 }
 .ne-connection-controls {
@@ -319,9 +319,9 @@
 .ne-connection-controls select,
 .ne-connection-controls input {
   min-width: 0;
-  background: var(--bg-panel);
-  border: 1px solid var(--line-soft);
-  color: var(--text-dim);
+  background: var(--ne-bg-panel);
+  border: 1px solid var(--ne-line-soft);
+  color: var(--ne-text-dim);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   padding: 2px 4px;
@@ -335,7 +335,7 @@
 }
 .ne-connection-controls select:focus,
 .ne-connection-controls input:focus {
-  border-color: var(--cyan);
+  border-color: var(--ne-cyan);
 }
 .ne-connection-delete {
   width: 18px;
@@ -344,14 +344,14 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--line-soft);
-  color: var(--text-mute);
+  border: 1px solid var(--ne-line-soft);
+  color: var(--ne-text-mute);
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   padding: 0;
 }
 .ne-connection-delete:hover {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--ne-danger);
+  color: var(--ne-danger);
 }

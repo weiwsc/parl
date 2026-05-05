@@ -1,3 +1,5 @@
+import type { ThemeId } from '../theme';
+
 export interface Stratum {
   id: string;
   name: string;
@@ -296,8 +298,11 @@ export interface NodeGraph {
   connections: NodeGraphConnection[];
 }
 
+export type NodeEditorTheme = 'studio';
+
 export interface NodeEditorConfig {
   fontScale: number;
+  theme: NodeEditorTheme;
 }
 
 export interface NodeEditorState {
@@ -322,7 +327,7 @@ export interface AppState {
   ui: {
     tab: 'sim' | 'hist' | 'trash' | 'alliances' | string;
     language : Language;
-    theme: string;
+    theme: ThemeId;
     factionExpanded: Record<string, boolean>;
     nodeEditor: NodeEditorConfig;
   };

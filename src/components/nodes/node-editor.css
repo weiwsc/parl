@@ -1,3 +1,4 @@
+@import './styles/node-theme.css';
 @import './styles/node-shell.css';
 @import './styles/node-schema.css';
 @import './styles/node-canvas.css';

@@ -95,7 +95,7 @@ export function EntityNodeView({
           </label>
           {bound && (
             <div className="ne-binding-preview">
-              <span className="ne-binding-color" style={{ background: bound.color ?? 'var(--line)' }} />
+              <span className="ne-binding-color" style={{ background: bound.color ?? 'var(--ne-line)' }} />
               <div className="ne-binding-main">
                 <b>{bound.label}</b>
                 <small>{bound.subtitle}</small>

@@ -200,11 +200,11 @@
     flex: 1;
     position: relative;
     overflow: hidden;
-    background-color: #030810;
+    background-color: var(--ui-canvas-bg);
     background-image:
-      linear-gradient(var(--line-soft) 1px, transparent 1px),
-      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
-    background-size: 40px 40px;
+      linear-gradient(var(--ui-canvas-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--ui-canvas-grid) 1px, transparent 1px);
+    background-size: var(--ui-canvas-grid-size) var(--ui-canvas-grid-size);
   }
 
   .map-canvas {
