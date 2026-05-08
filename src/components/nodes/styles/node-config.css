@@ -78,6 +78,27 @@
   justify-content: center;
 }
 
+.ne-config-control--segmented {
+  display: flex;
+  grid-template-columns: unset;
+  gap: 0;
+}
+
+.ne-config-control--segmented button {
+  flex: 1;
+  border-radius: 0;
+  letter-spacing: 0.5px;
+}
+
+.ne-config-control--segmented button:first-child {
+  border-radius: var(--ui-radius-control, 0) 0 0 var(--ui-radius-control, 0);
+}
+
+.ne-config-control--segmented button:last-child {
+  border-radius: 0 var(--ui-radius-control, 0) var(--ui-radius-control, 0) 0;
+  margin-left: -1px;
+}
+
 .ne-config-export-summary {
   min-width: 0;
   display: flex;

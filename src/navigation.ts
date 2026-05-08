@@ -21,6 +21,7 @@ export const APP_NAV_ITEMS: SidebarNavItem[] = [
   },
   { id: 'map', tab: 'map', icon: '◎', label: 'MAP', title: 'Map' },
   { id: 'law', tab: 'law', icon: '⚖', label: 'LAW', title: 'Senate Floor' },
+  { id: 'events', tab: 'events', icon: '▤', label: 'EVNT', title: 'Events' },
   { id: 'senate', tab: 'senate', icon: '⬡', label: 'SEN', title: 'Senate' },
   { id: 'nodes', tab: 'nodes', icon: '◇', label: 'NODE', title: 'Type Editor' },
   { id: 'economy', tab: 'economy', icon: '◆', label: 'ECON', title: 'Economy (coming soon)', disabled: true },

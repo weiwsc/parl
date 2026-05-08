@@ -301,6 +301,7 @@
   min-height: var(--ne-node-min-height);
   background: var(--ne-node-bg);
   border: 1px solid var(--ne-node-border);
+  border-radius: var(--ne-node-radius);
   box-shadow: var(--ne-node-shadow);
   z-index: 2;
 }
@@ -310,7 +311,9 @@
   gap: 5px;
   padding: 5px 8px;
   border-bottom: 1px solid var(--ne-node-border-soft);
+  border-radius: var(--ne-node-head-radius);
   background: var(--ne-node-head-bg);
+  box-shadow: var(--ne-node-highlight);
   cursor: grab;
 }
 .ne-graph-node-head:active { cursor: grabbing; }

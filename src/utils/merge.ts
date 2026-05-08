@@ -157,6 +157,19 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
     alliances:  mergeById(base.alliances,  local.alliances,  remote.alliances),
     laws:       mergeById(base.laws,       local.laws,       remote.laws),
     lawHistory: mergeById(base.lawHistory, local.lawHistory, remote.lawHistory),
+    events:     mergeById(base.events,     local.events,     remote.events),
+    eventSettings: {
+      newspaperName: sc(
+        local.eventSettings?.newspaperName,
+        base.eventSettings?.newspaperName,
+        remote.eventSettings?.newspaperName,
+      ) as string,
+      issues: mergeById(
+        base.eventSettings?.issues ?? [],
+        local.eventSettings?.issues ?? [],
+        remote.eventSettings?.issues ?? [],
+      ),
+    },
     history:    mergeById(base.history,    local.history,    remote.history),
     trash: {
       strata:    mergeById(base.trash.strata,    local.trash.strata,    remote.trash.strata),

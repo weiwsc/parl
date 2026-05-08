@@ -29,6 +29,7 @@ export type {
   NodeGraphNode,
   NodeGraph,
   NodeEditorTheme,
+  NodeEditorUiStyle,
   NodeEditorConfig,
   NodeEditorState,
 } from '../../models/types';

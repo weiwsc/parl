@@ -48,6 +48,8 @@
   --ne-node-width: var(--ui-compact-wide-width);
   --ne-node-compact-width: var(--ui-compact-width);
   --ne-node-min-height: 138px;
+  --ne-node-radius: var(--ui-radius-panel);
+  --ne-node-head-radius: var(--ne-node-radius) var(--ne-node-radius) 0 0;
   --ne-node-bg: var(--ui-compact-bg);
   --ne-node-border: var(--ui-compact-border);
   --ne-node-border-soft: var(--ui-compact-border-soft);
@@ -58,6 +60,7 @@
   --ne-node-section-bg-soft: rgba(0,0,0,0.08);
   --ne-node-code-bg: rgba(0,0,0,0.06);
   --ne-node-hover-bg: rgba(255,255,255,0.035);
+  --ne-node-highlight: none;
   --ne-list-bg: rgba(0,0,0,0.16);
   --ne-editor-section-bg: rgba(0,0,0,0.10);
   --ne-toolbar-bg: rgba(0,0,0,0.18);
@@ -92,6 +95,164 @@
   --ne-code-selection: rgba(95, 216, 255, 0.36);
   --ne-code-selection-focused: rgba(95, 216, 255, 0.46);
 }
+/* ── Native UI style — theme-agnostic, any color palette ── */
+.ne-page[data-ne-style="native"] {
+  --ui-font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --ui-font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --ui-radius-panel: 10px;
+  --ui-radius-control: 8px;
+  --ui-button-hover-shadow: 0 0 0 3px rgb(var(--theme-accent-rgb) / 0.18);
+  --ui-button-primary-shadow: 0 0 0 3px rgb(var(--theme-accent-rgb) / 0.22);
+  --ui-compact-bg:
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.012)),
+    color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  --ui-compact-head-bg: linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.08), rgba(255,255,255,0.015));
+  --ui-compact-border: rgba(255,255,255,0.15);
+  --ui-compact-border-soft: rgba(255,255,255,0.08);
+  --ui-compact-shadow: 0 16px 36px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.055);
+
+  --ne-float-bg: color-mix(in srgb, var(--ne-bg-panel) 76%, transparent);
+  --ne-float-bg-dense: color-mix(in srgb, var(--ne-bg-panel) 84%, transparent);
+  --ne-float-bg-strong: color-mix(in srgb, var(--ne-bg-panel) 95%, transparent);
+  --ne-panel-header-bg: linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.07), rgba(255,255,255,0.012));
+  --ne-topbar-shadow: 0 16px 36px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.08);
+  --ne-palette-shadow: 0 18px 38px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.07);
+  --ne-popover-shadow: 0 18px 38px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08);
+  --ne-node-head-bg: linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.10), rgba(255,255,255,0.018));
+  --ne-node-highlight: inset 0 1px 0 rgb(var(--theme-accent-rgb) / 0.12);
+  --ne-node-shadow: 0 16px 36px rgba(0,0,0,0.36), inset 0 1px 0 rgb(var(--theme-accent-rgb) / 0.10);
+}
+
+.ne-page[data-ne-style="native"] .ne-topbar {
+  height: 44px;
+  background: var(--ne-float-bg-dense);
+  border-color: rgba(255,255,255,0.11);
+  border-radius: 12px;
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+.ne-page[data-ne-style="native"] .ne-topbar-title,
+.ne-page[data-ne-style="native"] .ne-editor-sidebar-head,
+.ne-page[data-ne-style="native"] .ne-canvas-sidebar-head,
+.ne-page[data-ne-style="native"] .ne-port-group-title,
+.ne-page[data-ne-style="native"] .ne-connection-list-toggle,
+.ne-page[data-ne-style="native"] .ne-wire-hint,
+.ne-page[data-ne-style="native"] .ne-conn-field,
+.ne-page[data-ne-style="native"] .ne-conn-mini-field {
+  font-family: var(--ui-font-body);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ne-page[data-ne-style="native"] .ne-topbar-title,
+.ne-page[data-ne-style="native"] .ne-editor-sidebar-head,
+.ne-page[data-ne-style="native"] .ne-canvas-sidebar-head {
+  color: var(--ne-text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ne-page[data-ne-style="native"] .tab-bar {
+  align-items: center;
+  gap: 4px;
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+
+.ne-page[data-ne-style="native"] .tab-bar::before,
+.ne-page[data-ne-style="native"] .tab-bar::after {
+  display: none;
+}
+
+.ne-page[data-ne-style="native"] .tab {
+  clip-path: none;
+  margin: 4px 0;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ne-text-mute);
+  font-family: var(--ui-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ne-page[data-ne-style="native"] .tab:hover {
+  color: var(--ne-text);
+  background: rgba(255,255,255,0.055);
+}
+
+.ne-page[data-ne-style="native"] .tab.active {
+  background: rgb(var(--theme-accent-rgb) / 0.14);
+  border-color: rgb(var(--theme-accent-rgb) / 0.24);
+  color: var(--ne-text);
+  box-shadow: none;
+}
+
+.ne-page[data-ne-style="native"] .tab .badge {
+  border-radius: 5px;
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.11);
+}
+
+.ne-page[data-ne-style="native"] .ne-canvas-overlay-toolbar,
+.ne-page[data-ne-style="native"] .ne-canvas-palette,
+.ne-page[data-ne-style="native"] .ne-connection-popover {
+  border-color: rgba(255,255,255,0.11);
+  border-radius: 10px;
+}
+
+.ne-page[data-ne-style="native"] .ne-port-handle {
+  box-shadow: none;
+}
+
+.ne-page[data-ne-style="native"] .ne-port-row:hover .ne-port-handle,
+.ne-page[data-ne-style="native"] .ne-instance-field-row:hover .ne-port-handle,
+.ne-page[data-ne-style="native"] .ne-transform-port-unified:hover .ne-port-handle {
+  box-shadow: 0 0 0 3px rgb(var(--theme-accent-rgb) / 0.14);
+}
+
+body[data-theme="midnight"] .ne-page {
+  /* Canvas darker than window bg — like content area behind Xcode editor */
+  --ne-canvas-bg: #161616;
+  --ne-canvas-grid: rgba(255,255,255,0.03);
+
+  /* Float surfaces: neutral warm gray, semi-transparent for blur */
+  --ne-float-bg: rgba(40, 40, 40, 0.78);
+  --ne-float-bg-dense: rgba(40, 40, 40, 0.88);
+  --ne-float-bg-strong: rgba(40, 40, 40, 0.97);
+  --ne-panel-header-bg: rgba(255,255,255,0.03);
+
+  /* Node surfaces — elevated grays, no color tint */
+  --ne-node-bg:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.00) 40%, rgba(40,40,40,0.98)),
+    rgba(40,40,40,0.94);
+  --ne-node-border: rgba(255,255,255,0.10);
+  --ne-node-border-soft: rgba(255,255,255,0.05);
+  --ne-node-section-bg: rgba(255,255,255,0.04);
+  --ne-node-section-bg-soft: rgba(255,255,255,0.02);
+  --ne-node-code-bg: rgba(0,0,0,0.18);
+  --ne-node-hover-bg: rgba(255,255,255,0.05);
+
+  --ne-port-bg: #282828;
+  --ne-port-section-bg: rgb(var(--theme-accent-rgb) / 0.12);
+  --ne-port-section-glow: 0 0 0 1px rgb(var(--theme-accent-rgb) / 0.16);
+  --ne-swatch-border: rgba(255,255,255,0.14);
+  --ne-binding-color-border: rgba(255,255,255,0.20);
+
+  /* Xcode dark mode syntax — blue keywords, green strings, teal literals */
+  --ne-code-keyword: #5ac8fa;
+  --ne-code-string: #30d158;
+  --ne-code-literal: #ff9f0a;
+  --ne-code-comment: #68686e;
+  --ne-code-property: #32ade6;
+  --ne-code-variable: #ababaf;
+  --ne-code-definition: #f5f5f7;
+  --ne-code-function: #0a84ff;
+  --ne-code-punctuation: #68686e;
+  --ne-code-selection: rgba(10, 132, 255, 0.26);
+  --ne-code-selection-focused: rgba(10, 132, 255, 0.40);
+}
 
 body[data-theme="green"] .ne-page {
   --ne-code-keyword: var(--gold-hot);
@@ -105,4 +266,148 @@ body[data-theme="green"] .ne-page {
   --ne-code-punctuation: #7d9b8a;
   --ne-code-selection: rgba(121, 176, 255, 0.38);
   --ne-code-selection-focused: rgba(121, 176, 255, 0.52);
+}
+
+body[data-theme="marine"] .ne-page,
+body[data-theme="amber"] .ne-page,
+body[data-theme="violet"] .ne-page,
+body[data-theme="aqua"] .ne-page {
+  --ne-port-section-bg: rgb(var(--theme-accent-rgb) / 0.22);
+  --ne-port-section-glow: 0 0 8px rgb(var(--theme-accent-rgb) / 0.44);
+}
+
+body[data-theme="pine"] .ne-page {
+  --ne-canvas-bg: #141416;
+  --ne-canvas-grid: rgba(255,255,255,0.026);
+
+  --ne-float-bg: rgba(36, 36, 38, 0.76);
+  --ne-float-bg-dense: rgba(36, 36, 38, 0.82);
+  --ne-float-bg-strong: rgba(36, 36, 38, 0.94);
+  --ne-panel-header-bg: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.018));
+
+  --ne-node-bg:
+    linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.015) 34%, rgba(36,36,38,0.96)),
+    rgba(36,36,38,0.88);
+  --ne-node-border: rgba(255,255,255,0.16);
+  --ne-node-border-soft: rgba(255,255,255,0.09);
+  --ne-node-section-bg: rgba(255,255,255,0.055);
+  --ne-node-section-bg-soft: rgba(255,255,255,0.035);
+  --ne-node-code-bg: rgba(0,0,0,0.20);
+  --ne-node-hover-bg: rgba(255,255,255,0.07);
+
+  --ne-halo: rgba(10,132,255,0.20);
+  --ne-halo-cyan: rgba(100,210,255,0.18);
+  --ne-port-bg: #1c1c1e;
+  --ne-port-section-bg: rgb(var(--theme-accent-rgb) / 0.18);
+  --ne-port-section-glow: 0 0 0 1px rgb(var(--theme-accent-rgb) / 0.24);
+  --ne-swatch-border: rgba(255,255,255,0.22);
+  --ne-binding-color-border: rgba(255,255,255,0.30);
+
+  --ne-code-keyword: #64d2ff;
+  --ne-code-string: #30d158;
+  --ne-code-literal: #0a84ff;
+  --ne-code-comment: #8e8e93;
+  --ne-code-property: #00c7be;
+  --ne-code-variable: #c7c7cc;
+  --ne-code-definition: #f4f4f5;
+  --ne-code-function: #64d2ff;
+  --ne-code-punctuation: #a1a1a6;
+  --ne-code-selection: rgba(10, 132, 255, 0.34);
+  --ne-code-selection-focused: rgba(10, 132, 255, 0.46);
+}
+
+body[data-theme="marine"] .ne-page {
+  --ne-code-keyword: #c6f5ff;
+  --ne-code-string: #8dffae;
+  --ne-code-literal: #39ffd1;
+  --ne-code-comment: #72a2b5;
+  --ne-code-property: #4bdcff;
+  --ne-code-variable: #acc7d3;
+  --ne-code-definition: #e8f6fb;
+  --ne-code-function: #39ffd1;
+  --ne-code-punctuation: #7ea7b6;
+  --ne-code-selection: rgba(75, 220, 255, 0.40);
+  --ne-code-selection-focused: rgba(57, 255, 209, 0.44);
+}
+
+body[data-theme="amber"] .ne-page {
+  --ne-code-keyword: #fff0a3;
+  --ne-code-string: #b6ff5a;
+  --ne-code-literal: #8bd4ff;
+  --ne-code-comment: #a49266;
+  --ne-code-property: #ffd34d;
+  --ne-code-variable: #c9bea8;
+  --ne-code-definition: #f5efe3;
+  --ne-code-function: #b6ff5a;
+  --ne-code-punctuation: #aa976e;
+  --ne-code-selection: rgba(255, 211, 77, 0.38);
+  --ne-code-selection-focused: rgba(182, 255, 90, 0.42);
+}
+
+body[data-theme="violet"] .ne-page {
+  --ne-code-keyword: #f1d7ff;
+  --ne-code-string: #9beea6;
+  --ne-code-literal: #62e6ff;
+  --ne-code-comment: #9d83b4;
+  --ne-code-property: #d59aff;
+  --ne-code-variable: #c5b6d3;
+  --ne-code-definition: #f3ecf8;
+  --ne-code-function: #62e6ff;
+  --ne-code-punctuation: #a88fbc;
+  --ne-code-selection: rgba(213, 154, 255, 0.40);
+  --ne-code-selection-focused: rgba(98, 230, 255, 0.42);
+}
+
+body[data-theme="aqua"] .ne-page {
+  --ne-code-keyword: #d6f4ff;
+  --ne-code-string: #30d158;
+  --ne-code-literal: #00f5d4;
+  --ne-code-comment: #7ca9b6;
+  --ne-code-property: #64d2ff;
+  --ne-code-variable: #b7bdc5;
+  --ne-code-definition: #eff0f2;
+  --ne-code-function: #00f5d4;
+  --ne-code-punctuation: #8ca8b2;
+  --ne-code-selection: rgba(100, 210, 255, 0.34);
+  --ne-code-selection-focused: rgba(0, 245, 212, 0.42);
+}
+
+body[data-theme="grove"] .ne-page {
+  --ne-canvas-bg: #0e1310;
+  --ne-canvas-grid: rgba(61,230,117,0.052);
+
+  --ne-float-bg: rgba(25, 34, 28, 0.76);
+  --ne-float-bg-dense: rgba(25, 34, 28, 0.86);
+  --ne-float-bg-strong: rgba(25, 34, 28, 0.96);
+  --ne-panel-header-bg: linear-gradient(180deg, rgba(61,230,117,0.10), rgba(255,255,255,0.012));
+
+  --ne-node-bg:
+    linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.012) 34%, rgba(25,34,28,0.96)),
+    rgba(25,34,28,0.90);
+  --ne-node-border: rgba(255,255,255,0.15);
+  --ne-node-border-soft: rgba(255,255,255,0.08);
+  --ne-node-section-bg: rgba(255,255,255,0.05);
+  --ne-node-section-bg-soft: rgba(255,255,255,0.032);
+  --ne-node-code-bg: rgba(0,0,0,0.20);
+  --ne-node-hover-bg: rgba(255,255,255,0.065);
+
+  --ne-halo: rgba(61,230,117,0.36);
+  --ne-halo-cyan: rgba(50,173,230,0.24);
+  --ne-port-bg: #141b18;
+  --ne-port-section-bg: rgb(var(--theme-accent-rgb) / 0.20);
+  --ne-port-section-glow: 0 0 6px rgb(var(--theme-accent-rgb) / 0.44);
+  --ne-swatch-border: rgba(255,255,255,0.20);
+  --ne-binding-color-border: rgba(255,255,255,0.28);
+
+  --ne-code-keyword: #7affa0;
+  --ne-code-string: #ffd60a;
+  --ne-code-literal: #32ade6;
+  --ne-code-comment: #6e7a73;
+  --ne-code-property: #3de675;
+  --ne-code-variable: #adb8b2;
+  --ne-code-definition: #f0f2f0;
+  --ne-code-function: #64d2ff;
+  --ne-code-punctuation: #737c76;
+  --ne-code-selection: rgba(61, 230, 117, 0.30);
+  --ne-code-selection-focused: rgba(61, 230, 117, 0.46);
 }

@@ -144,6 +144,7 @@ export function NodeEditorPage() {
     <div
       className={`ne-page${mode === 'canvas' ? ' ne-page--canvas' : ''}`}
       data-node-editor-theme={config.theme}
+      data-ne-style={config.uiStyle}
       style={pageStyle}
     >
       <div className="ne-topbar">
@@ -339,7 +340,8 @@ function NodeEditorConfigPanel({
 }) {
   const importRef = useRef<HTMLInputElement>(null);
   const isDefaultConfig = config.fontScale === DEFAULT_NODE_EDITOR_CONFIG.fontScale
-    && config.theme === DEFAULT_NODE_EDITOR_CONFIG.theme;
+    && config.theme === DEFAULT_NODE_EDITOR_CONFIG.theme
+    && config.uiStyle === DEFAULT_NODE_EDITOR_CONFIG.uiStyle;
 
   const setFontScale = (fontScale: number) => {
     onChange({ ...config, fontScale: clampFontScale(fontScale) });
@@ -388,6 +390,25 @@ function NodeEditorConfigPanel({
           >
             Reset
           </button>
+        </div>
+        <div className="ne-config-row">
+          <div className="ne-config-label">
+            <span>UI STYLE</span>
+          </div>
+          <div className="ne-config-control ne-config-control--segmented">
+            <button
+              className={`small${config.uiStyle === 'studio' ? ' primary' : ' ghost'}`}
+              onClick={() => onChange({ ...config, uiStyle: 'studio' })}
+            >
+              Studio
+            </button>
+            <button
+              className={`small${config.uiStyle === 'native' ? ' primary' : ' ghost'}`}
+              onClick={() => onChange({ ...config, uiStyle: 'native' })}
+            >
+              Native
+            </button>
+          </div>
         </div>
         <div className="ne-config-row ne-config-row--export">
           <div className="ne-config-label">

@@ -159,14 +159,13 @@ export function SettingsPanel() {
           <div className="settings-section">
             <div className="settings-section-title">{t("appearance")}</div>
 
-            <div className="settings-row">
-              <span className="settings-label">{t("theme")}</span>
+            <div className="settings-row" style={{ alignItems: 'flex-start' }}>
+              <span className="settings-label" style={{ paddingTop: '8px' }}>{t("theme")}</span>
               <div className="theme-switch" data-ro-allow>
                 {THEME_DEFINITIONS.map(theme => (
                   <button key={theme.id} data-ro-allow
                     className={state.ui.theme === theme.id ? 'active' : ''}
                     onClick={() => updateState({ ui: { ...state.ui, theme: theme.id } })}
-                    title={theme.label}
                     aria-label={theme.label}>
                     <span
                       className="swatch"
@@ -175,6 +174,7 @@ export function SettingsPanel() {
                         '--theme-swatch-glow': theme.accent,
                       } as CSSProperties}
                     />
+                    <span className="theme-label">{theme.label}</span>
                   </button>
                 ))}
               </div>

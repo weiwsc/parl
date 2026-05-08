@@ -123,6 +123,31 @@ export interface LawVoteRecord {
   chamber?: 'parliament' | 'senate';
 }
 
+export type EventStoryRank = 'notice' | 'dispatch' | 'feature' | 'headline' | 'breaking';
+
+export interface TimelineEvent {
+  id: string;
+  turn: number;
+  rank: EventStoryRank;
+  title: string;
+  subtitle?: string;
+  body: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
+export interface EventIssueArchive {
+  id: string;
+  turn: number;
+  newspaperName: string;
+  archivedAt: number;
+}
+
+export interface EventSettings {
+  newspaperName: string;
+  issues: EventIssueArchive[];
+}
+
 export interface SenateHistoryEntry {
   id: string;
   name?: string;
@@ -299,10 +324,12 @@ export interface NodeGraph {
 }
 
 export type NodeEditorTheme = 'studio';
+export type NodeEditorUiStyle = 'studio' | 'native';
 
 export interface NodeEditorConfig {
   fontScale: number;
   theme: NodeEditorTheme;
+  uiStyle: NodeEditorUiStyle;
 }
 
 export interface NodeEditorState {
@@ -334,6 +361,8 @@ export interface AppState {
   map: { regions: MapRegion[] };
   laws: Law[];
   lawHistory: LawVoteRecord[];
+  events: TimelineEvent[];
+  eventSettings: EventSettings;
   nodes: NodeEditorState;
   senate: SenateState;
 }

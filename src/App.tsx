@@ -12,6 +12,7 @@ import { TrashPanel } from './components/Trash';
 import { SettingsPanel } from './components/Settings';
 import { MapPage } from './components/MapPage';
 import { LawPage } from './components/LawPage';
+import { EventsPage } from './components/EventsPage';
 import { NodeEditorPage } from './components/nodes/NodeEditorPage';
 import { SenatePage } from './components/SenatePage';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -370,8 +371,8 @@ function AppContent() {
         <Sidebar />
 
         <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}${tab === 'nodes' ? ' app-main--nodes' : ''}`}>
-          {tab !== 'map' && tab !== 'law' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
-          {tab !== 'settings' && tab !== 'map' && tab !== 'law' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
+          {tab !== 'map' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
+          {tab !== 'settings' && tab !== 'map' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
 
           {tab === 'sim' && (
             <div className="grid">
@@ -388,6 +389,7 @@ function AppContent() {
           {tab === 'settings' && <SettingsPanel />}
           {tab === 'map'      && <MapPage />}
           {tab === 'law'      && <LawPage />}
+          {tab === 'events'   && <EventsPage />}
           {tab === 'senate'   && <SenatePage />}
           {tab === 'nodes'    && <NodeEditorPage />}
         </main>

@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import type {
   AppState,
   EntityType,
+  EventIssueArchive,
+  EventSettings,
+  EventStoryRank,
   Language,
   NodeEditorState,
   NodeEntityBinding,
@@ -26,8 +29,10 @@ export { THEMES };
 export const STORAGE_KEY = 'parliamentState_v3';
 export const SCHEMA_VERSION = 3;
 export const UNALIGNED_COLOR = '#6b7e9e';
+export const DEFAULT_NEWSPAPER_NAME = 'The Parliamentary Gazette';
 
 const SUPPORTED_LANGUAGES: Language[] = ['en', 'cn'];
+const EVENT_RANKS: EventStoryRank[] = ['notice', 'dispatch', 'feature', 'headline', 'breaking'];
 
 export function uid(prefix: string): string { 
   return prefix + Math.random().toString(36).slice(2, 9); 
@@ -83,6 +88,11 @@ export function defaultState(language: Language = browserDefaultLanguage()): App
     map: { regions: [] },
     laws: [],
     lawHistory: [],
+    events: [],
+    eventSettings: {
+      newspaperName: DEFAULT_NEWSPAPER_NAME,
+      issues: [],
+    },
     nodes: {
       types: defaultEntityTypes(),
       graph: { nodes: [], connections: [] },
@@ -96,6 +106,7 @@ export function normalizeState(p: any): AppState {
   const d = defaultState();
   if (!p) return d;
   const oldFormat = !p.schemaVersion || p.schemaVersion < 3;
+  const events = normalizeTimelineEvents(p.events);
   const s: AppState = {
     schemaVersion: SCHEMA_VERSION,
     totalSeats: typeof p.totalSeats === 'number' ? p.totalSeats : d.totalSeats,
@@ -138,6 +149,8 @@ export function normalizeState(p: any): AppState {
       senateFactionStances: (x.senateFactionStances && typeof x.senateFactionStances === 'object') ? x.senateFactionStances : {},
     })) : [],
     lawHistory: Array.isArray(p.lawHistory) ? p.lawHistory : [],
+    events,
+    eventSettings: normalizeEventSettings(p.eventSettings, events),
     map: {
       regions: (p.map && Array.isArray(p.map.regions))
         ? p.map.regions.map((r: any) => ({
@@ -185,6 +198,71 @@ export function normalizeState(p: any): AppState {
     });
   }
   return s;
+}
+
+function normalizeTimelineEvents(value: any): AppState['events'] {
+  if (!Array.isArray(value)) return [];
+  return value.map((x: any) => {
+    const title = typeof x.title === 'string' && x.title.trim() ? x.title : 'Untitled Event';
+    const subtitle = optionalString(x.subtitle);
+    return {
+      id: stringOr(x.id, uid('event')),
+      turn: Math.max(0, Math.round(numberOr(x.turn, 1))),
+      rank: normalizeEventRank(x.rank ?? x.importance),
+      title,
+      ...(subtitle ? { subtitle } : {}),
+      body: typeof x.body === 'string' ? x.body : '',
+      createdAt: numberOr(x.createdAt, Date.now()),
+      updatedAt: typeof x.updatedAt === 'undefined' ? undefined : numberOr(x.updatedAt, Date.now()),
+    };
+  });
+}
+
+function normalizeEventRank(value: unknown): EventStoryRank {
+  if (EVENT_RANKS.includes(value as EventStoryRank)) return value as EventStoryRank;
+  const numeric = numberOr(value, 3);
+  if (numeric <= 1) return 'notice';
+  if (numeric <= 2) return 'dispatch';
+  if (numeric <= 3) return 'feature';
+  if (numeric <= 4) return 'headline';
+  return 'breaking';
+}
+
+function normalizeEventSettings(value: any, events: AppState['events']): EventSettings {
+  const newspaperName = typeof value?.newspaperName === 'string' && value.newspaperName.trim()
+    ? value.newspaperName.trim()
+    : DEFAULT_NEWSPAPER_NAME;
+  const issueByTurn = new Map<number, EventIssueArchive>();
+
+  if (Array.isArray(value?.issues)) {
+    for (const item of value.issues) {
+      const turn = Math.max(0, Math.round(numberOr(item?.turn, 0)));
+      if (issueByTurn.has(turn)) continue;
+      issueByTurn.set(turn, {
+        id: stringOr(item?.id, `issue-${turn}`),
+        turn,
+        newspaperName: typeof item?.newspaperName === 'string' && item.newspaperName.trim()
+          ? item.newspaperName.trim()
+          : newspaperName,
+        archivedAt: numberOr(item?.archivedAt, Date.now()),
+      });
+    }
+  }
+
+  for (const event of events) {
+    if (issueByTurn.has(event.turn)) continue;
+    issueByTurn.set(event.turn, {
+      id: `issue-${event.turn}`,
+      turn: event.turn,
+      newspaperName,
+      archivedAt: event.createdAt,
+    });
+  }
+
+  return {
+    newspaperName,
+    issues: [...issueByTurn.values()].sort((a, b) => b.turn - a.turn),
+  };
 }
 
 function normalizeNodeEditorState(value: any, fallback: NodeEditorState): NodeEditorState {
@@ -522,6 +600,11 @@ function stringOr(value: unknown, fallback: string): string {
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function numberOr(value: unknown, fallback: number): number {
+  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+  return Number.isFinite(numeric) ? numeric : fallback;
 }
 
 function finiteNumber(value: unknown, fallback: number): number {
