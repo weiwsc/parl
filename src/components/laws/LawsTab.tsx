@@ -3,7 +3,7 @@ import { lawStatusLabel, useLang } from '../../utils/localization';
 import type { Law, LawStatus } from '../../models/types';
 import { EmptyState } from '../ui/EmptyState';
 import { GridSurface } from '../ui/ListSurface';
-import { LawCard } from './LawCard';
+import { LawCard, LawReaderDialog } from './LawCard';
 import { LawEditor } from './LawEditor';
 
 export type LawsFilter = LawStatus | 'all';
@@ -22,11 +22,12 @@ interface LawsTabProps {
   onToggleConstitution: (id: string) => void;
 }
 
-const FILTER_ORDER: LawsFilter[] = ['all', 'effect', 'draft', 'failed', 'abolished'];
+const FILTER_ORDER: LawsFilter[] = ['all', 'voting', 'effect', 'draft', 'failed', 'abolished'];
 
 export function LawsTab({ laws, editingLaw, isNew, canEdit, onAdd, onEdit, onSave, onCancelEdit, onDelete, onStatusChange, onToggleConstitution }: LawsTabProps) {
   const t = useLang();
   const [filter, setFilter] = useState<LawsFilter>('all');
+  const [readingLawId, setReadingLawId] = useState<string | null>(null);
 
   if (editingLaw || isNew) {
     return (
@@ -43,6 +44,7 @@ export function LawsTab({ laws, editingLaw, isNew, canEdit, onAdd, onEdit, onSav
   const billLaws = laws.filter(law => !law.isConstitution);
   const filtered = filter === 'all' ? billLaws : billLaws.filter(law => law.status === filter);
   const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
+  const readingLaw = readingLawId ? laws.find(law => law.id === readingLawId) ?? null : null;
 
   return (
     <div className="law-tab-content">
@@ -67,7 +69,9 @@ export function LawsTab({ laws, editingLaw, isNew, canEdit, onAdd, onEdit, onSav
           <LawCard
             key={law.id}
             law={law}
+            preview
             canEdit={canEdit}
+            onOpen={() => setReadingLawId(law.id)}
             onEdit={() => onEdit(law)}
             onStatusChange={status => onStatusChange(law.id, status)}
             onToggleConstitution={() => onToggleConstitution(law.id)}
@@ -75,6 +79,17 @@ export function LawsTab({ laws, editingLaw, isNew, canEdit, onAdd, onEdit, onSav
           />
         ))}
       </GridSurface>
+      {readingLaw && (
+        <LawReaderDialog
+          law={readingLaw}
+          canEdit={canEdit}
+          onClose={() => setReadingLawId(null)}
+          onEdit={() => {
+            setReadingLawId(null);
+            onEdit(readingLaw);
+          }}
+        />
+      )}
     </div>
   );
 }

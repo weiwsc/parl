@@ -286,7 +286,6 @@
     .law-filter-btn {
       flex: 0 0 auto;
     }
-    .law-registry-list,
     .constitution-list {
       grid-template-columns: 1fr;
     }

@@ -16,6 +16,10 @@ import { LawsTab } from './laws/LawsTab';
 
 type LawTab = 'floor' | 'senate' | 'laws' | 'constitution' | 'history';
 
+function isVotingBill(law: Law | undefined): law is Law {
+  return !!law && law.status === 'voting' && !law.isConstitution;
+}
+
 export function LawPage() {
   const { state, updateState, showToast } = useAppContext();
   const { canEdit, factionId: playerFactionId, token } = useAuth();
@@ -34,8 +38,8 @@ export function LawPage() {
   const senateEntries     = senateProjection.projection.entries;
   const senateTotalSeats  = senateProjection.displayTotalSeats;
 
-  const parlActiveLaw   = useMemo(() => state.laws.find(l => l.id === parlActiveLawId)   ?? null, [state.laws, parlActiveLawId]);
-  const senateActiveLaw = useMemo(() => state.laws.find(l => l.id === senateActiveLawId) ?? null, [state.laws, senateActiveLawId]);
+  const parlActiveLaw   = useMemo(() => state.laws.find(l => l.id === parlActiveLawId && isVotingBill(l))   ?? null, [state.laws, parlActiveLawId]);
+  const senateActiveLaw = useMemo(() => state.laws.find(l => l.id === senateActiveLawId && isVotingBill(l)) ?? null, [state.laws, senateActiveLawId]);
 
   const submitPlayerStance = useCallback(async (
     lawId: string,

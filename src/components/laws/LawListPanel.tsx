@@ -23,7 +23,7 @@ export function LawListPanel({ laws, activeLawId, entries, totalSeats, onActivat
     <Panel className="law-list-panel" title={t('bill_queue')} subtitle={`${floorLaws.length} ${t('bill_count')}`}>
       {floorLaws.length === 0 && (
         <EmptyState>
-          {t('no_draft_bills')} {t('create_laws_hint')}
+          {t('no_voting_bills')} {t('create_laws_hint')}
         </EmptyState>
       )}
       {floorLaws.map(({ law, net }) => {

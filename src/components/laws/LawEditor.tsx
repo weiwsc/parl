@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { uid } from '../../store';
-import { useLang } from '../../utils/localization';
-import type { Law, LawClause } from '../../models/types';
+import { lawStatusLabel, useLang } from '../../utils/localization';
+import type { Law, LawClause, LawStatus } from '../../models/types';
 import { renderMarkdown } from './markdown';
 import { EditorField } from '../ui/EditorField';
+
+const LAW_STATUS_OPTIONS: LawStatus[] = ['draft', 'voting', 'effect', 'failed', 'abolished'];
 
 interface ClauseEditorProps {
   clauses: LawClause[];
@@ -81,6 +83,7 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
   const [clauses, setClauses] = useState<LawClause[]>(initial.clauses ?? []);
   const [preview, setPreview] = useState(false);
   const [isConstitution, setIsConstitution] = useState(initial.isConstitution ?? false);
+  const [status, setStatus] = useState<LawStatus>(initial.status ?? 'draft');
 
   const save = () => {
     if (!name.trim()) return;
@@ -90,7 +93,7 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
       subtitle: subtitle.trim() || undefined,
       description,
       clauses,
-      status: initial.status ?? 'draft',
+      status,
       isConstitution,
       factionStances: initial.factionStances ?? {},
       senateFactionStances: initial.senateFactionStances ?? {},
@@ -110,6 +113,17 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
         </EditorField>
         <EditorField label={t('subtitle').toUpperCase()} optional={t('optional')}>
           <input className="law-field-input" value={subtitle} onChange={event => setSubtitle(event.target.value)} placeholder={t('short_description_placeholder')} />
+        </EditorField>
+        <EditorField label={t('status').toUpperCase()}>
+          <select
+            className={`law-field-input law-field-select law-field-select--${status}`}
+            value={status}
+            onChange={event => setStatus(event.target.value as LawStatus)}
+          >
+            {LAW_STATUS_OPTIONS.map(option => (
+              <option key={option} value={option}>{lawStatusLabel(t, option)}</option>
+            ))}
+          </select>
         </EditorField>
         <EditorField
           label={t('description').toUpperCase()}

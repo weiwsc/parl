@@ -20,6 +20,7 @@
     "@codemirror/view": "^6.41.1",
     "@lezer/highlight": "^1.2.3",
     "codemirror": "^6.0.2",
+    "html2canvas": "^1.4.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

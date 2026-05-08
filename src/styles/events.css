@@ -46,6 +46,14 @@
     gap: 12px;
   }
 
+  .event-news-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   .event-issue-switcher {
     display: flex;
     align-items: center;
@@ -56,6 +64,30 @@
     letter-spacing: 1.5px;
     color: var(--text-mute);
     text-transform: uppercase;
+  }
+
+  .event-newspaper-export {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 6px 10px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.13s, color 0.13s, background 0.13s;
+  }
+
+  .event-newspaper-export:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent-hot);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-input));
+  }
+
+  .event-newspaper-export:disabled {
+    cursor: wait;
+    opacity: 0.56;
   }
 
   .event-issue-switcher select {
@@ -95,6 +127,13 @@
   }
 
   .event-newspaper::before { content: none; }
+
+  .event-newspaper--export {
+    width: 1180px !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
 
   .event-newspaper > * {
     position: relative;
@@ -328,7 +367,7 @@
   /* News grid: dense matrix — heavy outer frame, 2px internal rules */
   .event-news-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-flow: dense;
     gap: 0;
     align-items: stretch;
@@ -343,14 +382,12 @@
   .event-newspaper .event-news-grid {
     margin-top: 0;
     border: 0;
-    border-right: 2px solid var(--paper-ink);
     border-bottom: 2px solid var(--paper-ink);
   }
 
   /* ── Shared event cards ─────────────────────────────────────────────────── */
   .event-card {
     --event-accent: var(--accent);
-    --event-body-max: 8.5em;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -404,22 +441,18 @@
   }
 
   .event-card--rank-notice {
-    --event-body-max: 4.2em;
     --event-accent: var(--text-mute);
   }
 
   .event-card--rank-dispatch {
-    --event-body-max: 5.5em;
     --event-accent: color-mix(in srgb, var(--accent) 55%, var(--text-mute));
   }
 
   .event-card--rank-headline {
-    --event-body-max: 11em;
     --event-accent: var(--accent);
   }
 
   .event-card--rank-breaking {
-    --event-body-max: 18em;
     --event-accent: var(--accent-hot);
   }
 
@@ -474,21 +507,16 @@
     overflow-wrap: anywhere;
   }
 
-  .event-card-body {
-    max-height: var(--event-body-max);
-    overflow: hidden;
-    position: relative;
+  .event-card-body-wrap {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
   }
 
-  .event-card-body::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 28px;
-    background: linear-gradient(180deg, transparent, var(--bg-deeper));
-    pointer-events: none;
+  .event-card-body {
+    overflow: hidden;
   }
 
   .event-card-dot {
@@ -521,8 +549,8 @@
     border-left: 0;
   }
 
-  /* On normal 4-col rows: every 4th card after breaking has no left rule */
-  .event-newspaper .event-news-grid .event-card--rank-breaking + .event-card ~ .event-card:nth-of-type(4n+2) {
+  /* On normal 3-col rows: every 3rd card after breaking has no left rule */
+  .event-newspaper .event-news-grid .event-card--rank-breaking + .event-card ~ .event-card:nth-of-type(3n+2) {
     border-left: 0;
   }
 
@@ -666,15 +694,6 @@
     letter-spacing: 1px;
   }
 
-  .event-newspaper .event-card-body::after {
-    background: linear-gradient(180deg, transparent, var(--paper-bg));
-  }
-
-  .event-newspaper .event-card:hover .event-card-body::after,
-  .event-newspaper .event-card:focus-visible .event-card-body::after {
-    background: linear-gradient(180deg, transparent, var(--paper-bg-alt));
-  }
-
   /* Breaking news — solid red top slab, massive headline beneath */
   .event-newspaper .event-card--rank-breaking {
     --event-accent: var(--paper-red);
@@ -707,7 +726,7 @@
   .event-newspaper .event-card--rank-breaking .event-card-top,
   .event-newspaper .event-card--rank-breaking .event-card-title-row,
   .event-newspaper .event-card--rank-breaking .event-card-subtitle,
-  .event-newspaper .event-card--rank-breaking .event-card-body {
+  .event-newspaper .event-card--rank-breaking .event-card-body-wrap {
     padding-left: 24px;
     padding-right: 24px;
   }
@@ -734,7 +753,7 @@
     letter-spacing: 2px;
   }
 
-  .event-newspaper .event-card--rank-breaking .event-card-body {
+  .event-newspaper .event-card--rank-breaking .event-card-body-wrap {
     padding-bottom: 18px;
   }
 
@@ -780,17 +799,12 @@
       padding-bottom: 28px;
     }
 
-    .event-news-grid .event-card--rank-breaking .event-card-body {
+    .event-news-grid .event-card--rank-breaking .event-card-body-wrap {
       grid-area: body;
-      max-height: 18em;
       padding-top: 24px;
       padding-bottom: 24px;
       border-left: 2px solid var(--paper-ink);
       align-self: stretch;
-    }
-
-    .event-news-grid .event-card--rank-breaking .event-card-body::after {
-      background: linear-gradient(180deg, transparent, var(--paper-bg));
     }
 
     .event-news-grid .event-card--rank-headline {
@@ -1287,12 +1301,6 @@
     text-transform: uppercase;
   }
 
-  @media (max-width: 1280px) {
-    .event-news-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
   @media (max-width: 1080px) {
     .events-editor-page {
       grid-template-columns: 1fr;
@@ -1323,12 +1331,23 @@
       grid-template-columns: 1fr;
     }
 
+    .event-news-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
     .event-issue-switcher,
     .event-card-top,
     .event-editor-hd,
     .event-editor-index-hd {
       align-items: flex-start;
       flex-direction: column;
+    }
+
+    .event-issue-switcher,
+    .event-issue-switcher select,
+    .event-newspaper-export {
+      width: 100%;
     }
 
     .event-timeline-row {
@@ -1468,11 +1487,10 @@
       line-height: 1.12;
     }
 
-    .event-news-grid .event-card--rank-breaking .event-card-body {
+    .event-news-grid .event-card--rank-breaking .event-card-body-wrap {
       border-left: none;
       padding-left: 24px;
       padding-top: 8px;
       padding-bottom: 18px;
-      max-height: var(--event-body-max);
     }
   }

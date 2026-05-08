@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import html2canvas from 'html2canvas';
 import type { AppState, EventSettings, EventStoryRank, TimelineEvent } from '../models/types';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_NEWSPAPER_NAME, useAppContext, uid } from '../store';
@@ -20,6 +21,8 @@ import {
 } from './events/eventUtils';
 
 type EventView = 'news' | 'timeline' | 'editor' | 'archive';
+
+const NEWSPAPER_EXPORT_WIDTH = 1180;
 
 const fallbackEventSettings: EventSettings = {
   newspaperName: DEFAULT_NEWSPAPER_NAME,
@@ -90,6 +93,150 @@ function nextTurnNumber(events: TimelineEvent[], settings: EventSettings): numbe
   return Math.max(...turns) + 1;
 }
 
+function safeFilePart(value: string): string {
+  return value.trim().replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'newspaper';
+}
+
+function escapeAttribute(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function cdata(value: string): string {
+  return value.replace(/]]>/g, ']]]]><![CDATA[>');
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function collectDocumentCss(): string {
+  const chunks: string[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      chunks.push(Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n'));
+    } catch {
+      // Ignore browser-protected stylesheets. App CSS is same-origin in Vite.
+    }
+  }
+  return chunks.join('\n');
+}
+
+function createNewspaperExportClone(element: HTMLElement): HTMLElement {
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.classList.remove('selected');
+  clone.classList.add('event-newspaper--export');
+  clone.querySelectorAll('.selected').forEach(node => node.classList.remove('selected'));
+  return clone;
+}
+
+function measureNewspaperExportHeight(element: HTMLElement): number {
+  const rectHeight = element.getBoundingClientRect().height;
+  const footer = element.querySelector<HTMLElement>('.event-newspaper-footer');
+  const footerBottom = footer ? footer.offsetTop + footer.offsetHeight : 0;
+  return Math.max(1, Math.ceil(Math.max(element.scrollHeight, element.offsetHeight, rectHeight, footerBottom) + 24));
+}
+
+function createNewspaperSvg(element: HTMLElement, issueName: string, turn: number): Blob {
+  const css = collectDocumentCss();
+  const clone = createNewspaperExportClone(element);
+
+  const theme = escapeAttribute(document.body.getAttribute('data-theme') ?? '');
+  const exportCss = `
+    html, body, .event-export-root { margin: 0; padding: 0; width: ${NEWSPAPER_EXPORT_WIDTH}px; background: transparent; }
+    .event-newspaper--export {
+      width: ${NEWSPAPER_EXPORT_WIDTH}px !important;
+      max-width: none !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+    }
+  `;
+
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.left = '-10000px';
+  host.style.top = '0';
+  host.style.width = `${NEWSPAPER_EXPORT_WIDTH}px`;
+  host.style.pointerEvents = 'none';
+  host.appendChild(clone);
+  document.body.appendChild(host);
+
+  try {
+    const height = measureNewspaperExportHeight(clone);
+    const html = clone.outerHTML;
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${NEWSPAPER_EXPORT_WIDTH}" height="${height}" viewBox="0 0 ${NEWSPAPER_EXPORT_WIDTH} ${height}">
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="event-export-root" data-theme="${theme}">
+      <style><![CDATA[${cdata(css)}]]></style>
+      <style><![CDATA[${cdata(exportCss)}]]></style>
+      ${html}
+    </div>
+  </foreignObject>
+</svg>`;
+    return new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  } finally {
+    host.remove();
+  }
+}
+
+async function exportNewspaperElement(element: HTMLElement, issueName: string, turn: number): Promise<'png' | 'svg'> {
+  const clone = createNewspaperExportClone(element);
+
+  const fileBase = `${safeFilePart(issueName)}_turn_${turn}`;
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.left = '-10000px';
+  host.style.top = '0';
+  host.style.width = `${NEWSPAPER_EXPORT_WIDTH}px`;
+  host.style.pointerEvents = 'none';
+  host.appendChild(clone);
+  document.body.appendChild(host);
+
+  try {
+    await document.fonts?.ready;
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+
+    const height = measureNewspaperExportHeight(clone);
+    const maxCanvasSide = 16384;
+    const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1, maxCanvasSide / Math.max(NEWSPAPER_EXPORT_WIDTH, height)));
+    const canvas = await html2canvas(clone, {
+      backgroundColor: null,
+      logging: false,
+      scale,
+      useCORS: true,
+      width: NEWSPAPER_EXPORT_WIDTH,
+      height,
+      windowWidth: NEWSPAPER_EXPORT_WIDTH,
+      windowHeight: height,
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    const pngBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not encode newspaper image')), 'image/png');
+    });
+    downloadBlob(pngBlob, `${fileBase}.png`);
+    return 'png';
+  } catch (error) {
+    console.warn('PNG newspaper export failed; downloading SVG image instead.', error);
+    downloadBlob(createNewspaperSvg(element, issueName, turn), `${fileBase}.svg`);
+    return 'svg';
+  } finally {
+    host.remove();
+  }
+}
+
 interface EventNewsViewProps {
   group: EventTurnGroup | null;
   groups: EventTurnGroup[];
@@ -101,26 +248,49 @@ interface EventNewsViewProps {
 
 function EventNewsView({ group, groups, settings, selectedId, onTurnChange, onOpenEvent }: EventNewsViewProps) {
   const t = useLang();
+  const { showToast } = useAppContext();
+  const newspaperRef = useRef<HTMLElement | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   if (!group) {
     return <EmptyState className="events-empty event-newspaper-empty">{t('no_events')}</EmptyState>;
   }
 
   const issueName = issueNameForTurn(settings, group.turn);
 
+  const handleExport = async () => {
+    if (!newspaperRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      const format = await exportNewspaperElement(newspaperRef.current, issueName, group.turn);
+      showToast(format === 'svg' ? t('newspaper_exported_svg') : t('newspaper_exported'));
+    } catch (error) {
+      console.error('Newspaper export failed:', error);
+      const detail = error instanceof Error ? `: ${error.message}` : '';
+      showToast(`${t('newspaper_export_failed')}${detail}`, 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="event-news">
-      {groups.length > 1 && (
-        <div className="event-issue-switcher">
-          <span>{t('archive')}</span>
-          <select data-ro-allow value={group.turn} onChange={event => onTurnChange(Number(event.target.value))}>
-            {groups.map(item => (
-              <option key={item.turn} value={item.turn}>{t('turn')} {item.turn} · {issueNameForTurn(settings, item.turn)}</option>
-            ))}
-          </select>
-        </div>
-      )}
+      <div className="event-news-toolbar">
+        {groups.length > 1 && (
+          <div className="event-issue-switcher">
+            <span>{t('archive')}</span>
+            <select data-ro-allow value={group.turn} onChange={event => onTurnChange(Number(event.target.value))}>
+              {groups.map(item => (
+                <option key={item.turn} value={item.turn}>{t('turn')} {item.turn} · {issueNameForTurn(settings, item.turn)}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button className="event-newspaper-export" data-ro-allow onClick={handleExport} disabled={isExporting}>
+          {isExporting ? t('exporting') : t('export_newspaper')}
+        </button>
+      </div>
 
-      <section className="event-newspaper">
+      <section className="event-newspaper" ref={newspaperRef}>
         <header className="event-newspaper-masthead">
           <div className="event-newspaper-volume-bar">
             <span>{t('turn')} <strong>{toRoman(group.turn)}</strong></span>

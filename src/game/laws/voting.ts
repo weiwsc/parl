@@ -176,7 +176,7 @@ export function computeLawNetSupport(law: Law, entries: ProjectionEntry[]): numb
 
 export function getFloorLawEntries(laws: Law[], entries: ProjectionEntry[]): FloorLawEntry[] {
   return [...laws]
-    .filter(law => (law.status === 'draft' || law.status === 'voting' || law.status === 'failed') && !law.isConstitution)
+    .filter(law => law.status === 'voting' && !law.isConstitution)
     .map(law => ({ law, net: computeLawNetSupport(law, entries) }))
     .sort((a, b) => b.net - a.net);
 }
