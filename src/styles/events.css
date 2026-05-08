@@ -102,8 +102,44 @@
   }
 
   .event-newspaper-empty {
-    border: 0;
-    background: var(--bg-panel);
+    grid-column: 1 / -1;
+    position: relative;
+    min-height: 230px;
+    padding: 42px 32px;
+    border-top: 2px solid var(--paper-ink);
+    border-left: 2px solid var(--paper-ink);
+    background:
+      linear-gradient(90deg, rgba(184,38,28,0.10), transparent 34%),
+      radial-gradient(rgba(19, 16, 9, 0.08) 0.6px, transparent 0.8px) 0 0 / 3px 3px,
+      var(--paper-bg);
+    color: var(--paper-muted);
+    font-family: 'Rajdhani', var(--paper-copy-font);
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .event-newspaper-empty::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 14px;
+    background: var(--paper-red);
+  }
+
+  .event-newspaper-empty::after {
+    content: '';
+    position: absolute;
+    left: 44px;
+    right: 44px;
+    bottom: 34px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--paper-red), transparent);
+    opacity: 0.65;
   }
 
   /* Masthead: black slab, white type, red blood rule along the bottom */
@@ -220,6 +256,7 @@
   /* Massive retro headline — Cinzel 700 with red registration ghost */
   .event-newspaper h1 {
     margin: 0;
+    margin-top: 10px;
     padding: 0 28px 4px;
     font-family: var(--paper-display-font, 'Cinzel', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', Georgia, serif);
     font-weight: 700;

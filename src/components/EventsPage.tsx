@@ -517,6 +517,13 @@ export function EventsPage() {
     setView('news');
   }, []);
 
+  const handleViewChange = useCallback((nextView: EventView) => {
+    if (nextView === 'news' && latestTurn !== null) {
+      setNewsTurn(latestTurn);
+    }
+    setView(nextView);
+  }, [latestTurn]);
+
   const handleCreate = useCallback((turn?: number) => {
     const event = createDefaultEvent(events, turn);
     updateState(s => {
@@ -628,7 +635,7 @@ export function EventsPage() {
         </AppHeader>
       )}
 
-      <TabBar active={view} items={tabs} onChange={setView} />
+      <TabBar active={view} items={tabs} onChange={handleViewChange} />
 
       <section className="events-feed">
         {view === 'news' && (
