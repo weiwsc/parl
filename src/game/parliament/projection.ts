@@ -230,6 +230,15 @@ export function computeRegionElectionBreakdowns(
 
   const rng = options.rng ?? Math.random;
   const baseRandomness = Math.max(0, finiteNumber(options.baseRandomness, state.election?.baseRandomness ?? 10));
+  const electionRandomRolls = new Map<string, number>();
+  const getElectionRandomRoll = (factionId: string) => {
+    if (!options.randomize) return 0;
+    const existing = electionRandomRolls.get(factionId);
+    if (typeof existing === 'number') return existing;
+    const next = lerp(-1, 1, rng());
+    electionRandomRolls.set(factionId, next);
+    return next;
+  };
 
   return (state.map?.regions ?? []).map(region => {
     const population = Math.max(0, finiteNumber(region.population, 0));
@@ -256,7 +265,7 @@ export function computeRegionElectionBreakdowns(
         const directSupport = getRegionFactionStratumSupport(region, faction.id, stratum.id);
         const baseWeight = Math.max(0, 100 + supportModifier);
         const randomDelta = options.randomize && randomness > 0
-          ? lerp(-randomness, randomness, rng())
+          ? getElectionRandomRoll(faction.id) * randomness
           : 0;
         const randomFactor = Math.max(0, (100 + randomDelta) / 100);
         const weight = baseWeight * randomFactor;
@@ -274,10 +283,16 @@ export function computeRegionElectionBreakdowns(
       });
 
       const totalWeight = weightRows.reduce((sum, row) => sum + row.weight, 0);
+      const totalFallbackWeight = weightRows.reduce((sum, row) => sum + Math.max(0, 100 + row.supportModifier), 0);
       const stratumVotes: Record<string, number> = {};
 
       for (const row of weightRows) {
-        row.distributedVote = totalWeight > 0 ? unalignedPopulation * (row.weight / totalWeight) : 0;
+        const fallbackWeight = Math.max(0, 100 + row.supportModifier);
+        row.distributedVote = totalWeight > 0
+          ? unalignedPopulation * (row.weight / totalWeight)
+          : totalFallbackWeight > 0
+            ? unalignedPopulation * (fallbackWeight / totalFallbackWeight)
+            : unalignedPopulation / Math.max(1, weightRows.length);
         row.totalVote = row.directSupport + row.distributedVote;
         stratumVotes[row.factionId] = row.totalVote;
         votes[row.factionId] = (votes[row.factionId] || 0) + row.totalVote;

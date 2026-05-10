@@ -114,7 +114,7 @@ export function defaultState(language: Language = browserDefaultLanguage()): App
       newspaperName: DEFAULT_NEWSPAPER_NAME,
       issues: [],
     },
-    election: { baseRandomness: 10 },
+    election: { baseRandomness: 20 },
     nodes: {
       types: defaultEntityTypes(),
       graph: { nodes: [], connections: [] },
@@ -369,7 +369,7 @@ function normalizeFactionElectionModifier(
 
 function normalizeElectionSettings(value: any): AppState['election'] {
   return {
-    baseRandomness: Math.max(0, numberOr(value?.baseRandomness, 10)),
+    baseRandomness: Math.max(0, numberOr(value?.baseRandomness, 20)),
   };
 }
 
