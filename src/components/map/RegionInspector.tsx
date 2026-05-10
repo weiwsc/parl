@@ -10,7 +10,13 @@ import {
   shouldShowAlliancePie,
 } from '../../game/map/control';
 import { SupportWeightControl } from '../election/SupportWeightControl';
-import { formatModifierStrataSummary, formatSupportWeight, normalizeSupportModifier } from '../../game/parliament/modifiers';
+import {
+  formatModifierStrataSummary,
+  formatRandomnessWeight,
+  formatSupportWeight,
+  normalizeRandomnessModifier,
+  normalizeSupportModifier,
+} from '../../game/parliament/modifiers';
 import { PieChart } from './PieChart';
 import type { ControlEntry } from '../../game/map/types';
 
@@ -162,7 +168,7 @@ export function RegionInspector({
                 ...modifier.effect,
                 ...effect,
                 support: normalizeSupportModifier(effect.support ?? modifier.effect.support),
-                randomness: Math.max(0, effect.randomness ?? modifier.effect.randomness),
+                randomness: normalizeRandomnessModifier(effect.randomness ?? modifier.effect.randomness),
               },
             }
           : modifier
@@ -643,7 +649,7 @@ function RegionModifierCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const supportEffect = modifier.effect?.support ?? 0;
-  const randomEffect = Math.max(0, modifier.effect?.randomness ?? 0);
+  const randomEffect = normalizeRandomnessModifier(modifier.effect?.randomness);
   const stratumSummary = formatModifierStrataSummary(modifier.stratumIds, strata);
 
   if (!editing || !expanded) {
@@ -657,7 +663,7 @@ function RegionModifierCard({
         <span className="insp-mod-summary-tags">
           <span>{stratumSummary}</span>
           <span>{formatSupportWeight(supportEffect)}</span>
-          <span>±{randomEffect}%</span>
+          <span>{formatRandomnessWeight(randomEffect)}</span>
         </span>
       </>
     );
@@ -719,16 +725,12 @@ function RegionModifierCard({
           value={supportEffect}
           onChange={support => onUpdateEffect({ support })}
         />
-        <label>
-          Random
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={randomEffect}
-            onChange={event => onUpdateEffect({ randomness: Math.max(0, +event.target.value || 0) })}
-          />
-        </label>
+        <SupportWeightControl
+          label="Randomness"
+          value={randomEffect}
+          formatValue={formatRandomnessWeight}
+          onChange={randomness => onUpdateEffect({ randomness })}
+        />
         <button className="insp-mod-delete" type="button" onClick={onDelete}>DEL</button>
         <button className="insp-mod-done" type="button" onClick={() => setExpanded(false)}>DONE</button>
       </div>

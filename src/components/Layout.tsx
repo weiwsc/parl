@@ -64,15 +64,13 @@ export function Tabs() {
   const { tab } = state.ui;
   const t = useLang();
   const histCount  = state.history.length;
-  const trashCount = state.trash.strata.length + state.trash.factions.length;
 
-  type ParliamentTab = 'sim' | 'current' | 'hist' | 'trash';
+  type ParliamentTab = 'sim' | 'current' | 'hist';
   const setTab = (nextTab: ParliamentTab) => updateState(s => { s.ui.tab = nextTab; return s; });
   const items: TabItem<ParliamentTab>[] = [
     { id: 'sim', label: t("election") },
     { id: 'current', label: t("current_parliament") },
     { id: 'hist', label: t("election_history"), badge: histCount },
-    { id: 'trash', label: 'Recycle Bin', badge: trashCount },
   ];
 
   return <TabBar active={tab as ParliamentTab} items={items} onChange={setTab} />;
@@ -81,6 +79,11 @@ export function Tabs() {
 export function Sidebar() {
   const { state, updateState } = useAppContext();
   const { tab } = state.ui;
+  const trashCount =
+    state.trash.strata.length
+    + state.trash.factions.length
+    + state.trash.alliances.length
+    + state.trash.regions.length;
 
   const setModule = (id: string) =>
     updateState(s => { s.ui.tab = id; return s; });
@@ -97,6 +100,7 @@ export function Sidebar() {
           >
             <span className="sidebar-icon">{item.icon}</span>
             <span className="sidebar-label">{item.label}</span>
+            {item.tab === 'trash' && trashCount > 0 && <span className="sidebar-badge">{trashCount}</span>}
           </button>
         ))}
       </nav>

@@ -23,7 +23,7 @@ import type {
 } from './models/types';
 import { DEFAULT_NODE_EDITOR_CONFIG, normalizeNodeEditorConfig } from './game/nodes/config';
 import { defaultEntityTypes } from './game/nodes/schema';
-import { normalizeSupportModifier } from './game/parliament/modifiers';
+import { normalizeRandomnessModifier, normalizeSupportModifier } from './game/parliament/modifiers';
 import { THEMES, isThemeId } from './theme';
 export { THEMES };
 
@@ -85,7 +85,7 @@ export function defaultState(language: Language = browserDefaultLanguage()): App
     factions,
     history: [],
     alliances: [],
-    trash: { strata: [], factions: [], alliances: [] },
+    trash: { strata: [], factions: [], alliances: [], regions: [] },
     ui: {
       tab: 'sim',
       language,
@@ -161,7 +161,8 @@ export function normalizeState(p: any): AppState {
     trash: {
       strata: p.trash && Array.isArray(p.trash.strata) ? p.trash.strata : [],
       factions: p.trash && Array.isArray(p.trash.factions) ? p.trash.factions : [],
-      alliances: p.trash && Array.isArray(p.trash.alliances) ? p.trash.alliances : []
+      alliances: p.trash && Array.isArray(p.trash.alliances) ? p.trash.alliances : [],
+      regions: p.trash && Array.isArray(p.trash.regions) ? p.trash.regions : [],
     },
     ui: {
       tab: (p.ui && p.ui.tab) || 'sim',
@@ -361,7 +362,7 @@ function normalizeFactionElectionModifier(
       : strata.map(stratum => stratum.id),
     effect: {
       support: normalizeSupportModifier(item?.effect?.support),
-      randomness: Math.max(0, numberOr(item?.effect?.randomness, 0)),
+      randomness: normalizeRandomnessModifier(item?.effect?.randomness),
     },
   };
 }

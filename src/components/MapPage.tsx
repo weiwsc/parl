@@ -5,7 +5,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
 } from 'react';
-import { useAppContext, uid } from '../store';
+import { clone, useAppContext, uid } from '../store';
 import { useAuth } from '../context/AuthContext';
 import type { MapRegion, MapVertex } from '../models/types';
 import { MAP_VIEWBOX_HEIGHT, MAP_VIEWBOX_WIDTH } from '../game/map/constants';
@@ -65,6 +65,31 @@ export function MapPage() {
     [updateState]
   );
 
+  const handleDeleteRegion = useCallback((id: string) => {
+    const target = regions.find(region => region.id === id);
+    if (!target) return;
+
+    const name = target.name?.trim() || 'Untitled Region';
+    if (!window.confirm(`Move region "${name}" to recycle bin?`)) return;
+
+    updateState(appState => {
+      const index = appState.map.regions.findIndex(region => region.id === id);
+      if (index === -1) return appState;
+
+      const [deleted] = appState.map.regions.splice(index, 1);
+      appState.trash.regions ??= [];
+      appState.trash.regions.push({
+        id: deleted.id,
+        deletedAt: Date.now(),
+        data: clone(deleted),
+      });
+      return appState;
+    });
+
+    setSelectedId(current => current === id ? null : current);
+    showToast(`${name} moved to bin`);
+  }, [regions, showToast, updateState]);
+
   const completeRegion = useCallback(() => {
     if (drawVerts.length < 3) return;
 
@@ -109,15 +134,14 @@ export function MapPage() {
       }
 
       if ((event.key === 'Delete' || event.key === 'Backspace') && editorMode && selectedId && tool === 'select') {
-        const id = selectedId;
-        updateRegions(prev => prev.filter(region => region.id !== id));
-        setSelectedId(null);
+        event.preventDefault();
+        handleDeleteRegion(selectedId);
       }
     };
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tool, drawVerts, selectedId, editorMode, updateRegions, completeRegion]);
+  }, [tool, drawVerts, selectedId, editorMode, handleDeleteRegion, completeRegion]);
 
   const handleCenterMap = useCallback(() => {
     setViewport(fitRegionsToViewport(regions));
@@ -346,11 +370,6 @@ export function MapPage() {
 
   const handleUpdateRegion = useCallback((updated: MapRegion) => {
     updateRegions(prev => prev.map(region => region.id === updated.id ? updated : region));
-  }, [updateRegions]);
-
-  const handleDeleteRegion = useCallback((id: string) => {
-    updateRegions(prev => prev.filter(region => region.id !== id));
-    setSelectedId(null);
   }, [updateRegions]);
 
   const handleCopyRegionJson = useCallback(async (region: MapRegion) => {

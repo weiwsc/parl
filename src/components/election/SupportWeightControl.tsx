@@ -16,17 +16,19 @@ const SUPPORT_WEIGHT_PRESETS = [
 interface SupportWeightControlProps {
   value: number;
   onChange: (value: number) => void;
+  label?: string;
+  formatValue?: (value: number) => string;
 }
 
-export function SupportWeightControl({ value, onChange }: SupportWeightControlProps) {
+export function SupportWeightControl({ value, onChange, label = 'Weight', formatValue = formatSupportWeight }: SupportWeightControlProps) {
   const modifier = normalizeSupportModifier(value);
   const multiplier = supportModifierToMultiplier(modifier);
 
   return (
     <div className="support-weight-control">
       <div className="support-weight-head">
-        <span>Weight</span>
-        <strong>{formatSupportWeight(modifier)}</strong>
+        <span>{label}</span>
+        <strong>{formatValue(modifier)}</strong>
       </div>
       <div className="support-weight-inputs">
         <label>

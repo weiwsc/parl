@@ -1,5 +1,5 @@
 import type { FactionControlEntry, MapRegion, MapVertex } from '../../models/types';
-import { normalizeSupportModifier } from '../parliament/modifiers';
+import { normalizeRandomnessModifier, normalizeSupportModifier } from '../parliament/modifiers';
 
 export function serializeMapRegions(regions: MapRegion[]): string {
   return JSON.stringify({ regions }, null, 2);
@@ -86,7 +86,7 @@ function readRegionElectionModifiers(value: unknown): MapRegion['electionModifie
         : [],
       effect: {
         support: normalizeSupportModifier(isRecord(modifier.effect) ? readFiniteNumber(modifier.effect.support) ?? 0 : 0),
-        randomness: Math.max(0, isRecord(modifier.effect) ? readFiniteNumber(modifier.effect.randomness) ?? 0 : 0),
+        randomness: normalizeRandomnessModifier(isRecord(modifier.effect) ? readFiniteNumber(modifier.effect.randomness) ?? 0 : 0),
       },
     }));
 }

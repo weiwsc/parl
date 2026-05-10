@@ -54,6 +54,8 @@ function StratumCard({ stratum }: StratumCardProps) {
   };
 
   const deleteStratum = () => {
+    if (!window.confirm(`Move stratum "${stratum.name || 'Untitled Stratum'}" to recycle bin?`)) return;
+
     updateState((s) => {
       const idx = s.strata.findIndex(x => x.id === stratum.id);
       if (idx !== -1) {

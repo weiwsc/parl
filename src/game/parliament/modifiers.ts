@@ -3,6 +3,20 @@ export function normalizeSupportModifier(value: unknown): number {
   return Math.max(-100, Number.isFinite(numeric) ? numeric : 0);
 }
 
+export function normalizeRandomnessModifier(value: unknown): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Math.max(-100, Number.isFinite(numeric) ? numeric : 0);
+}
+
+export function randomnessModifierToMultiplier(value: unknown): number {
+  return (100 + normalizeRandomnessModifier(value)) / 100;
+}
+
+export function multiplierToRandomnessModifier(value: unknown): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return normalizeRandomnessModifier((Number.isFinite(numeric) ? numeric : 1) * 100 - 100);
+}
+
 export function supportModifierToMultiplier(value: unknown): number {
   return (100 + normalizeSupportModifier(value)) / 100;
 }
@@ -16,6 +30,18 @@ export function formatSupportWeight(value: unknown): string {
   const modifier = normalizeSupportModifier(value);
   const signed = modifier > 0 ? `+${formatEffectNumber(modifier)}` : formatEffectNumber(modifier);
   return `${formatEffectNumber(supportModifierToMultiplier(modifier))}x / ${signed}%`;
+}
+
+export function formatRandomnessModifier(value: unknown): string {
+  const modifier = normalizeRandomnessModifier(value);
+  const signed = modifier > 0 ? `+${formatEffectNumber(modifier)}` : formatEffectNumber(modifier);
+  return `${signed}% rnd`;
+}
+
+export function formatRandomnessWeight(value: unknown): string {
+  const modifier = normalizeRandomnessModifier(value);
+  const signed = modifier > 0 ? `+${formatEffectNumber(modifier)}` : formatEffectNumber(modifier);
+  return `${formatEffectNumber(randomnessModifierToMultiplier(modifier))}x rnd / ${signed}%`;
 }
 
 export function formatModifierStrataSummary(

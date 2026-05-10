@@ -1,5 +1,5 @@
 import type { AppState, Faction, HistoryEntry, MapRegion, ProjectionEntry, ProjectionResult, Stratum } from '../../models/types';
-import { normalizeSupportModifier } from './modifiers';
+import { normalizeRandomnessModifier, normalizeSupportModifier, randomnessModifierToMultiplier } from './modifiers';
 
 export const UNALIGNED_FACTION_ID = '__unaligned__';
 export const UNALIGNED_COLOR = '#6b7e9e';
@@ -248,12 +248,11 @@ export function computeRegionElectionBreakdowns(
         const supportModifier =
           totalFactionGlobalSupportModifier(faction, stratum.id)
           + totalRegionSupportModifier(region, faction.id, stratum.id);
-        const randomness = Math.max(
-          0,
-          baseRandomness
-          + totalFactionGlobalRandomness(faction, stratum.id)
+        const randomnessModifier = normalizeRandomnessModifier(
+          totalFactionGlobalRandomness(faction, stratum.id)
           + totalRegionRandomness(region, faction.id, stratum.id)
         );
+        const randomness = baseRandomness * randomnessModifierToMultiplier(randomnessModifier);
         const directSupport = getRegionFactionStratumSupport(region, faction.id, stratum.id);
         const baseWeight = Math.max(0, 100 + supportModifier);
         const randomDelta = options.randomize && randomness > 0

@@ -32,6 +32,8 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
   };
 
   const deleteFaction = () => {
+    if (!window.confirm(`Move faction "${faction.name || 'Untitled Faction'}" to recycle bin?`)) return;
+
     updateState(s => {
       const idx = s.factions.findIndex(x => x.id === faction.id);
       if (idx !== -1) {
@@ -181,6 +183,8 @@ function AllianceBlock({ alliance, isFirst, isLast, projection }: AllianceBlockP
   const updateName  = (name: string)  => updateState(s => { const a = s.alliances.find(a => a.id === alliance.id); if (a) a.name = name;   return s; });
 
   const deleteAlliance = () => {
+    if (!window.confirm(`Move alliance "${alliance.name || 'Untitled Alliance'}" to recycle bin?`)) return;
+
     updateState(s => {
       const idx = s.alliances.findIndex(a => a.id === alliance.id);
       if (idx !== -1) {

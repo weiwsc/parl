@@ -182,6 +182,7 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
       strata:    mergeById(base.trash.strata,    local.trash.strata,    remote.trash.strata),
       factions:  mergeById(base.trash.factions,  local.trash.factions,  remote.trash.factions),
       alliances: mergeById(base.trash.alliances, local.trash.alliances, remote.trash.alliances),
+      regions:   mergeById(base.trash.regions ?? [], local.trash.regions ?? [], remote.trash.regions ?? []),
     },
     map: { regions: mergeById(base.map.regions, local.map.regions, remote.map.regions) },
     nodes: mergeNodeEditorState(base.nodes, local.nodes, remote.nodes),

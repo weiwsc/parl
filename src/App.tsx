@@ -336,6 +336,16 @@ function AppContent() {
   useLocalWindowSync();
   useServerSync();
 
+  const showParliamentHeader =
+    tab !== 'trash'
+    && tab !== 'map'
+    && tab !== 'factions'
+    && tab !== 'law'
+    && tab !== 'events'
+    && tab !== 'nodes'
+    && tab !== 'senate';
+  const showParliamentTabs = showParliamentHeader && tab !== 'settings';
+
   const projection = useMemo(() => {
     const proj = computeElectionProjection(state, { randomize: false });
     return {
@@ -381,8 +391,8 @@ function AppContent() {
         <Sidebar />
 
         <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}${tab === 'nodes' ? ' app-main--nodes' : ''}`}>
-          {tab !== 'map' && tab !== 'factions' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
-          {tab !== 'settings' && tab !== 'map' && tab !== 'factions' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
+          {showParliamentHeader && <Header onElection={handleElection} />}
+          {showParliamentTabs && <Tabs />}
 
           {tab === 'sim' && (
             <div className="grid">
