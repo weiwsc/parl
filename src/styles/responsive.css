@@ -5,10 +5,20 @@
       max-width: none;
       padding: 10px 10px 44px;
     }
+    .app.app--map {
+      height: auto;
+      min-height: 100vh;
+      overflow: visible;
+      padding-bottom: 44px;
+    }
 
     .app-body {
       flex-direction: column;
       gap: 10px;
+    }
+    .app.app--map .app-body {
+      height: auto;
+      min-height: 0;
     }
 
     .sidebar {
@@ -68,6 +78,9 @@
     .app-main--map {
       width: 100%;
       padding-left: 0;
+    }
+    .app-main--map {
+      height: auto;
     }
     .app-main--map,
     .map-page {

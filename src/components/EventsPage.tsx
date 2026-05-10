@@ -146,7 +146,7 @@ function measureNewspaperExportHeight(element: HTMLElement): number {
   return Math.max(1, Math.ceil(Math.max(element.scrollHeight, element.offsetHeight, rectHeight, footerBottom) + 24));
 }
 
-function createNewspaperSvg(element: HTMLElement, issueName: string, turn: number): Blob {
+function createNewspaperSvg(element: HTMLElement, _issueName: string, _turn: number): Blob {
   const css = collectDocumentCss();
   const clone = createNewspaperExportClone(element);
 

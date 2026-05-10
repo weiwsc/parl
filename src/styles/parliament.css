@@ -139,6 +139,21 @@
     border-color: var(--danger);
     color: var(--danger);
   }
+  .computed-support-value {
+    display: block;
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--line-soft);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: right;
+    padding: 3px 6px;
+  }
+  .stratum-support-row.over .computed-support-value {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
 
   .item-actions {
     display: flex; gap: 6px;
@@ -323,6 +338,276 @@
     font-family: 'JetBrains Mono', monospace;
     color: var(--cyan);
     font-size: 11px; letter-spacing: 1px;
+  }
+
+  .current-parliament-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .current-parliament-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .current-parliament-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-mute);
+    text-transform: uppercase;
+  }
+  .current-parliament-meta span {
+    border: 1px solid var(--line-soft);
+    background: var(--bg-panel-alt);
+    padding: 3px 7px;
+  }
+  .current-parliament-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .current-parliament-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid var(--line-soft);
+    background: var(--bg-panel-alt);
+    font-size: 12px;
+  }
+  .current-parliament-row .swatch {
+    width: 10px;
+    height: 10px;
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 4px currentColor;
+  }
+  .current-parliament-row .name {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .current-parliament-row .votes,
+  .current-parliament-row .seats,
+  .current-parliament-row .pct {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+  }
+  .current-parliament-row .votes {
+    color: var(--cyan);
+    font-size: 10px;
+  }
+  .current-parliament-row .seats {
+    color: var(--accent-hot);
+    font-weight: 700;
+    min-width: 28px;
+  }
+  .current-parliament-row .pct {
+    color: var(--text-mute);
+    font-size: 10px;
+    min-width: 42px;
+  }
+  @media (max-width: 980px) {
+    .current-parliament-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .factions-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+  }
+  .factions-page-grid {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 16px;
+    min-height: 0;
+  }
+  .faction-page-list-body {
+    min-height: 0;
+  }
+  .faction-page-list {
+    gap: 6px;
+  }
+  .faction-page-list-item {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    text-align: left;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--line-soft);
+    color: var(--text);
+    padding: 8px 9px;
+    cursor: pointer;
+    transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
+  }
+  .faction-page-list-item:hover {
+    border-color: var(--cyan);
+  }
+  .faction-page-list-item.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent), 0 0 14px var(--halo);
+    background: linear-gradient(90deg, var(--grid-glow-2), var(--bg-panel-alt));
+  }
+  .faction-page-list-item .swatch {
+    width: 11px;
+    height: 11px;
+    border: 1px solid rgba(255,255,255,0.24);
+    box-shadow: 0 0 5px currentColor;
+  }
+  .faction-page-list-item .label {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .faction-page-list-item strong,
+  .faction-page-list-item small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .faction-page-list-item strong {
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+  .faction-page-list-item small {
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.7px;
+  }
+  .faction-page-list-item .count {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .faction-page-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .faction-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .faction-color-field {
+    min-height: 36px;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+  .faction-color-field span {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--line);
+    box-shadow: 0 0 8px currentColor;
+  }
+  .faction-color-field input[type="color"] {
+    width: 100%;
+    min-height: 34px;
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    padding: 2px;
+  }
+  .faction-election-field {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.7px;
+  }
+  .faction-election-field input {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
+  }
+  .faction-description-input {
+    min-height: 96px;
+    resize: vertical;
+  }
+  .faction-mod-section {
+    border-top: 1px solid var(--line-soft);
+    padding-top: 12px;
+  }
+  .insp-mod-list.faction-mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+  .insp-mod-list.faction-mod-grid .insp-mod-card {
+    min-width: 0;
+  }
+  .faction-mod-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .faction-mod-section-head h3 {
+    margin: 0;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .faction-region-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .faction-region-add select,
+  .faction-mod-card-top select {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    min-height: 28px;
+  }
+  .faction-region-add select {
+    max-width: 220px;
+  }
+  .faction-mod-card-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 0.55fr);
+    gap: 8px;
+  }
+  .faction-page-readonly-note {
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  @media (max-width: 1100px) {
+    .factions-page-grid {
+      grid-template-columns: 1fr;
+    }
+    .faction-editor-grid,
+    .faction-mod-card-top {
+      grid-template-columns: 1fr;
+    }
   }
 
   .empty {
@@ -609,6 +894,28 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px; color: var(--text-dim);
     min-width: 38px; text-align: right; flex-shrink: 0;
+  }
+
+  .fr-election-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .fr-election-toggle input {
+    width: 12px;
+    height: 12px;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .fr-election-toggle:has(input:checked) {
+    color: var(--accent);
   }
 
   .fr-toggle {

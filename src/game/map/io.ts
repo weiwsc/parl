@@ -1,4 +1,5 @@
 import type { FactionControlEntry, MapRegion, MapVertex } from '../../models/types';
+import { normalizeSupportModifier } from '../parliament/modifiers';
 
 export function serializeMapRegions(regions: MapRegion[]): string {
   return JSON.stringify({ regions }, null, 2);
@@ -21,6 +22,9 @@ export function normalizeImportedMapRegions(
       factionControl: readFactionControl(region.factionControl),
       seatings: readFiniteNumber(region.seatings) ?? 0,
       strataWeights: isRecord(region.strataWeights) ? readNumberRecord(region.strataWeights) : {},
+      population: readFiniteNumber(region.population) ?? 0,
+      factionSupport: isRecord(region.factionSupport) ? readNestedNumberRecord(region.factionSupport) : {},
+      electionModifiers: readRegionElectionModifiers(region.electionModifiers),
     }));
 }
 
@@ -55,6 +59,36 @@ function readNumberRecord(value: Record<string, unknown>): Record<string, number
     if (numberValue !== null) record[key] = numberValue;
   }
   return record;
+}
+
+function readNestedNumberRecord(value: Record<string, unknown>): Record<string, Record<string, number>> {
+  const record: Record<string, Record<string, number>> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!isRecord(raw)) continue;
+    const nested = readNumberRecord(raw);
+    if (Object.keys(nested).length > 0) record[key] = nested;
+  }
+  return record;
+}
+
+function readRegionElectionModifiers(value: unknown): MapRegion['electionModifiers'] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(isRecord)
+    .map(modifier => ({
+      id: readString(modifier.id) || `rem_${Math.random().toString(36).slice(2, 9)}`,
+      title: readString(modifier.title) || 'Election Modifier',
+      description: readString(modifier.description),
+      factionId: readString(modifier.factionId),
+      stratumIds: Array.isArray(modifier.stratumIds)
+        ? modifier.stratumIds.filter((id): id is string => typeof id === 'string')
+        : [],
+      effect: {
+        support: normalizeSupportModifier(isRecord(modifier.effect) ? readFiniteNumber(modifier.effect.support) ?? 0 : 0),
+        randomness: Math.max(0, isRecord(modifier.effect) ? readFiniteNumber(modifier.effect.randomness) ?? 0 : 0),
+      },
+    }));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

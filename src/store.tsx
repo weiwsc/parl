@@ -23,6 +23,7 @@ import type {
 } from './models/types';
 import { DEFAULT_NODE_EDITOR_CONFIG, normalizeNodeEditorConfig } from './game/nodes/config';
 import { defaultEntityTypes } from './game/nodes/schema';
+import { normalizeSupportModifier } from './game/parliament/modifiers';
 import { THEMES, isThemeId } from './theme';
 export { THEMES };
 
@@ -33,6 +34,7 @@ export const DEFAULT_NEWSPAPER_NAME = 'The Parliamentary Gazette';
 
 const SUPPORTED_LANGUAGES: Language[] = ['en', 'cn'];
 const EVENT_RANKS: EventStoryRank[] = ['notice', 'dispatch', 'feature', 'headline', 'breaking'];
+type LegacyFaction = AppState['factions'][number] & { support?: Record<string, number> };
 
 export function uid(prefix: string): string { 
   return prefix + Math.random().toString(36).slice(2, 9); 
@@ -54,27 +56,33 @@ function browserDefaultLanguage(): Language {
 }
 
 export function defaultState(language: Language = browserDefaultLanguage()): AppState {
+  const strata = [
+    { id: 's1', name: 'Aristocracy',    color: '#d4a14a', population: 500000,   power: 4.0 },
+    { id: 's2', name: 'Bourgeoisie',    color: '#2c6fb1', population: 1500000,  power: 2.0 },
+    { id: 's3', name: 'Intelligentsia', color: '#8a4cb1', population: 1000000,  power: 1.6 },
+    { id: 's4', name: 'Workers',        color: '#c44a2a', population: 4000000,  power: 0.8 },
+    { id: 's5', name: 'Peasantry',      color: '#5fa863', population: 3000000,  power: 0.5 }
+  ];
+  const factions = [
+    { id: 'f1', name: 'Reactionaries', description: '', color: '#7a2030', globalModifiers: [], participatesInElections: false },
+    { id: 'f2', name: 'Liberals',      description: '', color: '#2c6fb1', globalModifiers: [], participatesInElections: false },
+    { id: 'f3', name: 'Progressives',  description: '', color: '#d4a14a', globalModifiers: [], participatesInElections: false },
+    { id: 'f4', name: 'Socialists',    description: '', color: '#c44a2a', globalModifiers: [], participatesInElections: false },
+  ];
+  const factionSupport = {
+    f1: { s1: 350000, s2: 225000, s3: 50000,  s4: 200000,  s5: 750000 },
+    f2: { s1: 100000, s2: 825000, s3: 350000, s4: 600000,  s5: 450000 },
+    f3: { s1: 25000,  s2: 300000, s3: 450000, s4: 800000,  s5: 450000 },
+    f4: { s1: 25000,  s2: 150000, s3: 150000, s4: 2400000, s5: 1350000 },
+  };
+  const totalPopulation = strata.reduce((sum, stratum) => sum + stratum.population, 0);
+
   return {
     schemaVersion: SCHEMA_VERSION,
     totalSeats: 200,
     unalignedMode: false,
-    strata: [
-      { id: 's1', name: 'Aristocracy',    color: '#d4a14a', population: 500000,   power: 4.0 },
-      { id: 's2', name: 'Bourgeoisie',    color: '#2c6fb1', population: 1500000,  power: 2.0 },
-      { id: 's3', name: 'Intelligentsia', color: '#8a4cb1', population: 1000000,  power: 1.6 },
-      { id: 's4', name: 'Workers',        color: '#c44a2a', population: 4000000,  power: 0.8 },
-      { id: 's5', name: 'Peasantry',      color: '#5fa863', population: 3000000,  power: 0.5 }
-    ],
-    factions: [
-      { id: 'f1', name: 'Reactionaries', color: '#7a2030',
-        support: { s1: 350000, s2: 225000, s3: 50000,   s4: 200000,  s5: 750000 } },
-      { id: 'f2', name: 'Liberals',      color: '#2c6fb1',
-        support: { s1: 100000, s2: 825000, s3: 350000,  s4: 600000,  s5: 450000 } },
-      { id: 'f3', name: 'Progressives',  color: '#d4a14a',
-        support: { s1: 25000,  s2: 300000, s3: 450000,  s4: 800000,  s5: 450000 } },
-      { id: 'f4', name: 'Socialists',    color: '#c44a2a',
-        support: { s1: 25000,  s2: 150000, s3: 150000,  s4: 2400000, s5: 1350000 } }
-    ],
+    strata,
+    factions,
     history: [],
     alliances: [],
     trash: { strata: [], factions: [], alliances: [] },
@@ -85,7 +93,20 @@ export function defaultState(language: Language = browserDefaultLanguage()): App
       factionExpanded: {},
       nodeEditor: DEFAULT_NODE_EDITOR_CONFIG,
     },
-    map: { regions: [] },
+    map: {
+      regions: [{
+        id: 'r1',
+        name: 'National Region',
+        description: '',
+        vertices: [{ x: 80, y: 80 }, { x: 920, y: 80 }, { x: 920, y: 620 }, { x: 80, y: 620 }],
+        factionControl: [],
+        seatings: 0,
+        strataWeights: Object.fromEntries(strata.map(stratum => [stratum.id, totalPopulation > 0 ? stratum.population / totalPopulation * 100 : 0])),
+        population: totalPopulation,
+        factionSupport,
+        electionModifiers: [],
+      }],
+    },
     laws: [],
     lawHistory: [],
     events: [],
@@ -93,6 +114,7 @@ export function defaultState(language: Language = browserDefaultLanguage()): App
       newspaperName: DEFAULT_NEWSPAPER_NAME,
       issues: [],
     },
+    election: { baseRandomness: 10 },
     nodes: {
       types: defaultEntityTypes(),
       graph: { nodes: [], connections: [] },
@@ -107,23 +129,28 @@ export function normalizeState(p: any): AppState {
   if (!p) return d;
   const oldFormat = !p.schemaVersion || p.schemaVersion < 3;
   const events = normalizeTimelineEvents(p.events);
+  const normalizedStrata = Array.isArray(p.strata) ? p.strata.map((x: any) => ({
+    id: x.id || uid('s'),
+    name: String(x.name || 'Stratum'),
+    color: x.color || '#888888',
+    population: +x.population || 0,
+    power: +x.power || 0
+  })) : d.strata;
+  const normalizedFactions: LegacyFaction[] = Array.isArray(p.factions) ? p.factions.map((x: any) => ({
+    id: x.id || uid('f'),
+    name: String(x.name || 'Faction'),
+    description: typeof x.description === 'string' ? x.description : '',
+    color: x.color || '#888',
+    globalModifiers: normalizeFactionElectionModifiers(x.globalModifiers, normalizedStrata),
+    participatesInElections: x.participatesInElections === true,
+    ...(x.support && typeof x.support === 'object' ? { support: { ...x.support } } : {}),
+  })) : d.factions;
   const s: AppState = {
     schemaVersion: SCHEMA_VERSION,
     totalSeats: typeof p.totalSeats === 'number' ? p.totalSeats : d.totalSeats,
     unalignedMode: !!p.unalignedMode,
-    strata: Array.isArray(p.strata) ? p.strata.map((x: any) => ({
-      id: x.id || uid('s'),
-      name: String(x.name || 'Stratum'),
-      color: x.color || '#888888',
-      population: +x.population || 0,
-      power: +x.power || 0
-    })) : d.strata,
-    factions: Array.isArray(p.factions) ? p.factions.map((x: any) => ({
-      id: x.id || uid('f'),
-      name: String(x.name || 'Faction'),
-      color: x.color || '#888',
-      support: x.support && typeof x.support === 'object' ? {...x.support} : {}
-    })) : d.factions,
+    strata: normalizedStrata,
+    factions: normalizedFactions,
     history: Array.isArray(p.history) ? p.history : [],
     alliances: Array.isArray(p.alliances) ? p.alliances.map((x: any) => ({
       id: x.id || uid('a'),
@@ -151,6 +178,7 @@ export function normalizeState(p: any): AppState {
     lawHistory: Array.isArray(p.lawHistory) ? p.lawHistory : [],
     events,
     eventSettings: normalizeEventSettings(p.eventSettings, events),
+    election: normalizeElectionSettings(p.election),
     map: {
       regions: (p.map && Array.isArray(p.map.regions))
         ? p.map.regions.map((r: any) => ({
@@ -161,7 +189,10 @@ export function normalizeState(p: any): AppState {
             vertices: Array.isArray(r.vertices) ? r.vertices : [],
             factionControl: Array.isArray(r.factionControl) ? r.factionControl : [],
             seatings: typeof r.seatings === 'number' ? r.seatings : 0,
-            strataWeights: (r.strataWeights && typeof r.strataWeights === 'object') ? r.strataWeights : {},
+            strataWeights: (r.strataWeights && typeof r.strataWeights === 'object') ? normalizeNumberRecord(r.strataWeights) : {},
+            population: numberOr(r.population, 0),
+            factionSupport: normalizeFactionStratumSupportRecord(r.factionSupport, normalizedStrata, r.strataWeights),
+            electionModifiers: normalizeRegionElectionModifiers(r.electionModifiers, normalizedStrata),
           }))
         : []
     },
@@ -179,24 +210,14 @@ export function normalizeState(p: any): AppState {
     },
   };
   
-  if (oldFormat) {
-    s.factions.forEach(f => {
-      const newSup: Record<string, number> = {};
-      s.strata.forEach(st => {
-        const pct = f.support[st.id];
-        newSup[st.id] = (typeof pct === 'number')
-          ? Math.round((pct / 100) * (st.population || 0))
-          : 0;
-      });
-      f.support = newSup;
-    });
-  } else {
-    s.factions.forEach(f => {
-      s.strata.forEach(st => {
-        if (typeof f.support[st.id] !== 'number') f.support[st.id] = 0;
-      });
-    });
+  if (!stateHasRegionSupport(s)) {
+    const legacySupport = normalizeLegacyFactionSupport(normalizedFactions, normalizedStrata, oldFormat);
+    if (stateHasSupportValues(legacySupport)) {
+      s.map.regions.unshift(createLegacySupportRegion(normalizedStrata, legacySupport));
+    }
   }
+
+  s.factions = (s.factions as LegacyFaction[]).map(({ support: _support, ...faction }) => faction);
   return s;
 }
 
@@ -262,6 +283,143 @@ function normalizeEventSettings(value: any, events: AppState['events']): EventSe
   return {
     newspaperName,
     issues: [...issueByTurn.values()].sort((a, b) => b.turn - a.turn),
+  };
+}
+
+function normalizeNumberRecord(value: any): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+  const record: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    const numeric = numberOr(raw, Number.NaN);
+    if (Number.isFinite(numeric)) record[key] = numeric;
+  }
+  return record;
+}
+
+function normalizeFactionStratumSupportRecord(
+  value: any,
+  strata: AppState['strata'],
+  strataWeights: any,
+): AppState['map']['regions'][number]['factionSupport'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+  const support: AppState['map']['regions'][number]['factionSupport'] = {};
+  for (const [factionId, raw] of Object.entries(value)) {
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      const byStratum = normalizeNumberRecord(raw);
+      if (Object.values(byStratum).some(v => v > 0)) support[factionId] = byStratum;
+      continue;
+    }
+
+    const flatSupport = numberOr(raw, Number.NaN);
+    if (!Number.isFinite(flatSupport) || flatSupport <= 0) continue;
+
+    const weights = normalizeNumberRecord(strataWeights);
+    const totalWeight = strata.reduce((sum, stratum) => sum + Math.max(0, weights[stratum.id] || 0), 0);
+    support[factionId] = Object.fromEntries(strata.map(stratum => {
+      const share = totalWeight > 0
+        ? Math.max(0, weights[stratum.id] || 0) / totalWeight
+        : 1 / Math.max(1, strata.length);
+      return [stratum.id, flatSupport * share];
+    }));
+  }
+
+  return support;
+}
+
+function normalizeRegionElectionModifiers(
+  value: any,
+  strata: AppState['strata'],
+): AppState['map']['regions'][number]['electionModifiers'] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((item: any) => ({
+    ...normalizeFactionElectionModifier(item, strata),
+    factionId: typeof item?.factionId === 'string' ? item.factionId : '',
+  }));
+}
+
+function normalizeFactionElectionModifiers(
+  value: any,
+  strata: AppState['strata'],
+): AppState['factions'][number]['globalModifiers'] {
+  if (!Array.isArray(value)) return [];
+  return value.map(item => normalizeFactionElectionModifier(item, strata));
+}
+
+function normalizeFactionElectionModifier(
+  item: any,
+  strata: AppState['strata'],
+): AppState['factions'][number]['globalModifiers'][number] {
+  return {
+    id: stringOr(item?.id, uid('rem')),
+    title: stringOr(item?.title, 'Election Modifier'),
+    description: typeof item?.description === 'string' ? item.description : '',
+    stratumIds: Array.isArray(item?.stratumIds)
+      ? item.stratumIds.filter((id: unknown): id is string => typeof id === 'string')
+      : strata.map(stratum => stratum.id),
+    effect: {
+      support: normalizeSupportModifier(item?.effect?.support),
+      randomness: Math.max(0, numberOr(item?.effect?.randomness, 0)),
+    },
+  };
+}
+
+function normalizeElectionSettings(value: any): AppState['election'] {
+  return {
+    baseRandomness: Math.max(0, numberOr(value?.baseRandomness, 10)),
+  };
+}
+
+function normalizeLegacyFactionSupport(
+  factions: LegacyFaction[],
+  strata: AppState['strata'],
+  oldFormat: boolean,
+): AppState['map']['regions'][number]['factionSupport'] {
+  const support: AppState['map']['regions'][number]['factionSupport'] = {};
+
+  for (const faction of factions) {
+    const source = faction.support ?? {};
+    const byStratum: Record<string, number> = {};
+    for (const stratum of strata) {
+      const raw = numberOr(source[stratum.id], 0);
+      byStratum[stratum.id] = oldFormat ? Math.round((raw / 100) * (stratum.population || 0)) : raw;
+    }
+    if (Object.values(byStratum).some(value => value > 0)) support[faction.id] = byStratum;
+  }
+
+  return support;
+}
+
+function stateHasRegionSupport(state: AppState): boolean {
+  return state.map.regions.some(region => stateHasSupportValues(region.factionSupport));
+}
+
+function stateHasSupportValues(support: AppState['map']['regions'][number]['factionSupport']): boolean {
+  return Object.values(support).some(byStratum => Object.values(byStratum).some(value => value > 0));
+}
+
+function createLegacySupportRegion(
+  strata: AppState['strata'],
+  factionSupport: AppState['map']['regions'][number]['factionSupport'],
+): AppState['map']['regions'][number] {
+  const population = strata.reduce((sum, stratum) => sum + stratum.population, 0);
+
+  return {
+    id: uid('r'),
+    name: 'Legacy Support Region',
+    description: 'Generated from older faction-level support data.',
+    vertices: [{ x: 80, y: 80 }, { x: 920, y: 80 }, { x: 920, y: 620 }, { x: 80, y: 620 }],
+    factionControl: [],
+    seatings: 0,
+    strataWeights: Object.fromEntries(strata.map(stratum => [
+      stratum.id,
+      population > 0 ? stratum.population / population * 100 : 0,
+    ])),
+    population,
+    factionSupport,
+    electionModifiers: [],
   };
 }
 

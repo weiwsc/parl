@@ -210,10 +210,11 @@ export function defaultEntityTypes(): EntityType[] {
           { kind: 'primitive', id: 'builtin-faction-id', name: 'id', description: 'Faction id in game state', valueType: 'string', computed: false },
           { kind: 'primitive', id: 'builtin-faction-name', name: 'name', description: 'Faction display name', valueType: 'string', computed: false },
           { kind: 'primitive', id: 'builtin-faction-color', name: 'color', description: 'Faction map/chart color', valueType: 'string', computed: false },
+          { kind: 'primitive', id: 'builtin-faction-participates', name: 'participatesInElections', description: 'Whether this faction appears on parliament ballots', valueType: 'boolean', computed: false },
         ] },
         { kind: 'section', id: 'builtin-faction-support', name: 'support', description: 'Faction support data from strata', children: [
-          { kind: 'primitive', id: 'builtin-faction-total-support', name: 'total', description: 'Total people supporting this faction', valueType: 'number', computed: false },
-          { kind: 'array', id: 'builtin-faction-support-by-stratum', name: 'byStratum', description: 'Support values by stratum order', item: { kind: 'primitive', valueType: 'number' }, computed: false },
+          { kind: 'primitive', id: 'builtin-faction-total-support', name: 'total', description: 'Total people supporting this faction', valueType: 'number', computed: true },
+          { kind: 'array', id: 'builtin-faction-support-by-stratum', name: 'byStratum', description: 'Support values by stratum order', item: { kind: 'primitive', valueType: 'number' }, computed: true },
         ] },
       ],
     },
@@ -231,6 +232,7 @@ export function defaultEntityTypes(): EntityType[] {
         ] },
         { kind: 'section', id: 'builtin-region-civic', name: 'civic', description: 'Government-facing region data', children: [
           { kind: 'primitive', id: 'builtin-region-seats', name: 'seats', description: 'Regional senate seats', valueType: 'number', computed: false },
+          { kind: 'primitive', id: 'builtin-region-population', name: 'population', description: 'Election population in this region', valueType: 'number', computed: false },
         ] },
         { kind: 'section', id: 'builtin-region-control', name: 'control', description: 'Faction control data', children: [
           { kind: 'array', id: 'builtin-region-control-factions', name: 'factions', description: 'Controlling factions in region order', item: { kind: 'reference', typeId: 'builtin-faction' }, computed: false },

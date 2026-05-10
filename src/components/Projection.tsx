@@ -1,5 +1,5 @@
 import { useAppContext } from '../store';
-import { arrangeSeats, fmtFull } from '../utils/compute';
+import { arrangeSeats, fmtFull, getComputedFactionStratumSupport, stratumTotalSupport } from '../utils/compute';
 import type { ProjectionResult } from '../models/types';
 import { useLang } from '../utils/localization';
 import { EmptyState } from './ui/EmptyState';
@@ -8,6 +8,7 @@ import { TableSurface } from './ui/TableSurface';
 
 interface ProjectionProps {
   projection: ProjectionResult;
+  title?: string;
 }
 
 type ArcGroup = {
@@ -21,7 +22,7 @@ type ArcGroup = {
   midAngle: number;
 };
 
-export function ProjectionChart({ projection }: ProjectionProps) {
+export function ProjectionChart({ projection, title }: ProjectionProps) {
   const t = useLang();
   const seats = arrangeSeats(projection.totalSeats || 0);
 
@@ -93,7 +94,7 @@ export function ProjectionChart({ projection }: ProjectionProps) {
   return (
       <div className="chart-wrap">
         <div className="chart-meta">
-          {t("projected_composition")}
+          {title ?? t("projected_composition")}
           <span className="total">— {projection.totalSeats} {t("seats")} —</span>
           <div className="meta-line">
             <span>Strata <b>{projection.strataCount}</b></span>
@@ -345,9 +346,7 @@ export function SupportMatrix({ projection }: ProjectionProps) {
     );
   }
 
-  const totals = state.strata.map(s =>
-      state.factions.reduce((a, f) => a + (f.support[s.id] || 0), 0)
-  );
+  const totals = state.strata.map(s => stratumTotalSupport(state, s));
 
   return (
       <Panel title="Support Matrix &mdash; Read Only" bodyClassName="matrix-wrap no-scroll">
@@ -377,7 +376,7 @@ export function SupportMatrix({ projection }: ProjectionProps) {
                     </th>
 
                     {state.strata.map(s => {
-                      const v = f.support[s.id] || 0;
+                      const v = getComputedFactionStratumSupport(state, f.id, s.id);
                       const pop = s.population || 1;
                       const pct = Math.min(100, (v / pop) * 100);
 

@@ -12,10 +12,7 @@ export function TrashPanel() {
       const data = { ...item.data };
       if (s.strata.find(x => x.id === data.id)) data.id = uid('s');
       s.strata.push(data);
-      s.factions.forEach(f => {
-        const restoredVal = item.supportSnapshot && item.supportSnapshot[f.id] != null ? item.supportSnapshot[f.id] : 0;
-        f.support[data.id] = restoredVal;
-      });
+      s.map.regions.forEach(region => { region.strataWeights[data.id] = 0; });
       s.trash.strata.splice(idx, 1);
       return s;
     });
@@ -26,9 +23,10 @@ export function TrashPanel() {
     updateState(s => {
       const data = { ...item.data };
       if (s.factions.find(f => f.id === data.id)) data.id = uid('f');
-      s.strata.forEach(st => {
-        if (typeof data.support[st.id] !== 'number') data.support[st.id] = 0;
-      });
+      data.participatesInElections = data.participatesInElections === true;
+      data.description = data.description ?? '';
+      data.globalModifiers = data.globalModifiers ?? [];
+      delete (data as { support?: Record<string, number> }).support;
       s.factions.push(data);
       s.trash.factions.splice(idx, 1);
       return s;

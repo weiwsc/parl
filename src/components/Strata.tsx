@@ -1,5 +1,5 @@
 import { useAppContext, uid } from '../store';
-import { fmtCount, fmtFull, stratumTotalSupport } from '../utils/compute';
+import { fmtCount, fmtFull, getComputedFactionStratumSupport, stratumTotalSupport } from '../utils/compute';
 import type { Stratum } from '../models/types';
 import { useLang } from '../utils/localization';
 import { EmptyState } from './ui/EmptyState';
@@ -53,10 +53,16 @@ function StratumCard({ stratum }: StratumCardProps) {
           id: st.id,
           deletedAt: Date.now(),
           data: JSON.parse(JSON.stringify(st)),
-          supportSnapshot: Object.fromEntries(s.factions.map(f => [f.id, f.support[st.id] || 0]))
         });
         s.strata.splice(idx, 1);
-        s.factions.forEach(f => delete f.support[st.id]);
+        s.map.regions.forEach(region => {
+          if (region.strataWeights) delete region.strataWeights[st.id];
+          Object.values(region.factionSupport ?? {}).forEach(byStratum => { delete byStratum[st.id]; });
+          region.electionModifiers = (region.electionModifiers ?? []).map(modifier => ({
+            ...modifier,
+            stratumIds: (modifier.stratumIds ?? []).filter(id => id !== st.id),
+          }));
+        });
       }
       return s;
     });
@@ -68,7 +74,7 @@ function StratumCard({ stratum }: StratumCardProps) {
   const legends: Legend[] = [];
 
   state.factions.forEach(f => {
-    const v = f.support[stratum.id] || 0;
+    const v = getComputedFactionStratumSupport(state, f.id, stratum.id);
     if (v > 0) {
       const segPct = (v / denom) * 100;
       const popPct = stratum.population > 0 ? (v / stratum.population) * 100 : 0;
@@ -167,7 +173,7 @@ export function StrataList() {
       const newId = uid('s');
       const palette = ['#d4a14a','#2c6fb1','#8a4cb1','#c44a2a','#5fa863','#3aa39e','#b8862e','#aa5f8e'];
       s.strata.push({ id: newId, name: 'New Stratum', color: palette[s.strata.length % palette.length], population: 1000000, power: 1.0 });
-      s.factions.forEach(f => { f.support[newId] = 0; });
+      s.map.regions.forEach(region => { region.strataWeights[newId] = 0; });
       return s;
     });
   };

@@ -11,8 +11,10 @@ export interface Stratum {
 export interface Faction {
   id: string;
   name: string;
+  description: string;
   color: string;
-  support: Record<string, number>;
+  globalModifiers: FactionElectionModifier[];
+  participatesInElections: boolean;
 }
 
 export interface Alliance {
@@ -67,13 +69,29 @@ export interface TrashItem<T> {
   id: string;
   deletedAt: number;
   data: T;
-  supportSnapshot?: Record<string, number>;
 }
 export interface MapVertex { x: number; y: number; }
 
 export interface FactionControlEntry {
   factionId: string;
   percentage: number; // 0–100
+}
+
+export interface RegionElectionModifierEffect {
+  support: number;
+  randomness: number;
+}
+
+export interface FactionElectionModifier {
+  id: string;
+  title: string;
+  description: string;
+  stratumIds: string[];
+  effect: RegionElectionModifierEffect;
+}
+
+export interface RegionElectionModifier extends FactionElectionModifier {
+  factionId: string;
 }
 
 export interface MapRegion {
@@ -85,6 +103,9 @@ export interface MapRegion {
   factionControl: FactionControlEntry[];
   seatings: number;
   strataWeights: Record<string, number>;
+  population: number;
+  factionSupport: Record<string, Record<string, number>>;
+  electionModifiers: RegionElectionModifier[];
 }
 
 export type LawStatus = 'draft' | 'voting' | 'effect' | 'abolished' | 'failed';
@@ -146,6 +167,10 @@ export interface EventIssueArchive {
 export interface EventSettings {
   newspaperName: string;
   issues: EventIssueArchive[];
+}
+
+export interface ElectionSettings {
+  baseRandomness: number;
 }
 
 export interface SenateHistoryEntry {
@@ -363,6 +388,7 @@ export interface AppState {
   lawHistory: LawVoteRecord[];
   events: TimelineEvent[];
   eventSettings: EventSettings;
+  election: ElectionSettings;
   nodes: NodeEditorState;
   senate: SenateState;
 }

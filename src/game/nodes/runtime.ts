@@ -910,8 +910,9 @@ function boundValue(
     if (path === 'props.identity.id') return faction.id;
     if (path === 'props.identity.name') return faction.name;
     if (path === 'props.identity.color') return faction.color;
-    if (path === 'props.support.total') return Object.values(faction.support).reduce((sum, value) => sum + value, 0);
-    if (path === 'props.support.byStratum') return Object.values(faction.support);
+    if (path === 'props.identity.participatesInElections') return faction.participatesInElections === true;
+    if (path === 'props.support.total') return factionSupportByStratum(faction.id, regions).reduce((sum, value) => sum + value, 0);
+    if (path === 'props.support.byStratum') return factionSupportByStratum(faction.id, regions);
   }
 
   if (binding.entityClass === 'region') {
@@ -922,12 +923,24 @@ function boundValue(
     if (path === 'props.identity.name') return region.name;
     if (path === 'props.identity.subtitle') return region.name2 ?? '';
     if (path === 'props.civic.seats') return region.seatings;
+    if (path === 'props.civic.population') return region.population;
     if (path === 'props.control.factions') return region.factionControl.map(entry => entry.factionId);
     if (path === 'props.control.percentages') return region.factionControl.map(entry => entry.percentage);
     if (path === 'props.geometry.vertexCount') return region.vertices.length;
   }
 
   return undefined;
+}
+
+function factionSupportByStratum(factionId: string, regions: MapRegion[]): number[] {
+  const support = new Map<string, number>();
+  for (const region of regions) {
+    const byStratum = region.factionSupport?.[factionId] ?? {};
+    for (const [stratumId, value] of Object.entries(byStratum)) {
+      support.set(stratumId, (support.get(stratumId) || 0) + Math.max(0, value));
+    }
+  }
+  return Array.from(support.values());
 }
 
 function flattenIncomingArray(values: NodeRuntimeValue[]): NodeRuntimeValue[] {

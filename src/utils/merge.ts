@@ -11,7 +11,7 @@ function isIdArray(value: unknown): value is Identified[] {
   return Array.isArray(value) && value.every(hasId);
 }
 
-// One level of field-by-field merge for plain objects (e.g. faction.support, law.factionStances).
+// One level of field-by-field merge for plain objects (e.g. law.factionStances).
 // Returns remote as base, overrides any field that only the local side changed.
 function mergeRecord(base: Rec, local: Rec, remote: Rec): Rec {
   const result: Rec = { ...remote };
@@ -169,6 +169,13 @@ export function mergeAppState(base: AppState, local: AppState, remote: AppState)
         local.eventSettings?.issues ?? [],
         remote.eventSettings?.issues ?? [],
       ),
+    },
+    election: {
+      baseRandomness: sc(
+        local.election?.baseRandomness,
+        base.election?.baseRandomness,
+        remote.election?.baseRandomness,
+      ) as number,
     },
     history:    mergeById(base.history,    local.history,    remote.history),
     trash: {

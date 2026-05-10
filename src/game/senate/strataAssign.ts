@@ -8,7 +8,7 @@ export function hasNoControl(region: MapRegion): boolean {
  * Distribute region seats among factions based on strata composition and support shares.
  *
  * Formula per faction F, per stratum S:
- *   share += (F.support[S] / totalFactionSupport[S]) * (strataWeights[S] / 100)
+ *   share += (regional support for F in S / total regional support in S) * (strataWeights[S] / 100)
  * Final seats = share * region.seatings, rounded via Largest Remainder.
  *
  * Only considers factions with any support in the relevant strata.
@@ -25,7 +25,6 @@ export function computeStrataSeats(
   const weights = region.strataWeights ?? {};
   const totalWeight = strata.reduce((s, st) => s + (weights[st.id] || 0), 0);
   if (totalWeight <= 0) return {};
-
   const exactSeats: Record<string, number> = {};
 
   for (const faction of factions) {
@@ -34,15 +33,19 @@ export function computeStrataSeats(
       const w = (weights[stratum.id] || 0) / 100;
       if (w <= 0) continue;
       // Total support across all factions for this stratum
-      const totalSupport = factions.reduce((s, f) => s + (f.support[stratum.id] || 0), 0);
+      const totalSupport = factions.reduce((s, f) => s + supportFor(f, stratum, region), 0);
       if (totalSupport <= 0) continue;
-      const factionSupport = faction.support[stratum.id] || 0;
+      const factionSupport = supportFor(faction, stratum, region);
       share += (factionSupport / totalSupport) * w;
     }
     exactSeats[faction.id] = share * (region.seatings || 0);
   }
 
   return largestRemainder(exactSeats, region.seatings || 0);
+}
+
+function supportFor(faction: Faction, stratum: Stratum, region: MapRegion): number {
+  return Math.max(0, region.factionSupport?.[faction.id]?.[stratum.id] || 0);
 }
 
 function largestRemainder(exact: Record<string, number>, total: number): Record<string, number> {

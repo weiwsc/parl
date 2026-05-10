@@ -38,6 +38,20 @@ export function Header({ onElection }: Pick<HeaderProps, 'onElection'>) {
           onChange={(e) => updateState({ totalSeats: parseInt(e.target.value) || 200 })} />
       </div>
 
+      <div className="control-group">
+        <label>{t("base_randomness")}</label>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          value={state.election.baseRandomness}
+          onChange={(e) => updateState(s => {
+            s.election.baseRandomness = Math.max(0, parseFloat(e.target.value) || 0);
+            return s;
+          })}
+        />
+      </div>
+
       <button className="primary" onClick={onElection}>⚙ {t("hold_election")}</button>
     </AppHeader>
   );
@@ -52,10 +66,11 @@ export function Tabs() {
   const histCount  = state.history.length;
   const trashCount = state.trash.strata.length + state.trash.factions.length;
 
-  type ParliamentTab = 'sim' | 'hist' | 'trash';
+  type ParliamentTab = 'sim' | 'current' | 'hist' | 'trash';
   const setTab = (nextTab: ParliamentTab) => updateState(s => { s.ui.tab = nextTab; return s; });
   const items: TabItem<ParliamentTab>[] = [
     { id: 'sim', label: t("election") },
+    { id: 'current', label: t("current_parliament") },
     { id: 'hist', label: t("election_history"), badge: histCount },
     { id: 'trash', label: 'Recycle Bin', badge: trashCount },
   ];

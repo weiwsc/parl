@@ -40,8 +40,8 @@ export function getBindingOptions(type: EntityType, factions: Faction[], regions
     return factions.map(faction => ({
       id: faction.id, label: faction.name, subtitle: faction.id, color: faction.color,
       stats: [
-        { label: 'support', value: Object.values(faction.support).reduce((sum, value) => sum + value, 0).toLocaleString() },
-        { label: 'strata', value: Object.keys(faction.support).length },
+        { label: 'support', value: factionSupportByStratum(faction.id, regions).reduce((sum, value) => sum + value, 0).toLocaleString() },
+        { label: 'strata', value: factionSupportByStratum(faction.id, regions).length },
       ],
     }));
   }
@@ -56,6 +56,17 @@ export function getBindingOptions(type: EntityType, factions: Faction[], regions
     }));
   }
   return [];
+}
+
+function factionSupportByStratum(factionId: string, regions: MapRegion[]): number[] {
+  const support = new Map<string, number>();
+  for (const region of regions) {
+    const byStratum = region.factionSupport?.[factionId] ?? {};
+    for (const [stratumId, value] of Object.entries(byStratum)) {
+      support.set(stratumId, (support.get(stratumId) || 0) + Math.max(0, value));
+    }
+  }
+  return Array.from(support.values());
 }
 
 export function cleanValues(values: Record<string, NodeInstanceValue>): Record<string, NodeInstanceValue> | undefined {

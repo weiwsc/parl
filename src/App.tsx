@@ -1,16 +1,18 @@
 import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAppContext, uid, clone, normalizeState, STORAGE_KEY } from './store';
-import { computeProjection } from './utils/compute';
+import { computeElectionProjection } from './utils/compute';
 import { stripUi, mergeAppState } from './utils/merge';
 import type { AppState } from './models/types';
 import { Header, Sidebar, Tabs, Toast } from './components/Layout';
 import { StrataList } from './components/Strata';
 import { FactionsList } from './components/Factions';
 import { ProjectionChart, SupportMatrix } from './components/Projection';
+import { CurrentParliamentPanel } from './components/CurrentParliament';
 import { HistoryPanel } from './components/History';
 import { TrashPanel } from './components/Trash';
 import { SettingsPanel } from './components/Settings';
 import { MapPage } from './components/MapPage';
+import { FactionsPage } from './components/FactionsPage';
 import { LawPage } from './components/LawPage';
 import { EventsPage } from './components/EventsPage';
 import { NodeEditorPage } from './components/nodes/NodeEditorPage';
@@ -335,7 +337,7 @@ function AppContent() {
   useServerSync();
 
   const projection = useMemo(() => {
-    const proj = computeProjection(state);
+    const proj = computeElectionProjection(state, { randomize: false });
     return {
       ...proj,
       totalSeats: state.totalSeats,
@@ -348,17 +350,25 @@ function AppContent() {
 
   const handleElection = () => {
     updateState(s => {
+      const electionProjection = computeElectionProjection(s, { randomize: true });
       s.history.unshift({
         id: uid('e'),
         timestamp: Date.now(),
-        totalSeats: state.totalSeats,
-        unalignedMode: state.unalignedMode,
-        strata: clone(state.strata),
-        factions: clone(state.factions),
-        alliances: clone(state.alliances),
-        projection: JSON.parse(JSON.stringify(projection)),
+        totalSeats: s.totalSeats,
+        unalignedMode: s.unalignedMode,
+        strata: clone(s.strata),
+        factions: clone(s.factions),
+        alliances: clone(s.alliances),
+        projection: JSON.parse(JSON.stringify({
+          ...electionProjection,
+          totalSeats: s.totalSeats,
+          unalignedMode: s.unalignedMode,
+          strataCount: s.strata.length,
+          factionsCount: s.factions.length,
+          timestamp: Date.now(),
+        })),
       });
-      s.ui.tab = 'hist';
+      s.ui.tab = 'current';
       return s;
     });
     showToast('Election recorded!');
@@ -366,13 +376,13 @@ function AppContent() {
 
   return (
     // data-readonly disables all editing controls via CSS when user cannot edit
-    <div className={`app${tab === 'nodes' ? ' app--nodes' : ''}`} {...(!canEdit ? { 'data-readonly': '' } : {})}>
+    <div className={`app${tab === 'map' ? ' app--map' : ''}${tab === 'nodes' ? ' app--nodes' : ''}`} {...(!canEdit ? { 'data-readonly': '' } : {})}>
       <div className="app-body">
         <Sidebar />
 
         <main className={`app-main${tab === 'map' ? ' app-main--map' : ''}${tab === 'nodes' ? ' app-main--nodes' : ''}`}>
-          {tab !== 'map' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
-          {tab !== 'settings' && tab !== 'map' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
+          {tab !== 'map' && tab !== 'factions' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Header onElection={handleElection} />}
+          {tab !== 'settings' && tab !== 'map' && tab !== 'factions' && tab !== 'law' && tab !== 'events' && tab !== 'nodes' && tab !== 'senate' && <Tabs />}
 
           {tab === 'sim' && (
             <div className="grid">
@@ -384,10 +394,12 @@ function AppContent() {
               <FactionsList projection={projection} />
             </div>
           )}
+          {tab === 'current'  && <CurrentParliamentPanel />}
           {tab === 'hist'     && <HistoryPanel />}
           {tab === 'trash'    && <TrashPanel />}
           {tab === 'settings' && <SettingsPanel />}
           {tab === 'map'      && <MapPage />}
+          {tab === 'factions' && <FactionsPage />}
           {tab === 'law'      && <LawPage />}
           {tab === 'events'   && <EventsPage />}
           {tab === 'senate'   && <SenatePage />}

@@ -3,8 +3,15 @@ export {
   StrataSupportPowerModel,
   LargestRemainderSeatAllocator,
   computeProjection,
+  computeElectionProjection,
   factionPower,
   stratumTotalSupport,
+  getComputedFactionStratumSupport,
+  getCurrentParliamentProjection,
+  getLatestElectionEntry,
+  getLatestElectionProjection,
+  getParticipatingFactions,
+  hasRegionalElectionData,
 } from '../game/parliament/projection';
 export { arrangeSeats } from '../game/parliament/seating';
 

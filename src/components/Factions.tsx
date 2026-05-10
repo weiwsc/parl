@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext, uid } from '../store';
-import { escapeHtml, fmtCount, stratumTotalSupport } from '../utils/compute';
+import { escapeHtml, fmtCount, getComputedFactionStratumSupport, stratumTotalSupport } from '../utils/compute';
 import type { Faction, Alliance, ProjectionResult, ProjectionEntry } from '../models/types';
 import { useLang } from '../utils/localization';
 import { EmptyState } from './ui/EmptyState';
@@ -20,15 +20,7 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
   const updateFaction = (field: keyof Faction, value: string) => {
     updateState(s => {
       const idx = s.factions.findIndex(x => x.id === faction.id);
-      if (idx !== -1 && field !== 'support') s.factions[idx] = { ...s.factions[idx], [field]: value };
-      return s;
-    });
-  };
-
-  const updateSupport = (sid: string, value: string) => {
-    updateState(s => {
-      const idx = s.factions.findIndex(x => x.id === faction.id);
-      if (idx !== -1) s.factions[idx].support[sid] = parseInt(value) || 0;
+      if (idx !== -1) s.factions[idx] = { ...s.factions[idx], [field]: value };
       return s;
     });
   };
@@ -41,6 +33,11 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
         s.factions.splice(idx, 1);
       }
       s.alliances.forEach(a => { a.factionIds = a.factionIds.filter(id => id !== faction.id); });
+      s.map.regions.forEach(region => {
+        if (region.factionSupport) delete region.factionSupport[faction.id];
+        region.factionControl = region.factionControl.filter(control => control.factionId !== faction.id);
+        region.electionModifiers = (region.electionModifiers ?? []).filter(modifier => modifier.factionId !== faction.id);
+      });
       return s;
     });
     showToast('Faction moved to bin');
@@ -70,10 +67,10 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
     });
   };
 
-  const resetSupport = () => {
+  const setParticipates = (participatesInElections: boolean) => {
     updateState(s => {
       const idx = s.factions.findIndex(x => x.id === faction.id);
-      if (idx !== -1) Object.keys(s.factions[idx].support).forEach(k => { s.factions[idx].support[k] = 0; });
+      if (idx !== -1) s.factions[idx].participatesInElections = participatesInElections;
       return s;
     });
   };
@@ -113,6 +110,14 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
 
         <span className="fr-seats" style={{ color: faction.color }}>{seats > 0 ? seats : '·'}</span>
         <span className="fr-pct">{pct > 0 ? pct.toFixed(1) + '%' : '·'}</span>
+        <label className="fr-election-toggle" title="Participates in parliament elections">
+          <input
+            type="checkbox"
+            checked={faction.participatesInElections === true}
+            onChange={e => setParticipates(e.target.checked)}
+          />
+          <span>Election</span>
+        </label>
         <button data-ro-allow className={`fr-toggle${editOpen ? ' fr-toggle--open' : ''}`} onClick={() => setEditOpen(v => !v)}>▾</button>
       </div>
       {editOpen && (
@@ -126,13 +131,12 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
               title={allianceId ? 'Move down in alliance (→ right in chart)' : 'Move right in chart'}>
               {allianceId ? '↓' : '→'}
             </button>
-            <button className="small ghost" onClick={resetSupport}>Reset</button>
             <button className="small danger ghost" onClick={deleteFaction}>Delete</button>
           </div>
           {state.strata.length === 0 ? (
             <EmptyState className="compact-empty">No strata defined.</EmptyState>
           ) : state.strata.map(s => {
-            const v = faction.support[s.id] || 0;
+            const v = getComputedFactionStratumSupport(state, faction.id, s.id);
             const over = stratumTotalSupport(state, s) > s.population;
             return (
               <div key={s.id} className={`stratum-support-row${over ? ' over' : ''}`}>
@@ -140,7 +144,7 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
                   <span className="lbl-name">{escapeHtml(s.name)}</span>
                   <span className="popinfo">/{fmtCount(s.population)}</span>
                 </label>
-                <input type="number" min="0" step="1" value={v} onChange={e => updateSupport(s.id, e.target.value)} />
+                <span className="computed-support-value">{fmtCount(v)}</span>
               </div>
             );
           })}
@@ -270,9 +274,14 @@ export function FactionsList({ projection }: { projection?: ProjectionResult }) 
   const addFaction = () => {
     updateState(s => {
       const palette = ['#7a2030','#2c6fb1','#d4a14a','#c44a2a','#5fa863','#8a4cb1','#3aa39e','#b8862e','#aa5f8e','#4a8a3e'];
-      const support: Record<string, number> = {};
-      s.strata.forEach(st => { support[st.id] = 0; });
-      s.factions.push({ id: uid('f'), name: 'New Faction', color: palette[s.factions.length % palette.length], support });
+      s.factions.push({
+        id: uid('f'),
+        name: 'New Faction',
+        description: '',
+        color: palette[s.factions.length % palette.length],
+        globalModifiers: [],
+        participatesInElections: false,
+      });
       return s;
     });
   };

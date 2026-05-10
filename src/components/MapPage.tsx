@@ -76,6 +76,9 @@ export function MapPage() {
       factionControl: [],
       seatings: 0,
       strataWeights: {},
+      population: 0,
+      factionSupport: {},
+      electionModifiers: [],
     };
 
     updateRegions(prev => [...prev, newRegion]);

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { LawVotingSession } from '../game/laws/voting';
-import { computeProjection } from '../utils/compute';
+import { getCurrentParliamentProjection } from '../utils/compute';
 import { computeSenateProjection } from '../game/senate';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext, uid } from '../store';
@@ -31,9 +31,9 @@ export function LawPage() {
   const [editingLaw, setEditingLaw]                       = useState<Law | null>(null);
   const [isNewLaw, setIsNewLaw]                           = useState(false);
 
-  const projection        = useMemo(() => computeProjection(state), [state]);
+  const projection        = useMemo(() => getCurrentParliamentProjection(state), [state]);
   const { entries }       = projection;
-  const totalSeats        = state.totalSeats;
+  const totalSeats        = projection.totalSeats ?? state.totalSeats;
   const senateProjection  = useMemo(() => computeSenateProjection(state), [state]);
   const senateEntries     = senateProjection.projection.entries;
   const senateTotalSeats  = senateProjection.displayTotalSeats;

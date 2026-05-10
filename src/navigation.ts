@@ -8,7 +8,7 @@ export interface SidebarNavItem {
   activeTabs?: string[];
 }
 
-export const PARLIAMENT_TABS = ['sim', 'hist', 'trash', 'alliances'];
+export const PARLIAMENT_TABS = ['sim', 'current', 'hist', 'trash', 'alliances'];
 
 export const APP_NAV_ITEMS: SidebarNavItem[] = [
   {
@@ -19,6 +19,7 @@ export const APP_NAV_ITEMS: SidebarNavItem[] = [
     title: 'Parliament',
     activeTabs: PARLIAMENT_TABS,
   },
+  { id: 'factions', tab: 'factions', icon: '◍', label: 'FAC', title: 'Factions' },
   { id: 'map', tab: 'map', icon: '◎', label: 'MAP', title: 'Map' },
   { id: 'law', tab: 'law', icon: '⚖', label: 'LAW', title: 'Senate Floor' },
   { id: 'events', tab: 'events', icon: '▤', label: 'EVNT', title: 'Events' },
