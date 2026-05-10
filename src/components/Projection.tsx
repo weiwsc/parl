@@ -1,5 +1,11 @@
 import { useAppContext } from '../store';
-import { arrangeSeats, fmtFull, getComputedFactionStratumSupport, stratumTotalSupport } from '../utils/compute';
+import {
+  arrangeSeats,
+  fmtFull,
+  getComputedFactionStratumSupport,
+  getComputedStratumPopulation,
+  stratumTotalSupport,
+} from '../utils/compute';
 import type { ProjectionResult } from '../models/types';
 import { useLang } from '../utils/localization';
 import { EmptyState } from './ui/EmptyState';
@@ -347,6 +353,7 @@ export function SupportMatrix({ projection }: ProjectionProps) {
   }
 
   const totals = state.strata.map(s => stratumTotalSupport(state, s));
+  const populations = state.strata.map(s => getComputedStratumPopulation(state, s));
 
   return (
       <Panel title="Support Matrix &mdash; Read Only" bodyClassName="matrix-wrap no-scroll">
@@ -375,17 +382,17 @@ export function SupportMatrix({ projection }: ProjectionProps) {
                       {f.name}
                     </th>
 
-                    {state.strata.map(s => {
+                    {state.strata.map((s, j) => {
                       const v = getComputedFactionStratumSupport(state, f.id, s.id);
-                      const pop = s.population || 1;
-                      const pct = Math.min(100, (v / pop) * 100);
+                      const population = populations[j];
+                      const pct = population > 0 ? Math.min(100, (v / population) * 100) : v > 0 ? 100 : 0;
 
                       return (
                           <td
                               key={s.id}
                               className="cell-support"
                               style={{ color: f.color }}
-                              title={`${fmtFull(v)} / ${fmtFull(s.population)}`}
+                              title={`${fmtFull(v)} / ${fmtFull(population)}`}
                           >
                             <div className="cell-bar" style={{ width: `${pct}%` }}></div>
                             <span className="cell-val">{(v / 1000).toFixed(0)}k</span>
@@ -401,11 +408,12 @@ export function SupportMatrix({ projection }: ProjectionProps) {
             <tr className="totals">
               <th className="faction-col">Total Allocated</th>
               {state.strata.map((s, j) => {
-                const isOver = totals[j] > s.population;
+                const population = populations[j];
+                const isOver = totals[j] > population;
 
                 return (
                     <td key={s.id} style={{ color: isOver ? 'var(--danger)' : '' }}>
-                      {(totals[j] / 1000).toFixed(0)}k / {(s.population / 1000).toFixed(0)}k
+                      {(totals[j] / 1000).toFixed(0)}k / {(population / 1000).toFixed(0)}k
                     </td>
                 );
               })}

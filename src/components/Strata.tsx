@@ -1,5 +1,12 @@
 import { useAppContext, uid } from '../store';
-import { fmtCount, fmtFull, getComputedFactionStratumSupport, stratumTotalSupport } from '../utils/compute';
+import {
+  fmtCount,
+  fmtFull,
+  getComputedFactionStratumSupport,
+  getComputedStratumPopulation,
+  hasRegionalPopulationData,
+  stratumTotalSupport,
+} from '../utils/compute';
 import type { Stratum } from '../models/types';
 import { useLang } from '../utils/localization';
 import { EmptyState } from './ui/EmptyState';
@@ -29,9 +36,11 @@ interface Legend {
 function StratumCard({ stratum }: StratumCardProps) {
   const { state, updateState, showToast } = useAppContext();
 
+  const population = getComputedStratumPopulation(state, stratum);
+  const usesRegionalPopulation = hasRegionalPopulationData(state);
   const totalSup = stratumTotalSupport(state, stratum);
-  const denom = Math.max(stratum.population, totalSup, 1);
-  const overAllocated = totalSup > stratum.population;
+  const denom = Math.max(population, totalSup, 1);
+  const overAllocated = totalSup > population;
 
   const updateStratum = (field: keyof Stratum, value: string) => {
     updateState((s) => {
@@ -69,7 +78,7 @@ function StratumCard({ stratum }: StratumCardProps) {
     showToast('Stratum moved to bin');
   };
 
-  const unaligned = Math.max(0, stratum.population - totalSup);
+  const computedUnaligned = Math.max(0, population - totalSup);
   const segments: Segment[] = [];
   const legends: Legend[] = [];
 
@@ -77,16 +86,16 @@ function StratumCard({ stratum }: StratumCardProps) {
     const v = getComputedFactionStratumSupport(state, f.id, stratum.id);
     if (v > 0) {
       const segPct = (v / denom) * 100;
-      const popPct = stratum.population > 0 ? (v / stratum.population) * 100 : 0;
+      const popPct = population > 0 ? (v / population) * 100 : 0;
       segments.push({ color: f.color, name: f.name, width: segPct, pct: popPct, v });
       legends.push({ color: f.color, name: f.name, pct: popPct });
     }
   });
 
-  if (!overAllocated && unaligned > 0) {
-    const segPct = (unaligned / denom) * 100;
-    const popPct = stratum.population > 0 ? (unaligned / stratum.population) * 100 : 0;
-    segments.push({ isUnaligned: true, width: segPct, pct: popPct, v: unaligned });
+  if (!overAllocated && computedUnaligned > 0) {
+    const segPct = (computedUnaligned / denom) * 100;
+    const popPct = population > 0 ? (computedUnaligned / population) * 100 : 0;
+    segments.push({ isUnaligned: true, width: segPct, pct: popPct, v: computedUnaligned });
     legends.push({ isUnaligned: true, pct: popPct });
   }
 
@@ -110,8 +119,12 @@ function StratumCard({ stratum }: StratumCardProps) {
             type="number"
             min="0"
             step="1"
-            value={stratum.population}
-            onChange={(e) => updateStratum('population', e.target.value)}
+            value={Math.round(population)}
+            readOnly={usesRegionalPopulation}
+            title={usesRegionalPopulation ? 'Computed from regional population and strata percentages' : undefined}
+            onChange={(e) => {
+              if (!usesRegionalPopulation) updateStratum('population', e.target.value);
+            }}
           />
         </div>
         <div className="field">
@@ -139,7 +152,7 @@ function StratumCard({ stratum }: StratumCardProps) {
               key={i}
               className="seg"
               style={{ background: seg.color, color: seg.color, width: `${seg.width.toFixed(2)}%` }}
-              title={`${seg.name}: ${fmtFull(seg.v)} (${seg.pct.toFixed(1)}% of ${fmtCount(stratum.population)})`}
+              title={`${seg.name}: ${fmtFull(seg.v)} (${seg.pct.toFixed(1)}% of ${fmtCount(population)})`}
             ></span>
           )
         ))}
@@ -157,7 +170,7 @@ function StratumCard({ stratum }: StratumCardProps) {
           !overAllocated && <span className="empty-leg">No support assigned</span>
         )}
         {overAllocated && (
-          <span className="over-warn" title="Sum of supporters exceeds population">⚠ over by {fmtCount(totalSup - stratum.population)}</span>
+          <span className="over-warn" title="Sum of supporters exceeds population">⚠ over by {fmtCount(totalSup - population)}</span>
         )}
       </div>
     </div>

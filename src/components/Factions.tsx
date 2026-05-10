@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useAppContext, uid } from '../store';
-import { escapeHtml, fmtCount, getComputedFactionStratumSupport, stratumTotalSupport } from '../utils/compute';
+import {
+  escapeHtml,
+  fmtCount,
+  getComputedFactionStratumSupport,
+  getComputedStratumPopulation,
+  stratumTotalSupport,
+} from '../utils/compute';
 import type { Faction, Alliance, ProjectionResult, ProjectionEntry } from '../models/types';
 import { useLang } from '../utils/localization';
 import { EmptyState } from './ui/EmptyState';
@@ -137,12 +143,13 @@ function FactionRow({ faction, entry, allianceId, isFirst, isLast }: FactionRowP
             <EmptyState className="compact-empty">No strata defined.</EmptyState>
           ) : state.strata.map(s => {
             const v = getComputedFactionStratumSupport(state, faction.id, s.id);
-            const over = stratumTotalSupport(state, s) > s.population;
+            const population = getComputedStratumPopulation(state, s);
+            const over = stratumTotalSupport(state, s) > population;
             return (
               <div key={s.id} className={`stratum-support-row${over ? ' over' : ''}`}>
                 <label>
                   <span className="lbl-name">{escapeHtml(s.name)}</span>
-                  <span className="popinfo">/{fmtCount(s.population)}</span>
+                  <span className="popinfo">/{fmtCount(population)}</span>
                 </label>
                 <span className="computed-support-value">{fmtCount(v)}</span>
               </div>

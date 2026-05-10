@@ -7,10 +7,13 @@ export {
   factionPower,
   stratumTotalSupport,
   getComputedFactionStratumSupport,
+  getComputedStratumPopulation,
   getCurrentParliamentProjection,
   getLatestElectionEntry,
   getLatestElectionProjection,
   getParticipatingFactions,
+  getRegionStratumPopulation,
+  hasRegionalPopulationData,
   hasRegionalElectionData,
 } from '../game/parliament/projection';
 export { arrangeSeats } from '../game/parliament/seating';

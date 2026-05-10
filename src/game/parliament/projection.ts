@@ -75,7 +75,7 @@ export class StrataSupportPowerModel implements PoliticalPowerModel {
     let power = 0;
     for (const stratum of state.strata) {
       const assignedSupport = stratumTotalSupport(state, stratum);
-      const unassignedPopulation = Math.max(0, stratum.population - assignedSupport);
+      const unassignedPopulation = Math.max(0, getComputedStratumPopulation(state, stratum) - assignedSupport);
       power += unassignedPopulation * stratum.power;
     }
     return power;
@@ -172,6 +172,24 @@ export function getComputedFactionStratumSupport(state: AppState, factionId: str
   return computeFactionStratumSupport(state)[factionId]?.[stratumId] || 0;
 }
 
+export function getComputedStratumPopulation(state: AppState, stratum: Stratum | string): number {
+  const stratumId = typeof stratum === 'string' ? stratum : stratum.id;
+  const regionalPopulation = (state.map?.regions ?? [])
+    .reduce((sum, region) => sum + getRegionStratumPopulation(region, stratumId), 0);
+
+  if (hasRegionalPopulationData(state)) return regionalPopulation;
+
+  if (typeof stratum === 'string') {
+    return Math.max(0, finiteNumber(state.strata.find(item => item.id === stratum)?.population, 0));
+  }
+
+  return Math.max(0, finiteNumber(stratum.population, 0));
+}
+
+export function hasRegionalPopulationData(state: AppState): boolean {
+  return (state.map?.regions ?? []).some(region => finiteNumber(region.population, 0) > 0);
+}
+
 export function computeFactionStratumSupport(state: AppState): Record<string, Record<string, number>> {
   const support = Object.fromEntries(
     state.factions.map(faction => [
@@ -219,7 +237,7 @@ export function computeRegionElectionBreakdowns(
     const strataBreakdowns: RegionElectionStratumBreakdown[] = [];
 
     for (const stratum of state.strata) {
-      const stratumPopulation = regionStratumPopulation(region, stratum.id);
+      const stratumPopulation = getRegionStratumPopulation(region, stratum.id);
       const assignedSupport = state.factions.reduce(
         (sum, faction) => sum + getRegionFactionStratumSupport(region, faction.id, stratum.id),
         0
@@ -390,7 +408,7 @@ function getRegionFactionStratumSupport(region: MapRegion, factionId: string, st
   return Math.max(0, finiteNumber(region.factionSupport?.[factionId]?.[stratumId], 0));
 }
 
-function regionStratumPopulation(region: MapRegion, stratumId: string): number {
+export function getRegionStratumPopulation(region: MapRegion, stratumId: string): number {
   const population = Math.max(0, finiteNumber(region.population, 0));
   const pct = Math.max(0, finiteNumber(region.strataWeights?.[stratumId], 0));
   return population * pct / 100;
