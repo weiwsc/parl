@@ -83,7 +83,8 @@ export function Sidebar() {
     state.trash.strata.length
     + state.trash.factions.length
     + state.trash.alliances.length
-    + state.trash.regions.length;
+    + state.trash.regions.length
+    + state.trash.elections.length;
 
   const setModule = (id: string) =>
     updateState(s => { s.ui.tab = id; return s; });

@@ -376,6 +376,7 @@ export interface AppState {
     factions: TrashItem<Faction>[];
     alliances: TrashItem<Alliance>[];
     regions: TrashItem<MapRegion>[];
+    elections: TrashItem<HistoryEntry>[];
   };
   ui: {
     tab: 'sim' | 'hist' | 'trash' | 'alliances' | string;

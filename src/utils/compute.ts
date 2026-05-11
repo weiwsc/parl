@@ -4,6 +4,7 @@ export {
   LargestRemainderSeatAllocator,
   computeProjection,
   computeElectionProjection,
+  computeStratumElectionTotals,
   factionPower,
   stratumTotalSupport,
   getComputedFactionStratumSupport,

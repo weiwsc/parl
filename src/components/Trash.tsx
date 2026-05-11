@@ -1,5 +1,5 @@
 import { clone, useAppContext, uid } from '../store';
-import type { Alliance, Faction, MapRegion, Stratum, TrashItem } from '../models/types';
+import type { Alliance, Faction, HistoryEntry, MapRegion, Stratum, TrashItem } from '../models/types';
 import { EmptyState } from './ui/EmptyState';
 import { ListSurface } from './ui/ListSurface';
 import { Panel } from './ui/Panel';
@@ -56,6 +56,18 @@ export function TrashPanel() {
     showToast('Region restored');
   };
 
+  const restoreElection = (item: TrashItem<HistoryEntry>, idx: number) => {
+    updateState(s => {
+      const data = clone(item.data);
+      if (s.history.find(record => record.id === data.id)) data.id = uid('e');
+      s.history.unshift(data);
+      s.history.sort((a, b) => b.timestamp - a.timestamp);
+      s.trash.elections.splice(idx, 1);
+      return s;
+    });
+    showToast('Election restored');
+  };
+
   const purgeTrash = () => {
     if (!window.confirm('Empty recycle bin permanently?')) return;
     updateState(s => {
@@ -63,6 +75,7 @@ export function TrashPanel() {
       s.trash.factions = [];
       s.trash.alliances = [];
       s.trash.regions = [];
+      s.trash.elections = [];
       return s;
     });
     showToast('Trash emptied');
@@ -139,6 +152,26 @@ export function TrashPanel() {
                   <button className="small" onClick={() => restoreRegion(item, idx)}>Restore</button>
                 </div>
               ))}
+            </ListSurface>
+          )}
+        </div>
+        <div>
+          <h3>Deleted Elections</h3>
+          {state.trash.elections.length === 0 ? (
+            <EmptyState>Empty.</EmptyState>
+          ) : (
+            <ListSurface className="history-list">
+              {state.trash.elections.map((item, idx) => {
+                const name = item.data.name || `SEQ-${item.data.timestamp.toString().slice(-4)}`;
+                return (
+                  <div key={item.id} className="trash-item">
+                    <div className="swatch" style={{ background: 'var(--accent)' }}></div>
+                    <div className="name">{name}</div>
+                    <div className="stamp">{new Date(item.deletedAt).toLocaleTimeString()}</div>
+                    <button className="small" onClick={() => restoreElection(item, idx)}>Restore</button>
+                  </div>
+                );
+              })}
             </ListSurface>
           )}
         </div>

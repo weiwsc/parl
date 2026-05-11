@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppContext } from '../store';
+import { clone, useAppContext } from '../store';
 import { ProjectionChart } from './Projection';
 import { fmtFull } from '../utils/compute';
 import type { HistoryEntry } from '../models/types';
@@ -17,8 +17,23 @@ export function HistoryPanel() {
 
   const deleteItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    updateState(s => { s.history = s.history.filter(record => record.id !== id); return s; });
-    showToast('Record deleted');
+    const target = state.history.find(record => record.id === id);
+    if (!target) return;
+    const name = target.name || `SEQ-${target.timestamp.toString().slice(-4)}`;
+    if (!window.confirm(`Move election "${name}" to recycle bin?`)) return;
+
+    updateState(s => {
+      const idx = s.history.findIndex(record => record.id === id);
+      if (idx < 0) return s;
+      const [deleted] = s.history.splice(idx, 1);
+      s.trash.elections.push({
+        id: deleted.id,
+        deletedAt: Date.now(),
+        data: clone(deleted),
+      });
+      return s;
+    });
+    showToast('Election moved to bin');
   };
 
   const setName = (id: string, name: string) => {
@@ -30,12 +45,18 @@ export function HistoryPanel() {
   };
 
   const clearAll = () => {
-    if (!window.confirm('Clear entire history?')) return;
+    if (!window.confirm('Move entire election history to recycle bin?')) return;
     updateState(s => {
+      const deletedAt = Date.now();
+      s.trash.elections.push(...s.history.map(record => ({
+        id: record.id,
+        deletedAt,
+        data: clone(record),
+      })));
       s.history = [];
       return s;
     });
-    showToast('History cleared');
+    showToast('Election history moved to bin');
   };
 
   return (

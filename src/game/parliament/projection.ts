@@ -57,6 +57,14 @@ export interface RegionElectionBreakdown {
   votes: Record<string, number>;
 }
 
+export interface StratumElectionTotals {
+  votesByFactionByStratum: Record<string, Record<string, number>>;
+  supportByFactionByStratum: Record<string, Record<string, number>>;
+  totalVotesByStratum: Record<string, number>;
+  totalSupportByStratum: Record<string, number>;
+  populationByStratum: Record<string, number>;
+}
+
 export class StrataSupportPowerModel implements PoliticalPowerModel {
   readonly id = 'strata-support-power';
 
@@ -324,6 +332,62 @@ export function computeRegionElectionBreakdowns(
   });
 }
 
+export function computeStratumElectionTotals(
+  state: AppState,
+  options: ElectionProjectionOptions = {}
+): StratumElectionTotals {
+  const supportByFactionByStratum = computeFactionStratumSupport(state);
+  const votesByFactionByStratum = Object.fromEntries(
+    state.factions.map(faction => [
+      faction.id,
+      Object.fromEntries(state.strata.map(stratum => [stratum.id, 0])),
+    ])
+  ) as Record<string, Record<string, number>>;
+  const totalVotesByStratum = Object.fromEntries(
+    state.strata.map(stratum => [stratum.id, 0])
+  ) as Record<string, number>;
+  const totalSupportByStratum = Object.fromEntries(
+    state.strata.map(stratum => [
+      stratum.id,
+      state.factions.reduce((sum, faction) => sum + (supportByFactionByStratum[faction.id]?.[stratum.id] || 0), 0),
+    ])
+  ) as Record<string, number>;
+  const populationByStratum = Object.fromEntries(
+    state.strata.map(stratum => [stratum.id, getComputedStratumPopulation(state, stratum)])
+  ) as Record<string, number>;
+
+  if (!hasRegionalElectionData(state)) {
+    return {
+      votesByFactionByStratum,
+      supportByFactionByStratum,
+      totalVotesByStratum,
+      totalSupportByStratum,
+      populationByStratum,
+    };
+  }
+
+  const regionBreakdowns = computeRegionElectionBreakdowns(state, options);
+  for (const breakdown of regionBreakdowns) {
+    for (const stratumBreakdown of breakdown.strata) {
+      for (const [factionId, votes] of Object.entries(stratumBreakdown.votes)) {
+        if (!votesByFactionByStratum[factionId]) continue;
+        votesByFactionByStratum[factionId][stratumBreakdown.stratumId] =
+          (votesByFactionByStratum[factionId][stratumBreakdown.stratumId] || 0) + votes;
+        totalVotesByStratum[stratumBreakdown.stratumId] =
+          (totalVotesByStratum[stratumBreakdown.stratumId] || 0) + votes;
+      }
+    }
+  }
+
+  return {
+    votesByFactionByStratum,
+    supportByFactionByStratum,
+    totalVotesByStratum,
+    totalSupportByStratum,
+    populationByStratum,
+  };
+}
+
 export function computeElectionProjection(
   state: AppState,
   options: ElectionProjectionOptions = {}
@@ -331,28 +395,12 @@ export function computeElectionProjection(
   if (!hasRegionalElectionData(state)) return defaultParliamentSystem.project(state);
 
   const participating = getParticipatingFactions(state);
-  const regionBreakdowns = computeRegionElectionBreakdowns(state, options);
-  const votesByFactionByStratum = Object.fromEntries(
-    participating.map(faction => [
-      faction.id,
-      Object.fromEntries(state.strata.map(stratum => [stratum.id, 0])),
-    ])
-  ) as Record<string, Record<string, number>>;
-
-  for (const breakdown of regionBreakdowns) {
-    for (const stratumBreakdown of breakdown.strata) {
-      for (const [factionId, votes] of Object.entries(stratumBreakdown.votes)) {
-        if (!votesByFactionByStratum[factionId]) continue;
-        votesByFactionByStratum[factionId][stratumBreakdown.stratumId] =
-          (votesByFactionByStratum[factionId][stratumBreakdown.stratumId] || 0) + votes;
-      }
-    }
-  }
+  const stratumTotals = computeStratumElectionTotals(state, options);
 
   const entries: ProjectionEntry[] = participating.map(faction => {
     const alliance = state.alliances?.find(a => a.factionIds.includes(faction.id));
     const power = state.strata.reduce((sum, stratum) => {
-      const votes = votesByFactionByStratum[faction.id]?.[stratum.id] || 0;
+      const votes = stratumTotals.votesByFactionByStratum[faction.id]?.[stratum.id] || 0;
       return sum + votes * Math.max(0, finiteNumber(stratum.power, 0));
     }, 0);
 

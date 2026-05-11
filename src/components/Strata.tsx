@@ -1,8 +1,9 @@
+import { useMemo } from 'react';
 import { useAppContext, uid } from '../store';
 import {
+  computeStratumElectionTotals,
   fmtCount,
   fmtFull,
-  getComputedFactionStratumSupport,
   getComputedStratumPopulation,
   hasRegionalPopulationData,
   stratumTotalSupport,
@@ -15,6 +16,7 @@ import { Panel } from './ui/Panel';
 
 interface StratumCardProps {
   stratum: Stratum;
+  electionTotals: ReturnType<typeof computeStratumElectionTotals>;
 }
 
 interface Segment {
@@ -33,13 +35,12 @@ interface Legend {
   isUnaligned?: boolean;
 }
 
-function StratumCard({ stratum }: StratumCardProps) {
+function StratumCard({ stratum, electionTotals }: StratumCardProps) {
   const { state, updateState, showToast } = useAppContext();
 
   const population = getComputedStratumPopulation(state, stratum);
   const usesRegionalPopulation = hasRegionalPopulationData(state);
   const totalSup = stratumTotalSupport(state, stratum);
-  const denom = Math.max(population, totalSup, 1);
   const overAllocated = totalSup > population;
 
   const updateStratum = (field: keyof Stratum, value: string) => {
@@ -80,26 +81,18 @@ function StratumCard({ stratum }: StratumCardProps) {
     showToast('Stratum moved to bin');
   };
 
-  const computedUnaligned = Math.max(0, population - totalSup);
+  const totalVote = electionTotals.totalVotesByStratum[stratum.id] || 0;
   const segments: Segment[] = [];
   const legends: Legend[] = [];
 
   state.factions.forEach(f => {
-    const v = getComputedFactionStratumSupport(state, f.id, stratum.id);
+    const v = electionTotals.votesByFactionByStratum[f.id]?.[stratum.id] || 0;
     if (v > 0) {
-      const segPct = (v / denom) * 100;
-      const popPct = population > 0 ? (v / population) * 100 : 0;
-      segments.push({ color: f.color, name: f.name, width: segPct, pct: popPct, v });
-      legends.push({ color: f.color, name: f.name, pct: popPct });
+      const votePct = totalVote > 0 ? (v / totalVote) * 100 : 0;
+      segments.push({ color: f.color, name: f.name, width: votePct, pct: votePct, v });
+      legends.push({ color: f.color, name: f.name, pct: votePct });
     }
   });
-
-  if (!overAllocated && computedUnaligned > 0) {
-    const segPct = (computedUnaligned / denom) * 100;
-    const popPct = population > 0 ? (computedUnaligned / population) * 100 : 0;
-    segments.push({ isUnaligned: true, width: segPct, pct: popPct, v: computedUnaligned });
-    legends.push({ isUnaligned: true, pct: popPct });
-  }
 
   return (
     <div className="item stratum-card">
@@ -154,7 +147,7 @@ function StratumCard({ stratum }: StratumCardProps) {
               key={i}
               className="seg"
               style={{ background: seg.color, color: seg.color, width: `${seg.width.toFixed(2)}%` }}
-              title={`${seg.name}: ${fmtFull(seg.v)} (${seg.pct.toFixed(1)}% of ${fmtCount(population)})`}
+              title={`${seg.name}: ${fmtFull(seg.v)} votes (${seg.pct.toFixed(1)}% of ${fmtCount(totalVote)} stratum vote)`}
             ></span>
           )
         ))}
@@ -169,7 +162,7 @@ function StratumCard({ stratum }: StratumCardProps) {
             </span>
           )
         )) : (
-          !overAllocated && <span className="empty-leg">No support assigned</span>
+          !overAllocated && <span className="empty-leg">No projected votes</span>
         )}
         {overAllocated && (
           <span className="over-warn" title="Sum of supporters exceeds population">⚠ over by {fmtCount(totalSup - population)}</span>
@@ -182,6 +175,7 @@ function StratumCard({ stratum }: StratumCardProps) {
 export function StrataList() {
   const { state, updateState } = useAppContext();
   const t = useLang();
+  const electionTotals = useMemo(() => computeStratumElectionTotals(state, { randomize: false }), [state]);
 
   const addStratum = () => {
     updateState((s) => {
@@ -199,7 +193,9 @@ export function StrataList() {
         <EmptyState>No strata defined.</EmptyState>
       ) : (
         <ListSurface>
-          {state.strata.map(stratum => <StratumCard key={stratum.id} stratum={stratum} />)}
+          {state.strata.map(stratum => (
+            <StratumCard key={stratum.id} stratum={stratum} electionTotals={electionTotals} />
+          ))}
         </ListSurface>
       )}
       <button className="add-btn" onClick={addStratum}>+ {t("add_strata")}</button>

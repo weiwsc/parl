@@ -85,7 +85,7 @@ export function defaultState(language: Language = browserDefaultLanguage()): App
     factions,
     history: [],
     alliances: [],
-    trash: { strata: [], factions: [], alliances: [], regions: [] },
+    trash: { strata: [], factions: [], alliances: [], regions: [], elections: [] },
     ui: {
       tab: 'sim',
       language,
@@ -163,6 +163,7 @@ export function normalizeState(p: any): AppState {
       factions: p.trash && Array.isArray(p.trash.factions) ? p.trash.factions : [],
       alliances: p.trash && Array.isArray(p.trash.alliances) ? p.trash.alliances : [],
       regions: p.trash && Array.isArray(p.trash.regions) ? p.trash.regions : [],
+      elections: p.trash && Array.isArray(p.trash.elections) ? p.trash.elections : [],
     },
     ui: {
       tab: (p.ui && p.ui.tab) || 'sim',

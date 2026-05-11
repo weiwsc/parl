@@ -316,8 +316,8 @@
     color: var(--text);
     position: relative;
     padding: 2px 4px;
-    height: 28px;
-    min-width: 70px;
+    height: 34px;
+    min-width: 76px;
     cursor: help;
   }
   table.matrix td.cell-support .cell-bar {
@@ -328,7 +328,34 @@
     box-shadow: 0 0 4px currentColor;
     opacity: 0.85;
   }
-  table.matrix td.cell-support .cell-val { position: relative; z-index: 1; }
+  table.matrix .cell-val,
+  table.matrix .cell-sub {
+    position: relative;
+    z-index: 1;
+    display: block;
+    white-space: nowrap;
+  }
+  table.matrix .cell-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  table.matrix .cell-label {
+    display: inline-block;
+    min-width: 28px;
+    margin-right: 4px;
+    color: var(--text-mute);
+    font-size: 8px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  table.matrix .cell-sub {
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    line-height: 1;
+    color: var(--text-mute);
+  }
   table.matrix td.cell-power {
     font-family: 'JetBrains Mono', monospace;
     color: var(--accent-hot); font-weight: 600;
@@ -337,7 +364,7 @@
     background: var(--grid-glow-1);
     font-family: 'JetBrains Mono', monospace;
     color: var(--cyan);
-    font-size: 11px; letter-spacing: 1px;
+    letter-spacing: 0.4px;
   }
 
   .current-parliament-grid {

@@ -1,10 +1,8 @@
 import { useAppContext } from '../store';
 import {
   arrangeSeats,
+  computeStratumElectionTotals,
   fmtFull,
-  getComputedFactionStratumSupport,
-  getComputedStratumPopulation,
-  stratumTotalSupport,
 } from '../utils/compute';
 import type { ProjectionResult } from '../models/types';
 import { useLang } from '../utils/localization';
@@ -346,24 +344,23 @@ export function SupportMatrix({ projection }: ProjectionProps) {
 
   if (state.factions.length === 0 || state.strata.length === 0) {
     return (
-        <Panel title="Support Matrix &mdash; Read Only" bodyClassName="no-scroll">
+        <Panel title="Votes / Supporters By Strata &mdash; Read Only" bodyClassName="no-scroll">
           <EmptyState>Requires both strata and factions.</EmptyState>
         </Panel>
     );
   }
 
-  const totals = state.strata.map(s => stratumTotalSupport(state, s));
-  const populations = state.strata.map(s => getComputedStratumPopulation(state, s));
+  const stratumTotals = computeStratumElectionTotals(state, { randomize: false });
 
   return (
-      <Panel title="Support Matrix &mdash; Read Only" bodyClassName="matrix-wrap no-scroll">
+      <Panel title="Votes / Supporters By Strata &mdash; Read Only" bodyClassName="matrix-wrap no-scroll">
         <TableSurface>
           <table className="matrix">
             <thead>
             <tr>
               <th className="faction-col">Faction</th>
               {state.strata.map(s => <th key={s.id} title={s.name}>{s.name}</th>)}
-              <th>Power</th>
+              <th title="Votes multiplied by strata political power">Weighted Power</th>
             </tr>
             </thead>
 
@@ -382,20 +379,22 @@ export function SupportMatrix({ projection }: ProjectionProps) {
                       {f.name}
                     </th>
 
-                    {state.strata.map((s, j) => {
-                      const v = getComputedFactionStratumSupport(state, f.id, s.id);
-                      const population = populations[j];
-                      const pct = population > 0 ? Math.min(100, (v / population) * 100) : v > 0 ? 100 : 0;
+                    {state.strata.map(s => {
+                      const vote = stratumTotals.votesByFactionByStratum[f.id]?.[s.id] || 0;
+                      const support = stratumTotals.supportByFactionByStratum[f.id]?.[s.id] || 0;
+                      const totalVote = stratumTotals.totalVotesByStratum[s.id] || 0;
+                      const pct = totalVote > 0 ? Math.min(100, (vote / totalVote) * 100) : vote > 0 ? 100 : 0;
 
                       return (
                           <td
                               key={s.id}
                               className="cell-support"
                               style={{ color: f.color }}
-                              title={`${fmtFull(v)} / ${fmtFull(population)}`}
+                              title={`${fmtFull(vote)} votes / ${fmtFull(support)} supporters`}
                           >
                             <div className="cell-bar" style={{ width: `${pct}%` }}></div>
-                            <span className="cell-val">{(v / 1000).toFixed(0)}k</span>
+                            <span className="cell-val"><span className="cell-label">Votes</span>{fmtMatrixNumber(vote)}</span>
+                            <span className="cell-sub"><span className="cell-label">Sup</span>{fmtMatrixNumber(support)} · {fmtMatrixPercent(pct)}</span>
                           </td>
                       );
                     })}
@@ -406,14 +405,18 @@ export function SupportMatrix({ projection }: ProjectionProps) {
             })}
 
             <tr className="totals">
-              <th className="faction-col">Total Allocated</th>
-              {state.strata.map((s, j) => {
-                const population = populations[j];
-                const isOver = totals[j] > population;
+              <th className="faction-col">Total Votes / Supporters</th>
+              {state.strata.map(s => {
+                const vote = stratumTotals.totalVotesByStratum[s.id] || 0;
+                const support = stratumTotals.totalSupportByStratum[s.id] || 0;
+                const population = stratumTotals.populationByStratum[s.id] || 0;
+                const isOver = support > population;
+                const votePct = population > 0 ? vote / population * 100 : vote > 0 ? 100 : 0;
 
                 return (
                     <td key={s.id} style={{ color: isOver ? 'var(--danger)' : '' }}>
-                      {(totals[j] / 1000).toFixed(0)}k / {(population / 1000).toFixed(0)}k
+                      <span className="cell-val"><span className="cell-label">Votes</span>{fmtMatrixNumber(vote)}</span>
+                      <span className="cell-sub"><span className="cell-label">Sup</span>{fmtMatrixNumber(support)} · {fmtMatrixPercent(votePct)} of pop</span>
                     </td>
                 );
               })}
@@ -424,4 +427,34 @@ export function SupportMatrix({ projection }: ProjectionProps) {
         </TableSurface>
       </Panel>
   );
+}
+
+function fmtMatrixNumber(value: number): string {
+  if (!Number.isFinite(value)) return '0';
+  const abs = Math.abs(value);
+  if (abs < 1000) return String(Math.round(value));
+
+  const units = [
+    { threshold: 1_000_000_000, suffix: 'B' },
+    { threshold: 1_000_000, suffix: 'M' },
+    { threshold: 1_000, suffix: 'K' },
+  ];
+  const unit = units.find(item => abs >= item.threshold)!;
+  const scaled = value / unit.threshold;
+  const maxDigits = Math.abs(scaled) < 10 ? 3 : Math.abs(scaled) < 100 ? 3 : 3;
+
+  return `${formatSignificant(scaled, maxDigits)}${unit.suffix}`;
+}
+
+function fmtMatrixPercent(value: number): string {
+  if (!Number.isFinite(value)) return '0%';
+  const abs = Math.abs(value);
+  const digits = abs > 0 && abs < 10 ? 1 : 0;
+  return `${value.toFixed(digits).replace(/\.0$/, '')}%`;
+}
+
+function formatSignificant(value: number, maxSignificantDigits: number): string {
+  return new Intl.NumberFormat('en', {
+    maximumSignificantDigits: maxSignificantDigits,
+  }).format(value);
 }
