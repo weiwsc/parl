@@ -4,6 +4,7 @@ import { useLang } from '../../utils/localization';
 import { renderMarkdown } from '../../utils/markdown';
 import { EmptyState } from '../ui/EmptyState';
 import { EditorField } from '../ui/EditorField';
+import { EditorShell } from '../ui/EditorShell';
 import { EVENT_RANK_ORDER, eventRankValue, normalizeEventRank } from './eventUtils';
 
 interface EventEditorProps {
@@ -20,12 +21,9 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
 
   if (!event) {
     return (
-      <div className="law-editor event-editor event-editor--empty">
-        <div className="law-editor-hd">
-          <span className="law-editor-title">{t('event_editor').toUpperCase()}</span>
-        </div>
+      <EditorShell className="event-editor event-editor--empty" title={t('event_editor').toUpperCase()} bodyClassName="event-editor-empty-body">
         <EmptyState className="event-editor-empty">{t('select_event_to_open')}</EmptyState>
-      </div>
+      </EditorShell>
     );
   }
 
@@ -45,17 +43,23 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
   };
 
   return (
-    <div className="law-editor event-editor">
-      <div className="law-editor-hd event-editor-hd">
-        <span className="law-editor-title">{t('event_editor').toUpperCase()}</span>
-        <span className="event-editor-kicker">{t('turn')} {event.turn} · {rankLabel(t, rank)}</span>
-      </div>
-
-      <div className="law-editor-body">
+    <EditorShell
+      className="event-editor"
+      headClassName="event-editor-hd"
+      title={t('event_editor').toUpperCase()}
+      kicker={`${t('turn')} ${event.turn} · ${rankLabel(t, rank)}`}
+      footClassName="event-editor-foot"
+      footer={canEdit && (
+        <>
+          <button className="btn ghost small" onClick={() => onDuplicate(event)}>{t('duplicate')}</button>
+          <button className="btn ghost small danger" onClick={() => onDelete(event.id)}>{t('delete_short')}</button>
+        </>
+      )}
+    >
         <div className="event-editor-grid">
           <EditorField label={t('turn_number').toUpperCase()}>
             <input
-              className="law-field-input"
+              className="ui-input"
               type="number"
               min="0"
               step="1"
@@ -67,7 +71,7 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
 
           <EditorField label={t('story_rank').toUpperCase()}>
             <select
-              className="law-field-input"
+              className="ui-select"
               value={rank}
               disabled={!canEdit}
               onChange={inputEvent => updateRank(inputEvent.target.value)}
@@ -81,7 +85,7 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
 
         <EditorField label={t('title').toUpperCase()}>
           <input
-            className="law-field-input"
+            className="ui-input"
             value={event.title}
             disabled={!canEdit}
             onChange={inputEvent => update({ title: inputEvent.target.value })}
@@ -91,7 +95,7 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
 
         <EditorField label={t('subtitle').toUpperCase()} optional={t('optional')}>
           <input
-            className="law-field-input"
+            className="ui-input"
             value={event.subtitle ?? ''}
             disabled={!canEdit}
             onChange={inputEvent => update({ subtitle: inputEvent.target.value.trim() ? inputEvent.target.value : undefined })}
@@ -108,7 +112,7 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
             ? <div className="law-md-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(event.body, t('no_event_body')) }} />
             : (
               <textarea
-                className="law-field-textarea event-body-textarea"
+                className="ui-textarea event-body-textarea"
                 value={event.body}
                 disabled={!canEdit}
                 onChange={inputEvent => update({ body: inputEvent.target.value })}
@@ -118,15 +122,7 @@ export function EventEditor({ event, canEdit, onChange, onDuplicate, onDelete }:
             )
           }
         </EditorField>
-      </div>
-
-      {canEdit && (
-        <div className="law-editor-foot event-editor-foot">
-          <button className="btn ghost small" onClick={() => onDuplicate(event)}>{t('duplicate')}</button>
-          <button className="btn ghost small danger" onClick={() => onDelete(event.id)}>{t('delete_short')}</button>
-        </div>
-      )}
-    </div>
+    </EditorShell>
   );
 }
 

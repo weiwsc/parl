@@ -14,10 +14,14 @@ The node editor is themeable, but it is not a separate skinning system. It inher
      - `--bg-deep`, `--bg-deeper`, `--bg-panel`, `--bg-panel-alt`, `--bg-input`
      - `--line`, `--line-soft`, `--line-strong`
      - `--accent`, `--accent-hot`, `--accent-deep`
-     - `--cyan`, `--cyan-soft`, `--cyan-deep`
+     - `--cyan`, `--cyan-soft`, `--cyan-deep`; this role means secondary accent and does not need to be literal cyan
+     - `--primary`, `--primary-hot`, `--primary-deep` as clearer aliases for the accent role
+     - `--secondary`, `--secondary-soft`, `--secondary-deep` as clearer aliases for the secondary role
      - `--text`, `--text-dim`, `--text-mute`, `--danger`, `--good`, `--neutral`
-     - `--grid-line`, `--grid-glow-1`, `--grid-glow-2`, `--halo`, `--halo-cyan`
+     - `--grid-line`, `--grid-glow-primary`, `--grid-glow-secondary`, `--halo-primary`, `--halo-secondary`
+     - `--grid-glow-1`, `--grid-glow-2`, `--halo`, `--halo-cyan` for legacy glow compatibility
      - `--theme-accent-rgb`, `--theme-cyan-rgb`
+     - `--theme-primary-rgb`, `--theme-secondary-rgb` as clearer aliases for those RGB roles
    - The `body` semantic contract derives `--ui-*` tokens from those palette tokens.
    - Node-editor-like shared surfaces use the compact primitives:
      - `--ui-compact-bg`
@@ -54,7 +58,7 @@ The node editor is themeable, but it is not a separate skinning system. It inher
 ## Practical Rules
 
 - For a theme like `green`, make the palette good first. Green works mostly because its `foundation.css` palette has a strong dark/value ladder; the node editor barely needs custom CSS.
-- Avoid making every color a tint of the accent. Good node themes need contrast roles: background, surface, separator, text, muted text, accent, secondary accent, danger, success.
+- Avoid making every color a tint of the primary accent. Good node themes need contrast roles: background, surface, separator, text, muted text, primary accent, secondary accent, danger, success.
 - Use `node-theme.css` for node-only token overrides. Avoid adding many `body[data-theme] .ne-page .some-selector` rules unless the theme is intentionally changing the UI language, not just the palette.
 - Keep node geometry stable unless the theme explicitly calls for a different language. Changing radius, clipping, tab shape, or row fills can make the editor stop feeling like the compact FL Studio-like UI.
 - If a theme starts to look like a color filter, reduce full-surface tint and push color into small signals: handles, focused borders, kind badges, selections, and syntax tokens.

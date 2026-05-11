@@ -336,10 +336,12 @@
     .law-clause-item {
       gap: 7px;
     }
-    .law-editor-body {
+    .law-editor-body,
+    .ui-editor-body {
       padding: 12px;
     }
-    .law-editor-foot {
+    .law-editor-foot,
+    .ui-editor-foot {
       flex-wrap: wrap;
     }
     .clause-row {
@@ -503,7 +505,8 @@
       letter-spacing: 1px;
       padding: 10px;
     }
-    .law-editor-foot > button {
+    .law-editor-foot > button,
+    .ui-editor-foot > button {
       flex: 1 1 120px;
     }
     .hist-item-left,

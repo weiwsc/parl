@@ -12,19 +12,19 @@ export function EditorField({ label, optional, actions, inline = false, children
   const hasLabel = label || optional;
 
   return (
-    <div className={`law-field${inline ? ' law-field--inline' : ''}`}>
+    <div className={`ui-field${inline ? ' ui-field--inline' : ''}`}>
       {actions ? (
-        <div className="law-field-label-row">
+        <div className="ui-field-label-row">
           {hasLabel && (
-            <label className="law-field-label">
-              {label} {optional && <span className="law-field-opt">{optional}</span>}
+            <label className="ui-field-label">
+              {label} {optional && <span className="ui-field-opt">{optional}</span>}
             </label>
           )}
           {actions}
         </div>
       ) : hasLabel ? (
-        <label className="law-field-label">
-          {label} {optional && <span className="law-field-opt">{optional}</span>}
+        <label className="ui-field-label">
+          {label} {optional && <span className="ui-field-opt">{optional}</span>}
         </label>
       ) : null}
       {children}

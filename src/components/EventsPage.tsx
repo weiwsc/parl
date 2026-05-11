@@ -9,6 +9,7 @@ import { AppHeader } from './ui/AppHeader';
 import { EmptyState } from './ui/EmptyState';
 import { TabBar, type TabItem } from './ui/TabBar';
 import { EditorField } from './ui/EditorField';
+import { EditorShell } from './ui/EditorShell';
 import { EventCard } from './events/EventCard';
 import { EventEditor } from './events/EventEditor';
 import {
@@ -447,16 +448,12 @@ function EventsEditorView({
   return (
     <div className="events-editor-page">
       <section className="events-editor-left">
-        <div className="law-editor event-paper-settings">
-          <div className="law-editor-hd">
-            <span className="law-editor-title">{t('turn_newspaper').toUpperCase()}</span>
-          </div>
-          <div className="law-editor-body">
+        <EditorShell className="event-paper-settings" title={t('turn_newspaper').toUpperCase()}>
             <EditorField label={t('turn_filter').toUpperCase()}>
               <div className="event-turn-filter">
                 <input
                   data-ro-allow
-                  className="law-field-input"
+                  className="ui-input"
                   type="number"
                   min="0"
                   step="1"
@@ -466,7 +463,7 @@ function EventsEditorView({
                 {turnOptions.length > 0 && (
                   <select
                     data-ro-allow
-                    className="law-field-input"
+                    className="ui-select"
                     value={currentTurn}
                     onChange={event => onTurnChange(Number(event.target.value))}
                   >
@@ -480,7 +477,7 @@ function EventsEditorView({
             </EditorField>
             <EditorField label={t('turn_newspaper_name').toUpperCase()}>
               <input
-                className="law-field-input"
+                className="ui-input"
                 value={issueTitle}
                 disabled={!canEdit}
                 onChange={event => onIssueNameChange(currentTurn, event.target.value)}
@@ -489,21 +486,22 @@ function EventsEditorView({
             </EditorField>
             <EditorField label={t('default_newspaper_name').toUpperCase()} optional={t('new_turns')}>
               <input
-                className="law-field-input"
+                className="ui-input"
                 value={settings.newspaperName}
                 disabled={!canEdit}
                 onChange={event => onPaperNameChange(event.target.value)}
                 placeholder={t('newspaper_name_placeholder')}
               />
             </EditorField>
-          </div>
-        </div>
+        </EditorShell>
 
-        <div className="law-editor event-editor-index">
-          <div className="law-editor-hd event-editor-index-hd">
-            <span className="law-editor-title">{t('turn')} {currentTurn}</span>
-            {canEdit && <button className="primary small" onClick={() => onCreate(currentTurn)}>+ {t('new_event')}</button>}
-          </div>
+        <EditorShell
+          className="event-editor-index"
+          headClassName="event-editor-index-hd"
+          title={`${t('turn')} ${currentTurn}`}
+          actions={canEdit && <button className="primary small" onClick={() => onCreate(currentTurn)}>+ {t('new_event')}</button>}
+          bodyClassName="event-editor-index-body"
+        >
           <div className="event-editor-list">
             {sorted.length === 0 && <EmptyState className="event-editor-list-empty">{t('no_events_turn')}</EmptyState>}
             {sorted.map(item => (
@@ -519,7 +517,7 @@ function EventsEditorView({
               </button>
             ))}
           </div>
-        </div>
+        </EditorShell>
       </section>
 
       <EventEditor

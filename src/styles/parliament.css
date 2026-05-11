@@ -184,8 +184,8 @@
   /* ==== CHART ==== */
   .chart-wrap {
     background:
-      radial-gradient(ellipse at center 80%, var(--grid-glow-2), transparent 80%),
-      rgb(16 18 17);
+      radial-gradient(ellipse at center 80%, var(--ui-seat-chart-glow), transparent 80%),
+      var(--ui-seat-chart-bg);
     border: 1px solid var(--line);
     padding: 22px 22px 18px;
     position: relative; overflow: hidden;

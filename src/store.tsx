@@ -168,7 +168,7 @@ export function normalizeState(p: any): AppState {
     ui: {
       tab: (p.ui && p.ui.tab) || 'sim',
       language: normalizeLanguage(p.ui?.language) ?? normalizeLanguage(p.language) ?? d.ui.language,
-      theme: isThemeId(p.ui?.theme) ? p.ui.theme : 'gold',
+      theme: isThemeId(p.ui?.theme) ? p.ui.theme : d.ui.theme,
       factionExpanded: (p.ui && p.ui.factionExpanded) || {},
       nodeEditor: normalizeNodeEditorConfig(p.ui?.nodeEditor ?? p.nodes?.config),
     },

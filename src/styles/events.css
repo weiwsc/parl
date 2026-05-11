@@ -1030,6 +1030,11 @@
     padding: 24px;
   }
 
+  .event-editor-empty-body,
+  .event-editor-index-body {
+    padding: 0;
+  }
+
   .event-editor-list-item {
     display: flex;
     flex-direction: column;

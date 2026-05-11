@@ -53,7 +53,7 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
   });
 
   while (colors.length < seats.length) {
-    colors.push('#2a3a5a');
+    colors.push('var(--ui-seat-chart-empty-seat)');
     seatGroupNames.push('');
   }
 
@@ -255,7 +255,7 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
                     y1={-Math.sin(angle) * r1}
                     x2={Math.cos(angle) * r2}
                     y2={-Math.sin(angle) * r2}
-                    stroke="rgba(95,216,255,0.28)"
+                    stroke="var(--ui-seat-chart-tick)"
                     strokeWidth={major ? 0.35 : 0.18}
                 />
             );
@@ -263,14 +263,14 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
 
           <path
               d={`M ${-arcR},0 A ${arcR},${arcR} 0 0 1 ${arcR},0`}
-              stroke="rgba(95,216,255,0.15)"
+              stroke="var(--ui-seat-chart-ring)"
               strokeWidth="0.22"
               fill="none"
           />
 
           <path
               d={`M ${-(arcR - 2)},0 A ${arcR - 2},${arcR - 2} 0 0 1 ${arcR - 2},0`}
-              stroke="rgba(212,161,74,0.09)"
+              stroke="var(--ui-seat-chart-ring-soft)"
               strokeWidth="0.15"
               fill="none"
               strokeDasharray="0.5 0.7"
@@ -281,7 +281,7 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
               y1="0"
               x2={maxR + pad + 6}
               y2="0"
-              stroke="rgba(95,216,255,0.22)"
+              stroke="var(--ui-seat-chart-axis)"
               strokeWidth="0.24"
           />
 
@@ -290,7 +290,7 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
               y1="0"
               x2={-arcR}
               y2="-1.8"
-              stroke="rgba(212,161,74,0.45)"
+              stroke="var(--ui-seat-chart-endcap)"
               strokeWidth="0.22"
           />
 
@@ -299,7 +299,7 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
               y1="0"
               x2={arcR}
               y2="-1.8"
-              stroke="rgba(212,161,74,0.45)"
+              stroke="var(--ui-seat-chart-endcap)"
               strokeWidth="0.22"
           />
 
@@ -311,7 +311,7 @@ export function ProjectionChart({ projection, title }: ProjectionProps) {
                   cy={p.y.toFixed(3)}
                   r={p.r.toFixed(2)}
                   fill={colors[i]}
-                  stroke="rgba(0,0,0,0.45)"
+                  stroke="var(--ui-seat-chart-seat-stroke)"
                   strokeWidth="0.15"
               >
                 <title>{`Seat ${i + 1}${seatGroupNames[i] ? ' — ' + seatGroupNames[i] : ''}`}</title>

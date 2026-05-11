@@ -4,6 +4,7 @@ import { lawStatusLabel, useLang } from '../../utils/localization';
 import type { Law, LawClause, LawStatus } from '../../models/types';
 import { renderMarkdown } from './markdown';
 import { EditorField } from '../ui/EditorField';
+import { EditorShell } from '../ui/EditorShell';
 
 const LAW_STATUS_OPTIONS: LawStatus[] = ['draft', 'voting', 'effect', 'failed', 'abolished'];
 
@@ -103,20 +104,27 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
   };
 
   return (
-    <div className="law-editor">
-      <div className="law-editor-hd">
-        <span className="law-editor-title">{initial.id ? t('edit_bill').toUpperCase() : t('new_bill').toUpperCase()}</span>
-      </div>
-      <div className="law-editor-body">
+    <EditorShell
+      className="law-editor"
+      title={initial.id ? t('edit_bill').toUpperCase() : t('new_bill').toUpperCase()}
+      footer={(
+        <>
+          <button className="btn ghost small" onClick={onCancel}>{t('cancel')}</button>
+          <button className="btn primary small" onClick={save} disabled={!name.trim()}>
+            {initial.id ? t('save_changes') : t('create_bill')}
+          </button>
+        </>
+      )}
+    >
         <EditorField label={t('title').toUpperCase()}>
-          <input className="law-field-input" value={name} onChange={event => setName(event.target.value)} placeholder={t('bill_title_placeholder')} autoFocus />
+          <input className="ui-input" value={name} onChange={event => setName(event.target.value)} placeholder={t('bill_title_placeholder')} autoFocus />
         </EditorField>
         <EditorField label={t('subtitle').toUpperCase()} optional={t('optional')}>
-          <input className="law-field-input" value={subtitle} onChange={event => setSubtitle(event.target.value)} placeholder={t('short_description_placeholder')} />
+          <input className="ui-input" value={subtitle} onChange={event => setSubtitle(event.target.value)} placeholder={t('short_description_placeholder')} />
         </EditorField>
         <EditorField label={t('status').toUpperCase()}>
           <select
-            className={`law-field-input law-field-select law-field-select--${status}`}
+            className={`ui-select law-field-select--${status}`}
             value={status}
             onChange={event => setStatus(event.target.value as LawStatus)}
           >
@@ -132,7 +140,7 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
         >
           {preview
             ? <div className="law-md-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(description, t('no_description')) }} />
-            : <textarea className="law-field-textarea" value={description} onChange={event => setDescription(event.target.value)} rows={6} placeholder={t('markdown_placeholder')} />
+            : <textarea className="ui-textarea" value={description} onChange={event => setDescription(event.target.value)} rows={6} placeholder={t('markdown_placeholder')} />
           }
         </EditorField>
         <EditorField label={t('clauses').toUpperCase()}>
@@ -145,13 +153,6 @@ export function LawEditor({ initial, onSave, onCancel }: LawEditorProps) {
             <span className="toggle-label">⚖ {t('constitutional_law')}</span>
           </label>
         </EditorField>
-      </div>
-      <div className="law-editor-foot">
-        <button className="btn ghost small" onClick={onCancel}>{t('cancel')}</button>
-        <button className="btn primary small" onClick={save} disabled={!name.trim()}>
-          {initial.id ? t('save_changes') : t('create_bill')}
-        </button>
-      </div>
-    </div>
+    </EditorShell>
   );
 }

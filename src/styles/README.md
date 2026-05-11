@@ -17,12 +17,23 @@
 Node editor styles are loaded by `src/components/nodes/node-editor.css` and live beside the node components.
 For node-editor-specific theming notes, see `src/components/nodes/styles/README.md`.
 
+## Shared UI Primitives
+
+Prefer the neutral `ui-*` primitives for new reusable app chrome. They are intentionally aligned with the node editor's compact tool UI:
+
+- `ui-editor`, `ui-editor-head`, `ui-editor-body`, `ui-editor-foot` for dense editor shells.
+- `ui-field`, `ui-input`, `ui-select`, `ui-textarea` for reusable form layout and controls.
+- `ui-list-surface`, `ui-grid-surface`, and `ui-table-surface` for repeated list/grid/table containers.
+
+Feature-prefixed classes may still be added beside these primitives for local layout or content-specific behavior.
+
 Theme metadata for UI pickers lives in `src/theme.ts`. CSS theme behavior is still driven by `body[data-theme]` and the semantic `--ui-*` tokens in `foundation.css`.
 
 ## Theme Token Layers
 
-- Palette tokens such as `--accent`, `--bg-panel`, and `--line-soft` are the raw colors. Define or override them only in `:root` and `body[data-theme="..."]`.
-- Semantic app tokens such as `--ui-panel-bg`, `--ui-control-border`, and `--ui-compact-bg` are the reusable UI contract. Palette-derived semantic tokens belong on `body`, so they recompute when `data-theme` changes.
+- Palette tokens such as `--bg-panel`, `--line-soft`, `--accent`, and `--cyan` are the raw colors. Define or override them only in `:root` and `body[data-theme="..."]`.
+- `--primary` and `--secondary` are clearer aliases for the legacy `--accent` and `--cyan` roles. `cyan` should be treated as “secondary accent,” not as a literal color requirement.
+- Semantic app tokens such as `--ui-panel-bg`, `--ui-control-border`, `--ui-primary`, `--ui-secondary`, and `--ui-compact-bg` are the reusable UI contract. Palette-derived semantic tokens belong on `body`, so they recompute when `data-theme` changes.
 - Feature tokens such as `--ne-node-bg` should bridge to `--ui-*` tokens unless the feature has a genuine local styling need.
 - New shared surfaces should prefer `--ui-*` tokens; direct palette-token use is still acceptable for legacy CSS and highly specific effects.
 

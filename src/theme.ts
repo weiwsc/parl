@@ -12,6 +12,42 @@ export const THEME_DEFINITIONS = [
     accent: '#5dee7b',
   },
   {
+    id: 'catppuccin-latte',
+    label: 'Catppuccin Latte',
+    swatch: 'linear-gradient(135deg, #eff1f5 0 34%, #8839ef 36% 66%, #04a5e5 68% 100%)',
+    accent: '#8839ef',
+  },
+  {
+    id: 'catppuccin-mocha',
+    label: 'Catppuccin Mocha',
+    swatch: 'linear-gradient(135deg, #1e1e2e 0 34%, #cba6f7 36% 66%, #89b4fa 68% 100%)',
+    accent: '#cba6f7',
+  },
+  {
+    id: 'solarized-light',
+    label: 'Solarized Light',
+    swatch: 'linear-gradient(135deg, #fdf6e3 0 34%, #268bd2 36% 66%, #b58900 68% 100%)',
+    accent: '#268bd2',
+  },
+  {
+    id: 'nord-light',
+    label: 'Nord Light',
+    swatch: 'linear-gradient(135deg, #eceff4 0 34%, #5e81ac 36% 66%, #a3be8c 68% 100%)',
+    accent: '#5e81ac',
+  },
+  {
+    id: 'civic-blue',
+    label: 'Civic Blue',
+    swatch: 'linear-gradient(135deg, #f7fbff 0 34%, #075dcc 36% 66%, #0086a8 68% 100%)',
+    accent: '#075dcc',
+  },
+  {
+    id: 'victoria',
+    label: 'Gothic Victoria',
+    swatch: 'linear-gradient(135deg, #100d12 0 30%, #9e2f46 32% 56%, #d8b46a 58% 76%, #315a76 78% 100%)',
+    accent: '#9e2f46',
+  },
+  {
     id: 'pine',
     label: 'Native Graphite',
     swatch: 'linear-gradient(135deg, #2c2c2e 0 42%, #0a84ff 45% 70%, #00c7be 73% 100%)',
