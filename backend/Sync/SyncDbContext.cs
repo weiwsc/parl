@@ -5,6 +5,7 @@ namespace ParliamentApi.Sync;
 public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbContext(options)
 {
     public DbSet<SyncDocument> Documents => Set<SyncDocument>();
+    public DbSet<SyncDocumentObject> DocumentObjects => Set<SyncDocumentObject>();
     public DbSet<SyncMutation> Mutations => Set<SyncMutation>();
     public DbSet<PlayerAccount> PlayerAccounts => Set<PlayerAccount>();
 
@@ -18,6 +19,23 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
         document.Property(x => x.Revision).HasColumnName("revision").IsRequired();
         document.Property(x => x.BodyJson).HasColumnName("body_json").IsRequired();
         document.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+        var documentObject = modelBuilder.Entity<SyncDocumentObject>();
+        documentObject.ToTable("sync_document_objects");
+        documentObject.HasKey(x => new { x.DocumentId, x.ObjectType, x.ObjectId });
+        documentObject.Property(x => x.DocumentId).HasColumnName("document_id").HasMaxLength(128);
+        documentObject.Property(x => x.ObjectType).HasColumnName("object_type").HasMaxLength(80);
+        documentObject.Property(x => x.ObjectId).HasColumnName("object_id").HasMaxLength(128);
+        documentObject.Property(x => x.SchemaVersion).HasColumnName("schema_version").IsRequired();
+        documentObject.Property(x => x.BodyJson).HasColumnName("body_json").IsRequired();
+        documentObject.Property(x => x.Revision).HasColumnName("revision").IsRequired();
+        documentObject.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        documentObject.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+        documentObject.HasIndex(x => new { x.DocumentId, x.ObjectType });
+        documentObject.HasOne(x => x.Document)
+            .WithMany(x => x.Objects)
+            .HasForeignKey(x => x.DocumentId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         var mutation = modelBuilder.Entity<SyncMutation>();
         mutation.ToTable("sync_mutations");
@@ -58,7 +76,21 @@ public sealed class SyncDocument
     public long Revision { get; set; }
     public string BodyJson { get; set; } = "{}";
     public DateTimeOffset UpdatedAt { get; set; }
+    public List<SyncDocumentObject> Objects { get; set; } = [];
     public List<SyncMutation> Mutations { get; set; } = [];
+}
+
+public sealed class SyncDocumentObject
+{
+    public string DocumentId { get; set; } = "";
+    public string ObjectType { get; set; } = "";
+    public string ObjectId { get; set; } = "";
+    public int SchemaVersion { get; set; }
+    public string BodyJson { get; set; } = "{}";
+    public long Revision { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+    public SyncDocument? Document { get; set; }
 }
 
 public sealed class SyncMutation

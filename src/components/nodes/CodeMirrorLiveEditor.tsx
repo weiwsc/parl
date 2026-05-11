@@ -18,6 +18,7 @@ interface CodeMirrorLiveEditorProps {
   className: string;
   ariaLabel: string;
   completionContext?: JsCodeCompletionContext;
+  readOnly?: boolean;
 }
 
 export function CodeMirrorLiveEditor({
@@ -27,6 +28,7 @@ export function CodeMirrorLiveEditor({
   className,
   ariaLabel,
   completionContext,
+  readOnly = false,
 }: CodeMirrorLiveEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -70,16 +72,19 @@ export function CodeMirrorLiveEditor({
           tooltips({ parent: document.body }),
           autocompletion({ activateOnTyping: true }),
           indentUnit.of('  '),
+          EditorState.readOnly.of(readOnly),
+          EditorView.editable.of(!readOnly),
           EditorView.lineWrapping,
           EditorView.contentAttributes.of({ 'aria-label': ariaLabel }),
           EditorView.domEventHandlers({
             blur: (_event, editorView) => {
+              if (readOnly) return;
               const current = editorView.state.doc.toString();
               if (current !== latestValueRef.current) onChangeRef.current(current);
             },
           }),
           EditorView.updateListener.of(update => {
-            if (update.docChanged) {
+            if (!readOnly && update.docChanged) {
               onChangeRef.current(update.state.doc.toString());
             }
           }),
@@ -92,7 +97,7 @@ export function CodeMirrorLiveEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [ariaLabel]);
+  }, [ariaLabel, readOnly]);
 
   useEffect(() => {
     const view = viewRef.current;

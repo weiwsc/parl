@@ -1,7 +1,5 @@
 import { lazy, Suspense, useMemo } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
-import { javascriptLanguage } from '@codemirror/lang-javascript';
-import { classHighlighter, highlightCode } from '@lezer/highlight';
+import type { CSSProperties } from 'react';
 
 export interface JsCodeCompletionItem {
   name: string;
@@ -36,10 +34,6 @@ export function JsCodeEditor({
   ariaLabel = 'JavaScript editor',
   completionContext,
 }: JsCodeEditorProps) {
-  if (disabled) {
-    return <StaticHighlightedCode value={value} minLines={minLines} className={className} />;
-  }
-
   return (
     <Suspense fallback={<StaticHighlightedCode value={value} minLines={minLines} className={className} />}>
       <CodeMirrorLiveEditor
@@ -49,6 +43,7 @@ export function JsCodeEditor({
         className={className}
         ariaLabel={ariaLabel}
         completionContext={completionContext}
+        readOnly={disabled}
       />
     </Suspense>
   );
@@ -68,37 +63,13 @@ function StaticHighlightedCode({
     return Array.from({ length: lineCount }, (_, index) => String(index + 1)).join('\n');
   }, [minLines, value]);
 
-  const highlighted = useMemo(() => highlightJavascript(value), [value]);
-
   return (
     <div
       className={`ne-js-code-editor ne-js-code-static${className ? ` ${className}` : ''}`}
       style={{ '--ne-code-min-lines': minLines } as CSSProperties}
     >
       <pre className="ne-js-code-static-gutter" aria-hidden="true">{lineNumbers}</pre>
-      <code className="ne-js-code-static-body">{highlighted}</code>
+      <code className="ne-js-code-static-body">{value || ''}</code>
     </div>
   );
-}
-
-function highlightJavascript(value: string): ReactNode[] {
-  const pieces: ReactNode[] = [];
-  let index = 0;
-
-  highlightCode(
-    value,
-    javascriptLanguage.parser.parse(value),
-    classHighlighter,
-    (text, classes) => {
-      pieces.push(classes
-        ? <span key={index++} className={classes}>{text}</span>
-        : <span key={index++}>{text}</span>
-      );
-    },
-    () => {
-      pieces.push('\n');
-    },
-  );
-
-  return pieces.length > 0 ? pieces : [''];
 }

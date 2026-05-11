@@ -2,6 +2,7 @@ import { useAppContext } from '../store';
 import { useLang } from '../utils/localization';
 import { useAuth } from '../context/AuthContext';
 import { APP_NAV_ITEMS, SETTINGS_NAV_ITEM, isNavItemActive } from '../navigation';
+import { preloadDeferredTab } from '../deferredTabs';
 import { AppHeader } from './ui/AppHeader';
 import { TabBar, type TabItem } from './ui/TabBar';
 //import { APP_MODE } from '../config';
@@ -68,6 +69,7 @@ export function Tabs() {
   type ParliamentTab = 'sim' | 'current' | 'hist';
   const setTab = (nextTab: ParliamentTab) => {
     if (tab === nextTab) return;
+    void preloadDeferredTab(nextTab);
     updateState({ ui: { ...state.ui, tab: nextTab } });
   };
   const items: TabItem<ParliamentTab>[] = [
@@ -76,7 +78,7 @@ export function Tabs() {
     { id: 'hist', label: t("election_history"), badge: histCount },
   ];
 
-  return <TabBar active={tab as ParliamentTab} items={items} onChange={setTab} />;
+  return <TabBar active={tab as ParliamentTab} items={items} onChange={setTab} onIntent={preloadDeferredTab} />;
 }
 
 export function Sidebar() {
@@ -91,6 +93,7 @@ export function Sidebar() {
 
   const setModule = (id: string) => {
     if (tab === id) return;
+    void preloadDeferredTab(id);
     updateState({ ui: { ...state.ui, tab: id } });
   };
 
@@ -102,6 +105,10 @@ export function Sidebar() {
             className={`sidebar-item${isNavItemActive(item, tab) ? ' active' : ''}`}
             title={item.title}
             disabled={item.disabled}
+            onPointerEnter={() => preloadDeferredTab(item.tab)}
+            onFocus={() => preloadDeferredTab(item.tab)}
+            onMouseDown={() => preloadDeferredTab(item.tab)}
+            onTouchStart={() => preloadDeferredTab(item.tab)}
             onClick={() => setModule(item.tab)}
           >
             <span className="sidebar-icon">{item.icon}</span>
@@ -115,6 +122,10 @@ export function Sidebar() {
         <button data-ro-allow
           className={`sidebar-item${isNavItemActive(SETTINGS_NAV_ITEM, tab) ? ' active' : ''}`}
           title={SETTINGS_NAV_ITEM.title}
+          onPointerEnter={() => preloadDeferredTab(SETTINGS_NAV_ITEM.tab)}
+          onFocus={() => preloadDeferredTab(SETTINGS_NAV_ITEM.tab)}
+          onMouseDown={() => preloadDeferredTab(SETTINGS_NAV_ITEM.tab)}
+          onTouchStart={() => preloadDeferredTab(SETTINGS_NAV_ITEM.tab)}
           onClick={() => setModule(SETTINGS_NAV_ITEM.tab)}
         >
           <span className="sidebar-icon">{SETTINGS_NAV_ITEM.icon}</span>

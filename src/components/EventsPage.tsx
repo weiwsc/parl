@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
 import type { AppState, EventSettings, EventStoryRank, TimelineEvent } from '../models/types';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_NEWSPAPER_NAME, useAppContext, uid } from '../store';
@@ -211,6 +210,7 @@ async function exportNewspaperElement(element: HTMLElement, issueName: string, t
     const height = measureNewspaperExportHeight(clone);
     const maxCanvasSide = 16384;
     const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1, maxCanvasSide / Math.max(NEWSPAPER_EXPORT_WIDTH, height)));
+    const { default: html2canvas } = await import('html2canvas');
     const canvas = await html2canvas(clone, {
       backgroundColor: null,
       logging: false,

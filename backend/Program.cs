@@ -74,6 +74,25 @@ await using (var scope = app.Services.CreateAsyncScope())
     await using var db = await dbFactory.CreateDbContextAsync();
     await db.Database.EnsureCreatedAsync();
     await db.Database.ExecuteSqlRawAsync("""
+        CREATE TABLE IF NOT EXISTS sync_document_objects (
+            document_id TEXT NOT NULL,
+            object_type TEXT NOT NULL,
+            object_id TEXT NOT NULL,
+            schema_version INTEGER NOT NULL,
+            body_json TEXT NOT NULL,
+            revision INTEGER NOT NULL,
+            deleted_at TEXT NULL,
+            updated_at TEXT NOT NULL,
+            CONSTRAINT pk_sync_document_objects PRIMARY KEY (document_id, object_type, object_id),
+            CONSTRAINT fk_sync_document_objects_sync_documents_document_id
+                FOREIGN KEY (document_id) REFERENCES sync_documents (id) ON DELETE CASCADE
+        );
+        """);
+    await db.Database.ExecuteSqlRawAsync("""
+        CREATE INDEX IF NOT EXISTS ix_sync_document_objects_document_id_object_type
+        ON sync_document_objects (document_id, object_type);
+        """);
+    await db.Database.ExecuteSqlRawAsync("""
         CREATE TABLE IF NOT EXISTS player_accounts (
             id TEXT NOT NULL CONSTRAINT pk_player_accounts PRIMARY KEY,
             username TEXT NOT NULL,
@@ -124,15 +143,119 @@ string Envelope(
     string? mutationId = null,
     bool duplicate = false)
 {
+    return JsonSerializer.Serialize(DocumentEnvelopeBody(document, clientId, mutationId, duplicate), jsonOptions);
+}
+
+DocumentEnvelope DocumentEnvelopeBody(
+    StoredDocument document,
+    string? clientId = null,
+    string? mutationId = null,
+    bool duplicate = false)
+{
     using var parsed = JsonDocument.Parse(document.BodyJson);
-    var payload = new DocumentEnvelope(
+    return new DocumentEnvelope(
         document.Id,
         document.Revision,
         clientId,
         mutationId,
         duplicate,
         parsed.RootElement.Clone());
-    return JsonSerializer.Serialize(payload, jsonOptions);
+}
+
+ObjectMutationEnvelope ObjectMutationBody(
+    StoredDocument document,
+    string? clientId,
+    string? mutationId,
+    bool duplicate,
+    IReadOnlyList<MutatedDocumentObject> objects)
+{
+    using var parsed = JsonDocument.Parse(document.BodyJson);
+    return new ObjectMutationEnvelope(
+        document.Id,
+        document.Revision,
+        clientId,
+        mutationId,
+        duplicate,
+        objects,
+        parsed.RootElement.Clone());
+}
+
+string ObjectMutationEventPayload(
+    StoredDocument document,
+    string? clientId,
+    string? mutationId,
+    IReadOnlyList<MutatedDocumentObject> objects,
+    IReadOnlyList<DocumentObjectMutationOperation> operations)
+{
+    var payload = new JsonObject
+    {
+        ["eventType"] = "object.mutate",
+        ["documentId"] = document.Id,
+        ["revision"] = document.Revision,
+        ["clientId"] = clientId,
+        ["mutationId"] = mutationId,
+        ["duplicate"] = false,
+        ["objects"] = MutatedObjectsJson(objects),
+        ["operations"] = MutationOperationsJson(operations),
+    };
+
+    return payload.ToJsonString(jsonOptions);
+}
+
+JsonArray MutatedObjectsJson(IReadOnlyList<MutatedDocumentObject> objects)
+{
+    var array = new JsonArray();
+    foreach (var item in objects)
+    {
+        array.Add(new JsonObject
+        {
+            ["objectType"] = item.ObjectType,
+            ["objectId"] = item.ObjectId,
+            ["revision"] = item.Revision,
+            ["deleted"] = item.Deleted,
+        });
+    }
+
+    return array;
+}
+
+JsonArray MutationOperationsJson(IReadOnlyList<DocumentObjectMutationOperation> operations)
+{
+    var array = new JsonArray();
+    foreach (var operation in operations)
+    {
+        var item = new JsonObject
+        {
+            ["type"] = operation.Type,
+            ["objectType"] = operation.ObjectType,
+            ["objectId"] = operation.ObjectId,
+        };
+
+        if (operation.Path is not null)
+        {
+            var path = new JsonArray();
+            foreach (var segment in operation.Path)
+            {
+                path.Add(segment);
+            }
+
+            item["path"] = path;
+        }
+
+        if (operation.Value.ValueKind != JsonValueKind.Undefined)
+        {
+            item["value"] = operation.Value.ValueKind == JsonValueKind.Null
+                ? null
+                : JsonNode.Parse(operation.Value.GetRawText());
+        }
+
+        if (operation.Index is not null) item["index"] = operation.Index.Value;
+        if (operation.BaseObjectRevision is not null) item["baseObjectRevision"] = operation.BaseObjectRevision.Value;
+
+        array.Add(item);
+    }
+
+    return array;
 }
 
 void Broadcast(string documentId, string payload)
@@ -222,8 +345,96 @@ app.MapPut("/api/documents/{documentId}/snapshot", async (
     return Results.Empty;
 }).RequireAuthorization("AdminOnly");
 
+app.MapPost("/api/documents/{documentId}/objects/mutations", async (
+    string documentId,
+    ObjectMutationRequest req,
+    HttpContext ctx,
+    IDocumentStore documents) => {
+    if (string.IsNullOrWhiteSpace(req.clientId) || string.IsNullOrWhiteSpace(req.mutationId))
+    {
+        return Results.BadRequest(new ObjectMutationErrorDto(
+            "invalid-request",
+            "clientId and mutationId are required.",
+            null,
+            [],
+            []));
+    }
+
+    if (req.operations is null || req.operations.Count == 0)
+    {
+        return Results.BadRequest(new ObjectMutationErrorDto(
+            "invalid-request",
+            "At least one operation is required.",
+            null,
+            [],
+            []));
+    }
+
+    var command = new ObjectMutationSaveCommand(
+        documentId,
+        documentId == MainDocumentId ? MainDocumentKind : "document",
+        req.clientId.Trim(),
+        req.mutationId.Trim(),
+        req.baseRevision,
+        req.operations);
+
+    var result = await documents.SaveObjectMutationsAsync(command, ctx.RequestAborted);
+    ctx.Response.Headers.ETag = result.Document.Revision.ToString();
+
+    if (result.Status == ObjectMutationSaveStatus.Invalid)
+    {
+        return Results.BadRequest(new ObjectMutationErrorDto(
+            "invalid-mutation",
+            result.Error ?? "Mutation is invalid.",
+            DocumentEnvelopeBody(result.Document),
+            [],
+            []));
+    }
+
+    if (result.Status == ObjectMutationSaveStatus.Conflict)
+    {
+        return Results.Conflict(new ObjectMutationErrorDto(
+            "revision-conflict",
+            result.Error ?? "Document changed before this mutation could be applied.",
+            DocumentEnvelopeBody(result.Document),
+            result.Conflicts ?? [],
+            []));
+    }
+
+    if (result.Status == ObjectMutationSaveStatus.ReferenceConflict)
+    {
+        return Results.Conflict(new ObjectMutationErrorDto(
+            "reference-conflict",
+            result.Error ?? "Mutation would create dangling active references.",
+            DocumentEnvelopeBody(result.Document),
+            [],
+            result.ReferenceIssues ?? []));
+    }
+
+    var body = ObjectMutationBody(
+        result.Document,
+        command.ClientId,
+        result.AcceptedMutationId,
+        result.Status == ObjectMutationSaveStatus.Duplicate,
+        result.Objects ?? []);
+
+    if (result.Status == ObjectMutationSaveStatus.Saved)
+    {
+        Broadcast(
+            documentId,
+            ObjectMutationEventPayload(
+                result.Document,
+                command.ClientId,
+                result.AcceptedMutationId,
+                result.Objects ?? [],
+                command.Operations));
+    }
+
+    return Results.Ok(body);
+}).RequireAuthorization("AdminOnly");
+
 // Public: Server-Sent Events stream for a document.
-// Sends current snapshot immediately, then streams accepted writes.
+// Sends current snapshot immediately, then streams snapshot or object-mutation writes.
 app.MapGet("/api/documents/{documentId}/events", async (
     string documentId,
     HttpContext ctx,
@@ -261,6 +472,130 @@ app.MapGet("/api/documents/{documentId}/events", async (
         sseClients.TryRemove(id, out _);
     }
 });
+
+app.MapGet("/api/documents/{documentId}/objects", async (
+    string documentId,
+    string? objectType,
+    bool? includeDeleted,
+    IDbContextFactory<SyncDbContext> dbFactory,
+    CancellationToken cancellationToken) => {
+    await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+    var query = db.DocumentObjects
+        .AsNoTracking()
+        .Where(x => x.DocumentId == documentId);
+
+    if (!string.IsNullOrWhiteSpace(objectType))
+    {
+        var trimmedObjectType = objectType.Trim();
+        query = query.Where(x => x.ObjectType == trimmedObjectType);
+    }
+
+    if (includeDeleted != true)
+    {
+        query = query.Where(x => x.DeletedAt == null);
+    }
+
+    var objects = await query
+        .OrderBy(x => x.ObjectType)
+        .ThenBy(x => x.ObjectId)
+        .Select(x => new DocumentObjectSummaryDto(
+            x.DocumentId,
+            x.ObjectType,
+            x.ObjectId,
+            x.SchemaVersion,
+            x.Revision,
+            x.DeletedAt,
+            x.UpdatedAt))
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(objects);
+}).RequireAuthorization("AdminOnly");
+
+app.MapGet("/api/documents/{documentId}/objects/{objectType}/{objectId}", async (
+    string documentId,
+    string objectType,
+    string objectId,
+    bool? includeDeleted,
+    IDbContextFactory<SyncDbContext> dbFactory,
+    CancellationToken cancellationToken) => {
+    await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+    var item = await db.DocumentObjects
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            x => x.DocumentId == documentId
+              && x.ObjectType == objectType
+              && x.ObjectId == objectId,
+            cancellationToken);
+
+    if (item is null || (includeDeleted != true && item.DeletedAt is not null))
+    {
+        return Results.NotFound();
+    }
+
+    using var parsed = JsonDocument.Parse(item.BodyJson);
+    return Results.Ok(new DocumentObjectEnvelope(
+        item.DocumentId,
+        item.ObjectType,
+        item.ObjectId,
+        item.SchemaVersion,
+        item.Revision,
+        item.DeletedAt,
+        item.UpdatedAt,
+        parsed.RootElement.Clone()));
+}).RequireAuthorization("AdminOnly");
+
+app.MapPost("/api/documents/{documentId}/objects/reindex", async (
+    string documentId,
+    HttpContext ctx,
+    IDbContextFactory<SyncDbContext> dbFactory) => {
+    await using var db = await dbFactory.CreateDbContextAsync(ctx.RequestAborted);
+    var document = await db.Documents
+        .FirstOrDefaultAsync(x => x.Id == documentId, ctx.RequestAborted);
+
+    if (document is null)
+    {
+        return Results.NotFound();
+    }
+
+    await using var transaction = await db.Database.BeginTransactionAsync(ctx.RequestAborted);
+    var now = DateTimeOffset.UtcNow;
+    await DocumentObjectIndexer.ApplyIndexAsync(
+        db,
+        document.Id,
+        document.BodyJson,
+        document.Revision,
+        now,
+        ctx.RequestAborted);
+    await db.SaveChangesAsync(ctx.RequestAborted);
+    await transaction.CommitAsync(ctx.RequestAborted);
+
+    var activeCount = await db.DocumentObjects.CountAsync(
+        x => x.DocumentId == documentId && x.DeletedAt == null,
+        ctx.RequestAborted);
+    var deletedCount = await db.DocumentObjects.CountAsync(
+        x => x.DocumentId == documentId && x.DeletedAt != null,
+        ctx.RequestAborted);
+
+    return Results.Ok(new DocumentObjectReindexResponse(
+        document.Id,
+        document.Revision,
+        activeCount,
+        deletedCount,
+        now));
+}).RequireAuthorization("AdminOnly");
+
+app.MapGet("/api/documents/{documentId}/references/issues", async (
+    string documentId,
+    HttpContext ctx,
+    IDocumentStore documents) => {
+    var document = await GetDocument(documents, documentId, ctx.RequestAborted);
+    var issues = DocumentReferenceValidator.FindIssues(document.BodyJson);
+    return Results.Ok(new DocumentReferenceReportDto(
+        document.Id,
+        document.Revision,
+        issues.Count,
+        issues));
+}).RequireAuthorization("AdminOnly");
 
 app.MapGet("/api/player-accounts", async (
     IDbContextFactory<SyncDbContext> dbFactory,
@@ -585,6 +920,53 @@ record PlayerAccountCreateRequest(string? Username, string? Password, string? Fa
 record PlayerAccountDto(string Id, string Username, string FactionId, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
 record PlayerLawStanceRequest(string? LawId, string? Chamber, string? Stance, string? MutationId);
 record SnapshotRequest(string? clientId, string? mutationId, long baseRevision, JsonElement document);
+record ObjectMutationRequest(
+    string? clientId,
+    string? mutationId,
+    long baseRevision,
+    IReadOnlyList<DocumentObjectMutationOperation>? operations);
+record ObjectMutationEnvelope(
+    string documentId,
+    long revision,
+    string? clientId,
+    string? mutationId,
+    bool duplicate,
+    IReadOnlyList<MutatedDocumentObject> objects,
+    JsonElement document);
+record ObjectMutationErrorDto(
+    string Code,
+    string Message,
+    DocumentEnvelope? CurrentDocument,
+    IReadOnlyList<DocumentObjectMutationConflict> ObjectConflicts,
+    IReadOnlyList<DocumentReferenceIssue> ReferenceIssues);
+record DocumentObjectSummaryDto(
+    string DocumentId,
+    string ObjectType,
+    string ObjectId,
+    int SchemaVersion,
+    long Revision,
+    DateTimeOffset? DeletedAt,
+    DateTimeOffset UpdatedAt);
+record DocumentObjectEnvelope(
+    string DocumentId,
+    string ObjectType,
+    string ObjectId,
+    int SchemaVersion,
+    long Revision,
+    DateTimeOffset? DeletedAt,
+    DateTimeOffset UpdatedAt,
+    JsonElement Body);
+record DocumentObjectReindexResponse(
+    string DocumentId,
+    long Revision,
+    int ActiveObjectCount,
+    int DeletedObjectCount,
+    DateTimeOffset ReindexedAt);
+record DocumentReferenceReportDto(
+    string DocumentId,
+    long Revision,
+    int IssueCount,
+    IReadOnlyList<DocumentReferenceIssue> Issues);
 record DocumentEnvelope(
     string documentId,
     long revision,

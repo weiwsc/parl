@@ -7,7 +7,7 @@ export default defineConfig({
     proxy: {
       // In dev, forward /api/* to the ASP.NET backend
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
     },

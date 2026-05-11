@@ -1,0 +1,38 @@
+.deferred-tab-fallback {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: min(360px, 60vh);
+  padding: 24px;
+  color: var(--text-mute);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.deferred-tab-fallback::before,
+.deferred-tab-fallback::after {
+  content: "";
+  display: block;
+  border: 1px solid var(--line-soft);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 20%, transparent), transparent);
+  background-size: 240% 100%;
+  animation: deferred-tab-pulse 1.1s ease-in-out infinite;
+}
+
+.deferred-tab-fallback::before {
+  width: min(420px, 72vw);
+  height: 42px;
+}
+
+.deferred-tab-fallback::after {
+  width: min(760px, 82vw);
+  height: 160px;
+  opacity: 0.75;
+}
+
+@keyframes deferred-tab-pulse {
+  from { background-position: 140% 0; }
+  to { background-position: -100% 0; }
+}

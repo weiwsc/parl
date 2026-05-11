@@ -10,9 +10,10 @@ interface TabBarProps<T extends string> {
   active: T;
   items: TabItem<T>[];
   onChange: (id: T) => void;
+  onIntent?: (id: T) => void;
 }
 
-export function TabBar<T extends string>({ active, items, onChange }: TabBarProps<T>) {
+export function TabBar<T extends string>({ active, items, onChange, onIntent }: TabBarProps<T>) {
   return (
     <nav className="ui-tab-bar tab-bar">
       {items.map(item => (
@@ -21,6 +22,10 @@ export function TabBar<T extends string>({ active, items, onChange }: TabBarProp
           data-ro-allow
           className={`ui-tab tab${active === item.id ? ' active' : ''}`}
           aria-selected={active === item.id}
+          onPointerEnter={() => onIntent?.(item.id)}
+          onFocus={() => onIntent?.(item.id)}
+          onMouseDown={() => onIntent?.(item.id)}
+          onTouchStart={() => onIntent?.(item.id)}
           onClick={() => onChange(item.id)}
         >
           {item.label}
