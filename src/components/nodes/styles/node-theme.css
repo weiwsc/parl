@@ -164,17 +164,21 @@
   font-weight: 600;
 }
 
+.ne-page[data-ne-style="native"] .ui-tab-bar,
 .ne-page[data-ne-style="native"] .tab-bar {
   align-items: center;
   gap: 4px;
   border-bottom-color: rgba(255,255,255,0.07);
 }
 
+.ne-page[data-ne-style="native"] .ui-tab-bar::before,
+.ne-page[data-ne-style="native"] .ui-tab-bar::after,
 .ne-page[data-ne-style="native"] .tab-bar::before,
 .ne-page[data-ne-style="native"] .tab-bar::after {
   display: none;
 }
 
+.ne-page[data-ne-style="native"] .ui-tab,
 .ne-page[data-ne-style="native"] .tab {
   clip-path: none;
   margin: 4px 0;
@@ -189,11 +193,13 @@
   text-transform: none;
 }
 
+.ne-page[data-ne-style="native"] .ui-tab:hover,
 .ne-page[data-ne-style="native"] .tab:hover {
   color: var(--ne-text);
   background: rgba(255,255,255,0.055);
 }
 
+.ne-page[data-ne-style="native"] .ui-tab.active,
 .ne-page[data-ne-style="native"] .tab.active {
   background: rgb(var(--ne-primary-rgb) / 0.14);
   border-color: rgb(var(--ne-primary-rgb) / 0.24);
@@ -201,6 +207,7 @@
   box-shadow: none;
 }
 
+.ne-page[data-ne-style="native"] .ui-tab-badge,
 .ne-page[data-ne-style="native"] .tab .badge {
   border-radius: 5px;
   background: rgba(255,255,255,0.07);

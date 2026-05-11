@@ -14,6 +14,7 @@ import type {
   SchemaChild,
   SchemaComputedView,
   SchemaFieldChild,
+  SchemaMarkdown,
   SchemaPrimitive,
   SchemaReference,
   SchemaSection,
@@ -56,6 +57,10 @@ export function newArray(typeId = ''): SchemaArray {
     item: typeId ? { kind: 'reference', typeId } : { kind: 'primitive', valueType: 'number' },
     computed: false,
   };
+}
+
+export function newMarkdownField(): SchemaMarkdown {
+  return { kind: 'markdown', id: nodeUid('md'), name: 'info', description: '', defaultValue: '', computed: false };
 }
 
 export function newComputedView(view: NodeComputedViewKind = 'pie'): SchemaComputedView {
@@ -301,6 +306,7 @@ export function markdownValueType(): NodeMarkdownValueType {
 export function schemaChildValueType(child: SchemaFieldChild): NodeValueType {
   if (child.kind === 'primitive') return primitiveValueType(child.valueType);
   if (child.kind === 'reference') return referenceValueType(child.typeId);
+  if (child.kind === 'markdown') return markdownValueType();
   if (child.kind === 'computedView') return child.valueType;
   return arrayValueType(child.item);
 }
@@ -383,6 +389,7 @@ export function createConnection(from: NodeGraphPortRef, to: NodeGraphPortRef): 
 export function describeSchemaChildType(child: SchemaFieldChild): string {
   if (child.kind === 'primitive') return child.valueType;
   if (child.kind === 'reference') return `ref:${child.typeId || 'unbound'}`;
+  if (child.kind === 'markdown') return 'markdown';
   if (child.kind === 'computedView') return describeNodeValueType(child.valueType);
   return `array<${describeArrayItem(child.item)}>`;
 }

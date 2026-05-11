@@ -248,6 +248,15 @@ export interface SchemaArray {
   computed: boolean;
 }
 
+export interface SchemaMarkdown {
+  kind: 'markdown';
+  id: string;
+  name: string;
+  description?: string;
+  defaultValue?: string;
+  computed: boolean;
+}
+
 export interface SchemaComputedView {
   kind: 'computedView';
   id: string;
@@ -265,7 +274,7 @@ export interface SchemaSection {
   children: SchemaChild[];
 }
 
-export type SchemaFieldChild = SchemaPrimitive | SchemaReference | SchemaArray | SchemaComputedView;
+export type SchemaFieldChild = SchemaPrimitive | SchemaReference | SchemaArray | SchemaMarkdown | SchemaComputedView;
 export type SchemaChild = SchemaSection | SchemaFieldChild;
 
 export interface EntityType {

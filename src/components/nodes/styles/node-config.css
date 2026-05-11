@@ -134,6 +134,20 @@
   display: none;
 }
 
+.ne-page .ui-input,
+.ne-page .ui-select,
+.ne-page .ui-textarea {
+  background: var(--ne-bg-input);
+  border-color: var(--ne-line-soft);
+  color: var(--ne-text);
+}
+
+.ne-page .ui-input:focus,
+.ne-page .ui-select:focus,
+.ne-page .ui-textarea:focus {
+  border-color: var(--ne-cyan);
+}
+
 /* Font scale hooks */
 .ne-page :is(input, select, button, textarea, code, pre) {
   font-size: var(--ne-font-10, 10px);

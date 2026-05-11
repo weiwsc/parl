@@ -589,6 +589,15 @@ function normalizeSchemaChild(value: any): SchemaChild[] {
     }];
   }
 
+  if (kind === 'markdown') {
+    return [{
+      kind: 'markdown',
+      ...common,
+      defaultValue: typeof value?.defaultValue === 'string' ? value.defaultValue : '',
+      computed: !!value?.computed,
+    }];
+  }
+
   if (kind === 'primitive') {
     return [{
       kind: 'primitive',

@@ -10,6 +10,7 @@ import type {
   SchemaArray,
   SchemaArrayItem,
   SchemaFieldChild,
+  SchemaPrimitive,
   SchemaReference,
   TransformDefinition,
 } from '../../game/nodes/types';
@@ -80,6 +81,7 @@ export function cleanValues(values: Record<string, NodeInstanceValue>): Record<s
 export function fieldKindClass(child: SchemaFieldChild): string {
   if (child.kind === 'primitive') return 'ne-kind-prim';
   if (child.kind === 'reference') return 'ne-kind-ref';
+  if (child.kind === 'markdown') return 'ne-kind-info';
   if (child.kind === 'computedView') return 'ne-kind-view';
   return 'ne-kind-arr';
 }
@@ -87,12 +89,14 @@ export function fieldKindClass(child: SchemaFieldChild): string {
 export function fieldKindLabel(child: SchemaFieldChild): string {
   if (child.kind === 'primitive') return 'P';
   if (child.kind === 'reference') return 'R';
+  if (child.kind === 'markdown') return 'i';
   if (child.kind === 'computedView') return 'V';
   return '[]';
 }
 
-export function emptyValueLabel(child: SchemaReference | SchemaArray | Extract<SchemaFieldChild, { kind: 'computedView' }>): string {
+export function emptyValueLabel(child: Exclude<SchemaFieldChild, SchemaPrimitive>): string {
   if (child.kind === 'reference') return child.typeId ? `ref:${child.typeId}` : 'unbound ref';
+  if (child.kind === 'markdown') return 'markdown';
   if (child.kind === 'computedView') return child.valueType.kind === 'markdown' ? 'markdown' : `${child.valueType.chart} chart`;
   return `array<${describeArrayItem(child.item)}>`;
 }

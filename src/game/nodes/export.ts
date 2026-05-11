@@ -175,6 +175,15 @@ function sanitizeSchemaChildren(
       continue;
     }
 
+    if (child.kind === 'markdown') {
+      next.push({
+        ...child,
+        defaultValue: typeof child.defaultValue === 'string' ? child.defaultValue : '',
+        computed: !!child.computed,
+      });
+      continue;
+    }
+
     next.push(child);
   }
 

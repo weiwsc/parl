@@ -158,6 +158,7 @@
 .ne-kind-prim { color: var(--ne-cyan); background: color-mix(in srgb, var(--ne-cyan) 15%, transparent); }
 .ne-kind-ref { color: var(--ne-accent-hot); background: color-mix(in srgb, var(--ne-accent) 15%, transparent); }
 .ne-kind-arr { color: var(--ne-neutral); background: color-mix(in srgb, var(--ne-neutral) 22%, transparent); }
+.ne-kind-info { color: var(--ne-good); background: color-mix(in srgb, var(--ne-good) 17%, transparent); }
 .ne-kind-view { color: var(--ne-good); background: color-mix(in srgb, var(--ne-good) 17%, transparent); }
 
 .ne-port-dot {

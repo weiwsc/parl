@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { uid } from '../../store';
 import type { Alliance, Faction, MapRegion, RegionElectionModifier, Stratum } from '../../models/types';
 import {
@@ -10,6 +10,9 @@ import {
   shouldShowAlliancePie,
 } from '../../game/map/control';
 import { SupportWeightControl } from '../election/SupportWeightControl';
+import { ComputedPieChartView } from '../nodes/ComputedValueView';
+import { NodeInfoField } from '../ui/NodeInfoField';
+import { NodeSection } from '../ui/NodeSection';
 import {
   formatModifierStrataSummary,
   formatRandomnessWeight,
@@ -17,7 +20,7 @@ import {
   normalizeRandomnessModifier,
   normalizeSupportModifier,
 } from '../../game/parliament/modifiers';
-import { PieChart } from './PieChart';
+import type { NodeRuntimeValue } from '../../game/nodes/runtime';
 import type { ControlEntry } from '../../game/map/types';
 
 interface RegionInspectorProps {
@@ -42,17 +45,12 @@ export function RegionInspector({
   onCopyRegionJson,
 }: RegionInspectorProps) {
   const [editMode, setEditMode] = useState(false);
-  const [descExpanded, setDescExpanded] = useState(false);
-
-  useEffect(() => {
-    setDescExpanded(false);
-  }, [region?.id]);
 
   const editing = canEdit && editMode;
 
   if (!region) {
     return (
-      <aside className="map-inspector">
+      <aside className="map-inspector ui-node-surface ui-compact-surface">
         <div className="map-inspector-empty">
           <span className="insp-empty-icon">◎</span>
           <span className="insp-empty-label">SELECT A REGION</span>
@@ -84,11 +82,15 @@ export function RegionInspector({
       pct: strataWeights[st.id] || 0,
     }));
   const showStrataPie = strataPie.length > 0;
+  const overviewPieCharts = [
+    pieChartBlock('Faction', factionPie),
+    showAlliancePie ? pieChartBlock('Alliance', alliancePie) : null,
+    showStrataPie ? pieChartBlock('Strata', strataPie) : null,
+  ].filter((chart): chart is NodeRuntimeValue => !!chart);
 
   const descText = region.description || '';
-  const descLong = descText.length > 160;
 
-  const hasPieCharts = factionPie.length > 0 || showStrataPie;
+  const hasPieCharts = overviewPieCharts.length > 0;
   const population = Math.max(0, region.population || 0);
   const factionSupport = region.factionSupport ?? {};
   const supportTotal = factions.reduce((sum, faction) => (
@@ -197,13 +199,13 @@ export function RegionInspector({
   };
 
   return (
-    <aside className="map-inspector">
+    <aside className="map-inspector ui-node-surface ui-compact-surface">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="insp-header">
+      <div className="insp-header ui-compact-head">
         <div className="insp-name-block">
           {editing ? (
             <input
-              className="insp-name-input"
+              className="ui-input insp-name-input"
               value={region.name}
               onChange={e => onUpdateRegion({ ...region, name: e.target.value })}
               placeholder="Region Name"
@@ -213,7 +215,7 @@ export function RegionInspector({
           )}
           {editing ? (
             <input
-              className="insp-name2-input"
+              className="ui-input insp-name2-input"
               value={region.name2 ?? ''}
               onChange={e => onUpdateRegion({ ...region, name2: e.target.value || undefined })}
               placeholder="Subtitle (optional)"
@@ -253,7 +255,7 @@ export function RegionInspector({
                   type="number"
                   min="0"
                   step="1"
-                  className="ctrl-pct-input"
+                  className="ui-input ctrl-pct-input"
                   value={region.seatings || 0}
                   onChange={e => onUpdateRegion({ ...region, seatings: Math.max(0, parseInt(e.target.value) || 0) })}
                 />
@@ -269,7 +271,7 @@ export function RegionInspector({
                   type="number"
                   min="0"
                   step="1"
-                  className="ctrl-num-input"
+                  className="ui-input ctrl-num-input"
                   value={population || ''}
                   placeholder="0"
                   onChange={e => setPopulation(parseInt(e.target.value, 10) || 0)}
@@ -284,55 +286,7 @@ export function RegionInspector({
         {/* ── Pie charts (view mode only) ────────────────────────────── */}
         {!editing && hasPieCharts && (
           <InspectorSection title="Overview" className="insp-section--charts">
-            <div className="insp-charts-grid">
-              {factionPie.length > 0 && (
-                <div className="insp-chart-block">
-                  <div className="insp-chart-label">FACTION</div>
-                  <PieChart entries={factionPie} size={96} />
-                  <div className="pie-legend">
-                    {factionPie.map(e => (
-                      <div key={e.id} className="pie-legend-row">
-                        <span className="pie-legend-dot" style={{ background: e.color }} />
-                        <span className="pie-legend-name">{e.label}</span>
-                        <span className="pie-legend-pct">{e.pct.toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {showAlliancePie && (
-                <div className="insp-chart-block">
-                  <div className="insp-chart-label">ALLIANCE</div>
-                  <PieChart entries={alliancePie} size={96} />
-                  <div className="pie-legend">
-                    {alliancePie.map(e => (
-                      <div key={e.id} className="pie-legend-row">
-                        <span className="pie-legend-dot" style={{ background: e.color }} />
-                        <span className="pie-legend-name">{e.label}</span>
-                        <span className="pie-legend-pct">{e.pct.toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {showStrataPie && (
-                <div className="insp-chart-block">
-                  <div className="insp-chart-label">STRATA</div>
-                  <PieChart entries={strataPie} size={96} />
-                  <div className="pie-legend">
-                    {strataPie.map(e => (
-                      <div key={e.id} className="pie-legend-row">
-                        <span className="pie-legend-dot" style={{ background: e.color }} />
-                        <span className="pie-legend-name">{e.label}</span>
-                        <span className="pie-legend-pct">{e.pct.toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ComputedPieChartView value={overviewPieCharts} className="insp-node-pie-grid" />
           </InspectorSection>
         )}
 
@@ -373,7 +327,7 @@ export function RegionInspector({
                     {editing ? (
                       <input
                         type="number" min="0" max="100" step="1"
-                        className="ctrl-pct-input"
+                        className="ui-input ctrl-pct-input"
                         value={pct || ''}
                         placeholder="0"
                         onChange={e => setPct(faction.id, Math.max(0, Math.min(100, +e.target.value || 0)))}
@@ -435,7 +389,7 @@ export function RegionInspector({
                           type="number"
                           min="0"
                           step="1"
-                          className="ctrl-num-input"
+                          className="ui-input ctrl-num-input"
                           value={support || ''}
                           placeholder="0"
                           onChange={e => setFactionStratumSupport(faction.id, stratum.id, parseInt(e.target.value, 10) || 0)}
@@ -519,7 +473,7 @@ export function RegionInspector({
                   {editing ? (
                     <input
                       type="number" min="0" max="100" step="1"
-                      className="ctrl-pct-input"
+                      className="ui-input ctrl-pct-input"
                       value={pct || ''}
                       placeholder="0"
                       onChange={e => setStrataWeight(st.id, Math.max(0, Math.min(100, +e.target.value || 0)))}
@@ -536,32 +490,30 @@ export function RegionInspector({
           </InspectorSection>
         )}
 
-        {/* ── Description ───────────────────────────────────────────── */}
-        <InspectorSection title="Description">
-          {editing ? (
-            <textarea
-              className="insp-desc-input"
-              value={descText}
-              onChange={e => onUpdateRegion({ ...region, description: e.target.value })}
-              rows={3}
-              placeholder="Region description..."
-            />
-          ) : (
-            <>
-              <div className={`insp-desc-text ${descExpanded ? 'expanded' : ''}`}>
-                {descText || <em className="text-mute">No description.</em>}
-              </div>
-              {descLong && (
-                <button className="insp-expand-btn" onClick={() => setDescExpanded(v => !v)}>
-                  {descExpanded ? '▲ Collapse' : '▼ Expand'}
-                </button>
-              )}
-            </>
-          )}
-        </InspectorSection>
+        <NodeInfoField
+          label="description"
+          value={descText}
+          editing={editing}
+          onChange={description => onUpdateRegion({ ...region, description })}
+          placeholder="Region description..."
+          emptyLabel="No description."
+        />
       </div>
     </aside>
   );
+}
+
+function pieChartBlock(title: string, entries: ControlEntry[]): NodeRuntimeValue | null {
+  const data = entries
+    .filter(entry => entry.pct > 0)
+    .map(entry => ({
+      id: entry.id,
+      label: entry.label,
+      value: entry.pct,
+      color: entry.color,
+    }));
+
+  return data.length > 0 ? { title, data } : null;
 }
 
 function InspectorSection({
@@ -577,17 +529,19 @@ function InspectorSection({
   className?: string;
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
-    <section className={`insp-section${open ? '' : ' collapsed'}${className ? ` ${className}` : ''}`}>
-      <button className="insp-section-toggle" type="button" onClick={() => setOpen(value => !value)}>
-        <span className="insp-chevron">{open ? '▾' : '▸'}</span>
-        <span className="insp-section-title">{title}</span>
-        {badge && <span className="insp-section-badge">{badge}</span>}
-      </button>
-      {open && <div className="insp-section-body">{children}</div>}
-    </section>
+    <NodeSection
+      title={title}
+      badge={badge}
+      defaultOpen={defaultOpen}
+      className={`insp-section${className ? ` ${className}` : ''}`}
+      headClassName="insp-section-toggle"
+      titleClassName="insp-section-title"
+      badgeClassName="insp-section-badge"
+      bodyClassName="insp-section-body"
+    >
+      {children}
+    </NodeSection>
   );
 }
 
@@ -604,25 +558,35 @@ function SupportStratumPanel({
   over: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-
   return (
-    <div className={`insp-support-stratum ${over ? 'over' : ''}${open ? ' open' : ''}`}>
-      <button className="insp-support-stratum-head" type="button" onClick={() => setOpen(value => !value)}>
-        <span className="insp-chevron">{open ? '▾' : '▸'}</span>
-        <span className="ctrl-swatch" style={{ background: stratum.color || '#888' }} />
-        <span className="ctrl-name">{stratum.name}</span>
-        <span className={`insp-support-cap ${over ? 'over' : ''}`}>
-          {Math.round(assigned).toLocaleString()} / {Math.round(capacity).toLocaleString()}
-        </span>
-        {over && (
-          <span className="insp-support-over">
-            Over by {Math.round(assigned - capacity).toLocaleString()}
+    <NodeSection
+      defaultOpen={false}
+      className={`insp-support-stratum${over ? ' over' : ''}`}
+      headClassName="insp-support-stratum-head"
+      titleClassName="insp-support-stratum-title"
+      badgeClassName="insp-support-stratum-badge"
+      bodyClassName="insp-support-stratum-body"
+      title={(
+        <>
+          <span className="ctrl-swatch" style={{ background: stratum.color || '#888' }} />
+          <span className="ctrl-name">{stratum.name}</span>
+        </>
+      )}
+      badge={(
+        <>
+          <span className={`insp-support-cap ${over ? 'over' : ''}`}>
+            {Math.round(assigned).toLocaleString()} / {Math.round(capacity).toLocaleString()}
           </span>
-        )}
-      </button>
-      {open && <div className="insp-support-stratum-body">{children}</div>}
-    </div>
+          {over && (
+            <span className="insp-support-over">
+              Over by {Math.round(assigned - capacity).toLocaleString()}
+            </span>
+          )}
+        </>
+      )}
+    >
+      {children}
+    </NodeSection>
   );
 }
 
@@ -685,13 +649,13 @@ function RegionModifierCard({
   return (
     <div className="insp-mod-card">
       <input
-        className="insp-mod-title"
+        className="ui-input insp-mod-title"
         value={modifier.title}
         onChange={event => onUpdate({ title: event.target.value })}
         placeholder="Modifier title"
       />
       <select
-        className="insp-mod-select"
+        className="ui-select insp-mod-select"
         value={modifier.factionId}
         onChange={event => onUpdate({ factionId: event.target.value })}
       >
@@ -701,7 +665,7 @@ function RegionModifierCard({
         ))}
       </select>
       <textarea
-        className="insp-mod-desc"
+        className="ui-textarea insp-mod-desc"
         value={modifier.description}
         onChange={event => onUpdate({ description: event.target.value })}
         rows={2}

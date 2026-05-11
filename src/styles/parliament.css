@@ -571,8 +571,12 @@
     resize: vertical;
   }
   .faction-mod-section {
-    border-top: 1px solid var(--line-soft);
-    padding-top: 12px;
+    border-top: 1px solid var(--ui-compact-row-border);
+  }
+  .faction-mod-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   .insp-mod-list.faction-mod-grid {
     display: grid;
@@ -584,23 +588,18 @@
     min-width: 0;
   }
   .faction-mod-section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
+    min-height: 30px;
   }
-  .faction-mod-section-head h3 {
-    margin: 0;
-    color: var(--accent);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+  .faction-mod-section-tools {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
   .faction-region-add {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 6px;
   }
   .faction-region-add select,

@@ -78,13 +78,35 @@ function sharedStateSnapshot(state: AppState): string {
   return JSON.stringify(stripUi(state));
 }
 
+function useSharedStateSnapshot(state: AppState): string {
+  return useMemo(() => sharedStateSnapshot(state), [
+    state.schemaVersion,
+    state.totalSeats,
+    state.unalignedMode,
+    state.strata,
+    state.factions,
+    state.alliances,
+    state.history,
+    state.trash,
+    state.map,
+    state.laws,
+    state.lawHistory,
+    state.events,
+    state.eventSettings,
+    state.election,
+    state.nodes,
+    state.senate,
+  ]);
+}
+
 function useLocalWindowSync() {
   const { state, updateState } = useAppContext();
+  const sharedSnapshot = useSharedStateSnapshot(state);
   const windowIdRef = useRef(createId('local-window'));
   const applyingRef = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
   const baseStateRef = useRef<AppState | null>(state);
-  const lastSharedSnapshotRef = useRef(sharedStateSnapshot(state));
+  const lastSharedSnapshotRef = useRef(sharedSnapshot);
 
   const applyRemoteSnapshot = useCallback((snapshot: string) => {
     if (snapshot === lastSharedSnapshotRef.current) return;
@@ -134,7 +156,7 @@ function useLocalWindowSync() {
   useEffect(() => {
     if (APP_MODE !== 'local') return;
 
-    const snapshot = sharedStateSnapshot(state);
+    const snapshot = sharedSnapshot;
     if (applyingRef.current) {
       applyingRef.current = false;
       lastSharedSnapshotRef.current = snapshot;
@@ -146,12 +168,13 @@ function useLocalWindowSync() {
     lastSharedSnapshotRef.current = snapshot;
     baseStateRef.current = snapshotToState(snapshot);
     channelRef.current?.postMessage({ sourceId: windowIdRef.current, snapshot });
-  }, [state]);
+  }, [sharedSnapshot]);
 }
 
 function useServerSync() {
   const { state, updateState, showToast } = useAppContext();
   const { canEdit, token } = useAuth();
+  const sharedSnapshot = useSharedStateSnapshot(state);
 
   const showToastRef = useRef(showToast);
   useEffect(() => { showToastRef.current = showToast; }, [showToast]);
@@ -236,7 +259,6 @@ function useServerSync() {
   // ── 2. Dirty tracker — marks only user-originated state changes ──────────
   useEffect(() => {
     if (APP_MODE !== 'hosted') return;
-    const sharedSnapshot = sharedStateSnapshot(state);
     if (!hasSeenStateRef.current) {
       hasSeenStateRef.current = true;
       lastSharedSnapshotRef.current = sharedSnapshot;
@@ -251,7 +273,7 @@ function useServerSync() {
       lastSharedSnapshotRef.current = sharedSnapshot;
       needsSaveRef.current = true;
     }
-  }, [state]);
+  }, [sharedSnapshot]);
 
   // ── 3. Debounced PUT — upload local changes (admins only) ───────────────
   const save = useCallback(async (body: string, rev: number, tok: string, seq: number, mutationId: string) => {
@@ -316,14 +338,14 @@ function useServerSync() {
   useEffect(() => {
     if (APP_MODE !== 'hosted' || !canEdit || !token || !initializedRef.current || !needsSaveRef.current) return;
     // Strip ui so each client keeps its own tab/theme/expansion state.
-    const snapshot = sharedStateSnapshot(state);
+    const snapshot = sharedSnapshot;
     const tok      = token;
     const seq      = ++saveSeqRef.current;
     const mutationId = createId('mutation');
     clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => save(snapshot, revRef.current, tok, seq, mutationId), 600);
     return () => clearTimeout(syncTimer.current);
-  }, [state, canEdit, token, save]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sharedSnapshot, canEdit, token, save]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 // ─── Main app content ─────────────────────────────────────────────────────────
@@ -356,7 +378,15 @@ function AppContent() {
       factionsCount: state.factions.length,
       timestamp: Date.now(),
     };
-  }, [state]);
+  }, [
+    state.totalSeats,
+    state.unalignedMode,
+    state.strata,
+    state.factions,
+    state.alliances,
+    state.map,
+    state.election,
+  ]);
 
   const handleElection = () => {
     updateState(s => {

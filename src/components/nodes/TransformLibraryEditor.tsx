@@ -114,7 +114,7 @@ export function TransformLibraryEditor({
         <div className="ne-transform-detail">
           <EditorField label="NAME">
             <input
-              className="law-field-input"
+              className="ui-input"
               value={selected.name}
               disabled={!canEdit}
               onChange={event => updateTransform({ ...selected, name: event.target.value })}
@@ -122,7 +122,7 @@ export function TransformLibraryEditor({
           </EditorField>
           <EditorField label="DESCRIPTION" optional="(optional)">
             <input
-              className="law-field-input"
+              className="ui-input"
               value={selected.description ?? ''}
               disabled={!canEdit}
               onChange={event => updateTransform({ ...selected, description: event.target.value || undefined })}

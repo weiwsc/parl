@@ -7,7 +7,7 @@
 | `foundation.css` | Palette tokens, semantic `--ui-*` theme contract, global base, app shell, sidebar, tabs, shared buttons, panels, compact primitives, and item cards |
 | `parliament.css` | Parliament projection, faction/alliance editing, chart, result matrix, history, trash, toast, and save indicator |
 | `settings.css` | Read-only mode, auth badge, settings panel, and language selector |
-| `map.css` | Map toolbar, canvas workspace, region list, inspector, pie chart, and map-specific utility classes |
+| `map.css` | Map toolbar, canvas workspace, region list, inspector layout, and map-specific utility classes |
 | `laws.css` | Law floor, stance editor, law registry, constitution cards, clause editor, and law history |
 | `events.css` | Event editor, newspaper issue view, turn archive, timeline cards, and story-rank sizing |
 | `senate.css` | Senate page, seat assignment controls, and static region map reuse hooks |
@@ -23,6 +23,13 @@ Prefer the neutral `ui-*` primitives for new reusable app chrome. They are inten
 
 - `ui-editor`, `ui-editor-head`, `ui-editor-body`, `ui-editor-foot` for dense editor shells.
 - `ui-field`, `ui-input`, `ui-select`, `ui-textarea` for reusable form layout and controls.
+- `ui-panel`, `ui-panel-header`, `ui-panel-body`, `ui-app-header`, `ui-tab-bar`, and `ui-tab` are neutral names for the existing app shell chrome.
+- `ui-section`, `ui-section-title`, `ui-section-row`, `ui-label`, `ui-toolbar`, and `ui-segmented` cover repeated settings/editor grouping patterns.
+- `ui-collapse`, `ui-collapse-head`, and `ui-collapse-body` provide node-editor-like collapsible sections for inspectors and editors.
+- `ui-node-surface` maps the shared `--ui-*` theme contract into node-editor `--ne-*` variables so reusable node sections and computed chart widgets can appear outside the node page.
+- `NodeSection` is the preferred React wrapper when a non-node editor wants the compact node section chrome without hand-wiring `ne-*` class stacks.
+- `ConfigSection` is the quieter collapsible section wrapper for settings/config surfaces where editor chrome feels too heavy.
+- `MarkdownValueView` and `NodeInfoField` provide the shared markdown/info-row treatment used by node fields and compact inspectors.
 - `ui-list-surface`, `ui-grid-surface`, and `ui-table-surface` for repeated list/grid/table containers.
 
 Feature-prefixed classes may still be added beside these primitives for local layout or content-specific behavior.

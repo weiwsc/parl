@@ -6,6 +6,7 @@ import { AppHeader } from './ui/AppHeader';
 import { EditorField } from './ui/EditorField';
 import { EmptyState } from './ui/EmptyState';
 import { ListSurface } from './ui/ListSurface';
+import { NodeSection } from './ui/NodeSection';
 import { Panel } from './ui/Panel';
 import { SupportWeightControl } from './election/SupportWeightControl';
 import {
@@ -128,7 +129,7 @@ export function FactionsPage() {
             <div className="faction-editor-grid">
               <EditorField label="Name">
                 <input
-                  className="law-field-input"
+                  className="ui-input"
                   value={faction.name}
                   onChange={event => updateFaction({ name: event.target.value })}
                 />
@@ -146,7 +147,7 @@ export function FactionsPage() {
               </EditorField>
 
               <EditorField label="Alliance">
-                <select className="law-field-input" value={currentAllianceId} onChange={event => setAlliance(event.target.value)}>
+                <select className="ui-select" value={currentAllianceId} onChange={event => setAlliance(event.target.value)}>
                   <option value="">Unallied</option>
                   {state.alliances.map(alliance => (
                     <option key={alliance.id} value={alliance.id}>{alliance.name}</option>
@@ -168,7 +169,7 @@ export function FactionsPage() {
 
             <EditorField label="Description">
               <textarea
-                className="law-field-input faction-description-input"
+                className="ui-textarea faction-description-input"
                 value={faction.description}
                 onChange={event => updateFaction({ description: event.target.value })}
                 rows={4}
@@ -256,9 +257,14 @@ function ModifierSection({
   onDelete: (id: string) => void;
 }) {
   return (
-    <section className="faction-mod-section">
-      <div className="faction-mod-section-head">
-        <h3>{title}</h3>
+    <NodeSection
+      title={title}
+      badge={modifiers.length > 0 ? <span className="insp-ctrl-ok">{modifiers.length}</span> : null}
+      className="faction-mod-section"
+      headClassName="faction-mod-section-head"
+      bodyClassName="faction-mod-section-body"
+    >
+      <div className="faction-mod-section-tools">
         <button type="button" className="ghost small" onClick={onAdd}>+ Add</button>
       </div>
       {modifiers.length === 0 ? (
@@ -276,7 +282,7 @@ function ModifierSection({
           ))}
         </div>
       )}
-    </section>
+    </NodeSection>
   );
 }
 
@@ -310,15 +316,18 @@ function RegionalModifierSection({
   }, [regions, targetRegionId]);
 
   return (
-    <section className="faction-mod-section">
-      <div className="faction-mod-section-head">
-        <h3>Regional Modifiers</h3>
-        <div className="faction-region-add">
-          <select value={targetRegionId} onChange={event => setTargetRegionId(event.target.value)}>
-            {regions.map(region => <option key={region.id} value={region.id}>{region.name}</option>)}
-          </select>
-          <button type="button" className="ghost small" disabled={!targetRegionId} onClick={() => onAdd(targetRegionId)}>+ Add</button>
-        </div>
+    <NodeSection
+      title="Regional Modifiers"
+      badge={modifiers.length > 0 ? <span className="insp-ctrl-ok">{modifiers.length}</span> : null}
+      className="faction-mod-section"
+      headClassName="faction-mod-section-head"
+      bodyClassName="faction-mod-section-body"
+    >
+      <div className="faction-mod-section-tools faction-region-add">
+        <select className="ui-select" value={targetRegionId} onChange={event => setTargetRegionId(event.target.value)}>
+          {regions.map(region => <option key={region.id} value={region.id}>{region.name}</option>)}
+        </select>
+        <button type="button" className="ghost small" disabled={!targetRegionId} onClick={() => onAdd(targetRegionId)}>+ Add</button>
       </div>
 
       {modifiers.length === 0 ? (
@@ -339,7 +348,7 @@ function RegionalModifierSection({
           ))}
         </div>
       )}
-    </section>
+    </NodeSection>
   );
 }
 
@@ -405,20 +414,20 @@ function ModifierEditor({
     <div className="insp-mod-card">
       <div className="faction-mod-card-top">
         <input
-          className="insp-mod-title"
+          className="ui-input insp-mod-title"
           value={modifier.title}
           onChange={event => change({ title: event.target.value })}
           placeholder="Modifier title"
         />
         {regions && regionId && onRegionChange && (
-          <select className="insp-mod-select" value={regionId} onChange={event => onRegionChange(event.target.value)}>
+          <select className="ui-select insp-mod-select" value={regionId} onChange={event => onRegionChange(event.target.value)}>
             {regions.map(region => <option key={region.id} value={region.id}>{region.name}</option>)}
           </select>
         )}
       </div>
 
       <textarea
-        className="insp-mod-desc"
+        className="ui-textarea insp-mod-desc"
         value={modifier.description}
         onChange={event => change({ description: event.target.value })}
         rows={2}

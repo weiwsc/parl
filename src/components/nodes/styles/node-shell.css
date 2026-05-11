@@ -62,6 +62,7 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
+.ne-topbar > .ui-tab-bar,
 .ne-topbar > .tab-bar {
   flex: 1;
   border-bottom: none;

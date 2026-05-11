@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang, LANGUAGES } from '../utils/localization';
 import { API_BASE } from '../config';
 import { Panel } from './ui/Panel';
+import { ConfigSection } from './ui/ConfigSection';
 import { THEME_DEFINITIONS } from '../theme';
 
 interface PlayerAccount {
@@ -156,11 +157,9 @@ export function SettingsPanel() {
       <Panel title={t("settings")} bodyClassName="no-scroll">
 
           {/* ── Appearance ─────────────────────────────── */}
-          <div className="settings-section">
-            <div className="settings-section-title">{t("appearance")}</div>
-
-            <div className="settings-row" style={{ alignItems: 'flex-start' }}>
-              <span className="settings-label" style={{ paddingTop: '8px' }}>{t("theme")}</span>
+          <ConfigSection title={t("appearance")} className="settings-section" bodyClassName="settings-section-body">
+            <div className="ui-section-row settings-row" style={{ alignItems: 'flex-start' }}>
+              <span className="ui-label settings-label" style={{ paddingTop: '8px' }}>{t("theme")}</span>
               <div className="theme-switch" data-ro-allow>
                 {THEME_DEFINITIONS.map(theme => (
                   <button key={theme.id} data-ro-allow
@@ -180,8 +179,8 @@ export function SettingsPanel() {
               </div>
             </div>
 
-            <div className="settings-row">
-              <span className="settings-label">{t("language")}</span>
+            <div className="ui-section-row settings-row">
+              <span className="ui-label settings-label">{t("language")}</span>
               <div className="lang-selector">
                 {LANGUAGES.map(({ code, native }) => (
                   <button key={code} data-ro-allow
@@ -192,33 +191,32 @@ export function SettingsPanel() {
                 ))}
               </div>
             </div>
-          </div>
+          </ConfigSection>
 
           {/* ── Data ───────────────────────────────────── */}
-          <div className="settings-section">
-            <div className="settings-section-title">{t("data")}</div>
-            <div className="settings-row settings-row--buttons">
+          <ConfigSection title={t("data")} className="settings-section" bodyClassName="settings-section-body">
+            <div className="ui-section-row ui-section-row--wrap settings-row settings-row--buttons">
               <button onClick={handleExport} disabled={!canEdit}>{t("export")}</button>
               <button onClick={() => importRef.current?.click()} disabled={!canEdit}>{t("import")}</button>
               <input ref={importRef} type="file" accept="application/json" style={{ display: 'none' }} onChange={handleImport} />
             </div>
-          </div>
+          </ConfigSection>
 
           {/* ── Account (hosted mode only) ──────────────── */}
           {mode === 'hosted' && (
-            <div className="settings-section">
-              <div className="settings-section-title">{t("account")}</div>
+            <ConfigSection title={t("account")} className="settings-section" bodyClassName="settings-section-body">
               {isAdmin ? (
                 <>
-                  <div className="settings-row">
+                  <div className="ui-section-row settings-row">
                     <span className="auth-badge auth-badge--admin">◈ {t("admin")}</span>
                     <button data-ro-allow className="small ghost" onClick={logout}>{t("logout")}</button>
                   </div>
 
                   <div className="player-account-admin">
-                    <div className="settings-section-title">Player Accounts</div>
+                    <div className="ui-section-title settings-section-title">Player Accounts</div>
                     <form className="player-account-form" onSubmit={handleCreatePlayer}>
                       <input
+                        className="ui-input"
                         type="text"
                         placeholder="Username"
                         value={playerUser}
@@ -226,6 +224,7 @@ export function SettingsPanel() {
                         autoComplete="off"
                       />
                       <input
+                        className="ui-input"
                         type="password"
                         placeholder="Password"
                         value={playerPass}
@@ -233,6 +232,7 @@ export function SettingsPanel() {
                         autoComplete="new-password"
                       />
                       <select
+                        className="ui-select"
                         value={playerFactionId || state.factions[0]?.id || ''}
                         onChange={e => setPlayerFactionId(e.target.value)}
                         disabled={state.factions.length === 0}
@@ -246,7 +246,7 @@ export function SettingsPanel() {
 
                     {accountsError && <div className="login-error">{accountsError}</div>}
 
-                    <div className="player-account-list">
+                    <div className="ui-list-surface player-account-list">
                       {accountsLoading && <div className="player-account-empty">Loading accounts...</div>}
                       {!accountsLoading && accounts.length === 0 && (
                         <div className="player-account-empty">No player accounts.</div>
@@ -262,16 +262,16 @@ export function SettingsPanel() {
                   </div>
                 </>
               ) : isPlayer ? (
-                <div className="settings-row settings-row--account">
+                <div className="ui-section-row ui-section-row--wrap settings-row settings-row--account">
                   <span className="auth-badge auth-badge--player">◇ {username}</span>
                   <span className="settings-account-faction">{factionName(factionId)}</span>
                   <button data-ro-allow className="small ghost" onClick={logout}>{t("logout")}</button>
                 </div>
               ) : (
                 <form className="login-form" onSubmit={handleLogin}>
-                  <input type="text" placeholder={t("username")} value={loginUser}
+                  <input className="ui-input" type="text" placeholder={t("username")} value={loginUser}
                     onChange={e => setLoginUser(e.target.value)} autoComplete="username" data-ro-allow />
-                  <input type="password" placeholder={t("password")} value={loginPass}
+                  <input className="ui-input" type="password" placeholder={t("password")} value={loginPass}
                     onChange={e => setLoginPass(e.target.value)} autoComplete="current-password" data-ro-allow />
                   {loginError && <div className="login-error">{loginError}</div>}
                   <button type="submit" className="primary" disabled={loginLoading} data-ro-allow>
@@ -279,7 +279,7 @@ export function SettingsPanel() {
                   </button>
                 </form>
               )}
-            </div>
+            </ConfigSection>
           )}
 
       </Panel>

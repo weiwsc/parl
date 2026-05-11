@@ -291,6 +291,7 @@ export function entityFieldValue(
   if (bound !== undefined) return bound;
 
   if (child.kind === 'primitive') return child.defaultValue ?? (child.valueType === 'boolean' ? false : '');
+  if (child.kind === 'markdown') return child.defaultValue ?? '';
   return undefined;
 }
 

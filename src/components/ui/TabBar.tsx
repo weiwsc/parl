@@ -14,16 +14,17 @@ interface TabBarProps<T extends string> {
 
 export function TabBar<T extends string>({ active, items, onChange }: TabBarProps<T>) {
   return (
-    <nav className="tab-bar">
+    <nav className="ui-tab-bar tab-bar">
       {items.map(item => (
         <button
           key={item.id}
           data-ro-allow
-          className={`tab${active === item.id ? ' active' : ''}`}
+          className={`ui-tab tab${active === item.id ? ' active' : ''}`}
+          aria-selected={active === item.id}
           onClick={() => onChange(item.id)}
         >
           {item.label}
-          {item.badge !== undefined && <span className="badge">{item.badge}</span>}
+          {item.badge !== undefined && <span className="ui-tab-badge badge">{item.badge}</span>}
         </button>
       ))}
     </nav>

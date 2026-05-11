@@ -18,6 +18,7 @@ import { runtimeValueLabel, type NodeEvaluation, type NodeRuntimeValue } from '.
 import { ComputedValueView } from './ComputedValueView';
 import { NodeValueTypeEditor } from './NodeValueTypeEditor';
 import { PortHandle } from './PortHandle';
+import { MarkdownValueView } from '../ui/MarkdownValueView';
 import type { PortDirection, RegisterPortAnchor } from './nodeCanvasTypes';
 import {
   cleanValues,
@@ -471,11 +472,12 @@ function InstanceField({
   const value = evaluation.values[`${node.id}:${path}`];
   const titleAttr = child.description ? `${path} - ${child.description}` : path;
   const isComputedView = child.kind === 'computedView';
+  const isMarkdownField = child.kind === 'markdown';
   const methodOwned = child.computed && isMethodAssignedPropPath(type, path);
   const rowClass = [
     'ne-node-head',
     'ne-instance-field-row',
-    isComputedView ? 'ne-instance-visual-row' : '',
+    isComputedView || isMarkdownField ? 'ne-instance-visual-row' : '',
     methodOwned ? 'ne-instance-field-row--method-owned' : '',
   ].filter(Boolean).join(' ');
 
@@ -492,6 +494,13 @@ function InstanceField({
         <PortHandle direction="output" port={port} canEdit={canEdit} registerPortAnchor={registerPortAnchor} onStartWire={onStartWire} onCompleteWire={onCompleteWire} />
       </div>
       {isComputedView && <ComputedValueView valueType={child.valueType} value={value} />}
+      {isMarkdownField && (
+        <MarkdownInstanceField
+          value={value}
+          canEdit={canEdit && !child.computed}
+          onChange={next => onValueChange(path, next)}
+        />
+      )}
     </div>
   );
 }
@@ -537,6 +546,46 @@ function InstanceValueEditor({
       disabled={!canEdit}
       onChange={event => onChange(child.valueType === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
       placeholder="value"
+    />
+  );
+}
+
+function MarkdownInstanceField({
+  value,
+  canEdit,
+  onChange,
+}: {
+  value: NodeRuntimeValue;
+  canEdit: boolean;
+  onChange: (value: string) => void;
+}) {
+  const text = typeof value === 'string' ? value : runtimeValueLabel(value);
+
+  if (canEdit) {
+    return (
+      <div className="ne-markdown-field-body">
+        <textarea
+          className="ne-markdown-editor"
+          value={text}
+          onChange={event => onChange(event.target.value)}
+          placeholder="markdown..."
+        />
+        {text.trim() && (
+          <MarkdownValueView
+            value={text}
+            emptyLabel="No info."
+            className="ne-computed-chart ne-computed-markdown ne-markdown-field-preview"
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <MarkdownValueView
+      value={value}
+      emptyLabel="No info."
+      className="ne-computed-chart ne-computed-markdown ne-markdown-field-preview"
     />
   );
 }

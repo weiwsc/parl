@@ -6,6 +6,7 @@ import type {
   SchemaArray,
   SchemaChild,
   SchemaComputedView,
+  SchemaMarkdown,
   SchemaPrimitive,
   SchemaReference,
   SchemaSection,
@@ -22,6 +23,7 @@ import {
   moveChildToParentEnd,
   newArray,
   newComputedView,
+  newMarkdownField,
   newPrimitive,
   newReference,
   newSection,
@@ -48,6 +50,7 @@ export function SchemaNodeEditor(props: NodeProps) {
   if (props.node.kind === 'section') return <SectionEditor {...props} node={props.node} />;
   if (props.node.kind === 'reference') return <ReferenceEditor {...props} node={props.node} />;
   if (props.node.kind === 'array') return <ArrayEditor {...props} node={props.node} />;
+  if (props.node.kind === 'markdown') return <MarkdownEditor {...props} node={props.node} />;
   if (props.node.kind === 'computedView') return <ComputedViewEditor {...props} node={props.node} />;
   return <PrimitiveEditor {...props} node={props.node} />;
 }
@@ -211,6 +214,33 @@ function ArrayEditor({
   );
 }
 
+function MarkdownEditor({
+  node, index, total, pathPrefix, readOnly, onUpdate, onRemove, onMove, onReorder,
+}: NodeProps & { node: SchemaMarkdown }) {
+  const path = `${pathPrefix}.${node.name}`;
+
+  return (
+    <NodeShell node={node} className="ne-markdown" readOnly={readOnly} onReorder={onReorder}>
+      <div className="ne-node-head">
+        <DragHandle nodeId={node.id} readOnly={readOnly} />
+        <span className="ne-kind-tag ne-kind-info">i</span>
+        {node.computed && <span className="ne-port-dot" title="Computed — can receive wire input">◉</span>}
+        <NameInput node={node} readOnly={readOnly} onUpdate={onUpdate} placeholder="info name" />
+        <span className="ne-type-pill">markdown</span>
+        <ComputedToggle checked={node.computed} disabled={readOnly} onChange={computed => onUpdate({ ...node, computed })} />
+        <NodeActions index={index} total={total} readOnly={readOnly} onMove={onMove} onRemove={onRemove} />
+      </div>
+      <FieldMeta
+        node={node}
+        readOnly={readOnly}
+        typeLabel={describeSchemaChildType(node)}
+        path={path}
+        onDescription={description => onUpdate({ ...node, description })}
+      />
+    </NodeShell>
+  );
+}
+
 function ComputedViewEditor({
   node, index, total, pathPrefix, readOnly, onUpdate, onRemove, onMove, onReorder,
 }: NodeProps & { node: SchemaComputedView }) {
@@ -366,9 +396,10 @@ function SchemaChildList({ children, pathPrefix, depth, typeOptions, readOnly, o
           <button className="small ghost" onClick={() => onChange(addChild(children, newPrimitive()))}>+ Primitive</button>
           <button className="small ghost" onClick={() => onChange(addChild(children, newReference(firstTypeId)))}>+ Reference</button>
           <button className="small ghost" onClick={() => onChange(addChild(children, newArray(firstTypeId)))}>+ Array</button>
+          <button className="small ghost" onClick={() => onChange(addChild(children, newMarkdownField()))}>+ Info</button>
           <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('pie')))}>+ Pie</button>
           <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('bar')))}>+ Bar</button>
-          <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('markdown')))}>+ Markdown</button>
+          <button className="small ghost" onClick={() => onChange(addChild(children, newComputedView('markdown')))}>+ Markdown View</button>
         </div>
       )}
     </div>

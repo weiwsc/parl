@@ -11,6 +11,7 @@ export type {
   SchemaReference,
   SchemaArrayItem,
   SchemaArray,
+  SchemaMarkdown,
   SchemaComputedView,
   SchemaSection,
   SchemaFieldChild,

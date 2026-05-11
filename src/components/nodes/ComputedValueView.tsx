@@ -1,25 +1,25 @@
 import type { CSSProperties } from 'react';
-import { renderMarkdown } from '../laws/markdown';
 import type { NodeComputedViewValueType } from '../../game/nodes/types';
 import { runtimeValueLabel, type NodeRuntimeValue } from '../../game/nodes/runtime';
+import { MarkdownValueView } from '../ui/MarkdownValueView';
 
 interface ComputedValueViewProps {
   valueType: NodeComputedViewValueType;
   value: NodeRuntimeValue;
 }
 
-interface ChartItem {
+export interface ComputedChartItem {
   id: string;
   label: string;
   value: number;
   color: string;
 }
 
-interface PieBlock {
+export interface ComputedPieChartBlock {
   id: string;
   title: string;
   total: number;
-  segments: ChartItem[];
+  segments: ComputedChartItem[];
 }
 
 const PALETTE = [
@@ -40,36 +40,27 @@ const COLOR_KEYS = ['color', 'colour', 'fill'];
 
 export function ComputedValueView({ valueType, value }: ComputedValueViewProps) {
   if (valueType.kind === 'markdown') {
-    return <MarkdownComputedValue value={value} />;
+    return <MarkdownValueView value={value} emptyLabel="no markdown" className="ne-computed-chart ne-computed-markdown" />;
   }
 
   if (valueType.chart === 'pie') {
-    return <PieComputedValue value={value} />;
+    return <ComputedPieChartView value={value} />;
   }
 
   return <BarComputedValue value={value} />;
 }
 
-function MarkdownComputedValue({ value }: { value: NodeRuntimeValue }) {
-  const text = typeof value === 'string' ? value : runtimeValueLabel(value);
-
-  return (
-    <div
-      className="ne-computed-chart ne-computed-markdown law-md-body"
-      dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-    />
-  );
-}
-
-function PieComputedValue({ value }: { value: NodeRuntimeValue }) {
+export function ComputedPieChartView({ value, className = '' }: { value: NodeRuntimeValue; className?: string }) {
   const charts = normalizePieCharts(value);
 
   if (charts.length === 0) {
     return <EmptyComputedChart label={runtimeValueLabel(value) || 'no pie data'} />;
   }
 
+  const rootClassName = ['ne-computed-chart', 'ne-computed-pie-grid', className].filter(Boolean).join(' ');
+
   return (
-    <div className="ne-computed-chart ne-computed-pie-grid">
+    <div className={rootClassName}>
       {charts.map(chart => (
         <div key={chart.id} className="ne-computed-pie-card">
           <div className="ne-computed-chart-head">
@@ -143,7 +134,7 @@ function BarComputedValue({ value }: { value: NodeRuntimeValue }) {
   );
 }
 
-function normalizeBarChart(value: NodeRuntimeValue): { title: string | null; items: ChartItem[] } {
+function normalizeBarChart(value: NodeRuntimeValue): { title: string | null; items: ComputedChartItem[] } {
   return {
     title: isRecord(value) ? titleFromRecord(value) : null,
     items: normalizeBarItems(value),
@@ -158,11 +149,11 @@ function EmptyComputedChart({ label }: { label: string }) {
   );
 }
 
-function normalizePieCharts(value: NodeRuntimeValue): PieBlock[] {
+function normalizePieCharts(value: NodeRuntimeValue): ComputedPieChartBlock[] {
   if (Array.isArray(value)) {
     const nested = value
       .map((entry, index) => pieBlockFromNested(entry, index))
-      .filter((entry): entry is PieBlock => !!entry);
+      .filter((entry): entry is ComputedPieChartBlock => !!entry);
     if (nested.length > 0) return nested;
 
     const block = pieBlockFromSegments(value, 'Pie', 'pie-0');
@@ -174,7 +165,7 @@ function normalizePieCharts(value: NodeRuntimeValue): PieBlock[] {
     if (chartCollection) {
       const nested = chartCollection
         .map((entry, index) => pieBlockFromNested(entry, index))
-        .filter((entry): entry is PieBlock => !!entry);
+        .filter((entry): entry is ComputedPieChartBlock => !!entry);
       if (nested.length > 0) return nested;
     }
 
@@ -183,7 +174,7 @@ function normalizePieCharts(value: NodeRuntimeValue): PieBlock[] {
 
     const keyedSegments = Object.entries(value)
       .map(([key, entry], index) => segmentFromKeyValue(key, entry, index))
-      .filter((entry): entry is ChartItem => !!entry);
+      .filter((entry): entry is ComputedChartItem => !!entry);
     if (keyedSegments.length > 0) {
       return [pieBlockFromItems(keyedSegments, titleFromRecord(value) ?? 'Pie', 'pie-0')];
     }
@@ -195,7 +186,7 @@ function normalizePieCharts(value: NodeRuntimeValue): PieBlock[] {
   return [];
 }
 
-function pieBlockFromNested(value: NodeRuntimeValue, index: number): PieBlock | null {
+function pieBlockFromNested(value: NodeRuntimeValue, index: number): ComputedPieChartBlock | null {
   if (Array.isArray(value) && looksLikeDatasetArray(value)) {
     return pieBlockFromSegments(value, `Pie ${index + 1}`, `pie-${index}`);
   }
@@ -208,10 +199,10 @@ function pieBlockFromNested(value: NodeRuntimeValue, index: number): PieBlock | 
   return pieBlockFromSegments(collection, title, `pie-${index}`);
 }
 
-function pieBlockFromSegments(values: NodeRuntimeValue[], title: string, id: string): PieBlock | null {
+function pieBlockFromSegments(values: NodeRuntimeValue[], title: string, id: string): ComputedPieChartBlock | null {
   const segments = values
     .map((entry, index) => normalizeChartItem(entry, index))
-    .filter((entry): entry is ChartItem => !!entry && entry.value > 0);
+    .filter((entry): entry is ComputedChartItem => !!entry && entry.value > 0);
 
   return segments.length > 0 ? pieBlockFromItems(segments, title, id) : null;
 }
@@ -228,7 +219,7 @@ function looksLikeTupleSegment(value: NodeRuntimeValue[]): boolean {
     && coerceNumber(value[1]) !== null;
 }
 
-function pieBlockFromItems(segments: ChartItem[], title: string, id: string): PieBlock {
+function pieBlockFromItems(segments: ComputedChartItem[], title: string, id: string): ComputedPieChartBlock {
   return {
     id,
     title,
@@ -237,11 +228,11 @@ function pieBlockFromItems(segments: ChartItem[], title: string, id: string): Pi
   };
 }
 
-function normalizeBarItems(value: NodeRuntimeValue): ChartItem[] {
+function normalizeBarItems(value: NodeRuntimeValue): ComputedChartItem[] {
   if (Array.isArray(value)) {
     return value
       .map((entry, index) => normalizeChartItem(entry, index))
-      .filter((entry): entry is ChartItem => !!entry);
+      .filter((entry): entry is ComputedChartItem => !!entry);
   }
 
   if (!isRecord(value)) return [];
@@ -254,10 +245,10 @@ function normalizeBarItems(value: NodeRuntimeValue): ChartItem[] {
 
   return Object.entries(value)
     .map(([key, entry], index) => segmentFromKeyValue(key, entry, index))
-    .filter((entry): entry is ChartItem => !!entry);
+    .filter((entry): entry is ComputedChartItem => !!entry);
 }
 
-function normalizeChartItem(value: NodeRuntimeValue, index: number): ChartItem | null {
+function normalizeChartItem(value: NodeRuntimeValue, index: number): ComputedChartItem | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return chartItem(`item-${index}`, `Item ${index + 1}`, value, colorAt(index));
   }
@@ -279,12 +270,12 @@ function normalizeChartItem(value: NodeRuntimeValue, index: number): ChartItem |
   return chartItem(stringFromRecord(value, ['id', 'key']) ?? `item-${index}`, label, amount, color);
 }
 
-function segmentFromKeyValue(key: string, value: NodeRuntimeValue, index: number): ChartItem | null {
+function segmentFromKeyValue(key: string, value: NodeRuntimeValue, index: number): ComputedChartItem | null {
   const amount = coerceNumber(value);
   return amount === null ? null : chartItem(key, key, amount, colorAt(index));
 }
 
-function chartItem(id: string, label: string, value: number, color: string): ChartItem {
+function chartItem(id: string, label: string, value: number, color: string): ComputedChartItem {
   return {
     id,
     label,
@@ -342,7 +333,7 @@ function colorAt(index: number): string {
   return PALETTE[index % PALETTE.length];
 }
 
-function pieGradient(segments: ChartItem[], total: number): string {
+function pieGradient(segments: ComputedChartItem[], total: number): string {
   if (total <= 0) return 'var(--ne-line-soft) 0 100%';
 
   let cursor = 0;

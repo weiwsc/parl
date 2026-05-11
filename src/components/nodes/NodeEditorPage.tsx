@@ -237,7 +237,7 @@ export function NodeEditorPage() {
                   <div className="ne-type-meta">
                     <EditorField label="NAME">
                       <input
-                        className="law-field-input"
+                        className="ui-input"
                         value={selected.name}
                         disabled={selected.builtIn || !canEdit}
                         onChange={e => updateType({ ...selected, name: e.target.value })}
@@ -246,7 +246,7 @@ export function NodeEditorPage() {
                     </EditorField>
                     <EditorField label="DESCRIPTION" optional="(optional)">
                       <input
-                        className="law-field-input"
+                        className="ui-input"
                         value={selected.description ?? ''}
                         disabled={!canEdit}
                         onChange={e => updateType({ ...selected, description: e.target.value || undefined })}

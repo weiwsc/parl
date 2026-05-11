@@ -66,7 +66,10 @@ export function Tabs() {
   const histCount  = state.history.length;
 
   type ParliamentTab = 'sim' | 'current' | 'hist';
-  const setTab = (nextTab: ParliamentTab) => updateState(s => { s.ui.tab = nextTab; return s; });
+  const setTab = (nextTab: ParliamentTab) => {
+    if (tab === nextTab) return;
+    updateState({ ui: { ...state.ui, tab: nextTab } });
+  };
   const items: TabItem<ParliamentTab>[] = [
     { id: 'sim', label: t("election") },
     { id: 'current', label: t("current_parliament") },
@@ -86,8 +89,10 @@ export function Sidebar() {
     + state.trash.regions.length
     + state.trash.elections.length;
 
-  const setModule = (id: string) =>
-    updateState(s => { s.ui.tab = id; return s; });
+  const setModule = (id: string) => {
+    if (tab === id) return;
+    updateState({ ui: { ...state.ui, tab: id } });
+  };
 
   return (
     <aside className="sidebar">
