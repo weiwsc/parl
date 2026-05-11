@@ -92,6 +92,7 @@ const translations: Record<string, Record<Language, string>> = {
   parliament_short:       { en: 'parl',                 cn: '议会' },
   senate_short:           { en: 'senate',               cn: '参院' },
   factions:              { en: 'factions',             cn: '派系' },
+  alliances:             { en: 'alliances',            cn: '联盟' },
   parliament_floor:       { en: 'Parliament Floor',     cn: '议会会场' },
   senate_floor:           { en: 'Senate Floor',         cn: '参议院会场' },
   bills:                 { en: 'Bills',                cn: '法案' },

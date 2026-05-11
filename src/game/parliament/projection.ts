@@ -1,4 +1,4 @@
-import type { AppState, Faction, HistoryEntry, MapRegion, ProjectionEntry, ProjectionResult, Stratum } from '../../models/types';
+import type { Alliance, AppState, Faction, HistoryEntry, MapRegion, ProjectionEntry, ProjectionResult, Stratum } from '../../models/types';
 import { normalizeRandomnessModifier, normalizeSupportModifier, randomnessModifierToMultiplier } from './modifiers';
 
 export const UNALIGNED_FACTION_ID = '__unaligned__';
@@ -24,6 +24,13 @@ export interface ElectionProjectionOptions {
   randomize?: boolean;
   rng?: () => number;
   baseRandomness?: number;
+}
+
+export interface CurrentParliamentSnapshot {
+  election: HistoryEntry | null;
+  projection: ProjectionResult | null;
+  factions: Faction[];
+  alliances: Alliance[];
 }
 
 export interface RegionElectionWeight {
@@ -435,16 +442,112 @@ export function getLatestElectionEntry(state: AppState): HistoryEntry | null {
 
 export function getLatestElectionProjection(state: AppState): ProjectionResult | null {
   const latest = getLatestElectionEntry(state);
-  if (!latest?.projection) return null;
+  return latest ? getElectionSnapshotProjection(latest) : null;
+}
+
+export function getElectionSnapshotProjection(entry: HistoryEntry): ProjectionResult | null {
+  if (!entry.projection) return null;
+  const alliances = entry.alliances.map(cloneSnapshotAlliance);
+  const entries = entry.projection.entries
+    .map(projectionEntry => rebindSnapshotProjectionEntry(projectionEntry, entry.factions, alliances))
+    .sort((a, b) => snapshotProjectionOrder(a, entry.factions, alliances) - snapshotProjectionOrder(b, entry.factions, alliances));
 
   return {
-    ...latest.projection,
-    totalSeats: latest.projection.totalSeats ?? latest.totalSeats,
-    unalignedMode: latest.projection.unalignedMode ?? latest.unalignedMode,
-    strataCount: latest.projection.strataCount ?? latest.strata.length,
-    factionsCount: latest.projection.factionsCount ?? latest.factions.length,
-    timestamp: latest.projection.timestamp ?? latest.timestamp,
+    ...entry.projection,
+    entries,
+    totalSeats: entry.projection.totalSeats ?? entry.totalSeats,
+    unalignedMode: entry.projection.unalignedMode ?? entry.unalignedMode,
+    strataCount: entry.projection.strataCount ?? entry.strata.length,
+    factionsCount: entry.projection.factionsCount ?? entry.factions.length,
+    timestamp: entry.projection.timestamp ?? entry.timestamp,
   };
+}
+
+export function rebuildElectionSnapshotProjection(entry: HistoryEntry): void {
+  const projection = getElectionSnapshotProjection(entry);
+  if (projection) entry.projection = projection;
+}
+
+export function getProjectionFactionIds(projection: ProjectionResult): Set<string> {
+  return new Set(projection.entries.filter(entry => !entry.isUnaligned).map(entry => entry.faction.id));
+}
+
+export function getCurrentParliamentSnapshot(state: AppState): CurrentParliamentSnapshot {
+  const election = getLatestElectionEntry(state);
+  const projection = election ? getElectionSnapshotProjection(election) : null;
+
+  if (!election || !projection) {
+    return {
+      election: null,
+      projection: null,
+      factions: state.factions,
+      alliances: state.alliances,
+    };
+  }
+
+  return {
+    election,
+    projection,
+    factions: mergeCurrentFactionList(election.factions, projection, state.factions),
+    alliances: election.alliances.map(cloneSnapshotAlliance),
+  };
+}
+
+function cloneSnapshotAlliance(alliance: Alliance): Alliance {
+  return { ...alliance, factionIds: [...alliance.factionIds] };
+}
+
+function snapshotProjectionFaction(entry: ProjectionEntry, factions: Faction[]): ProjectionEntry['faction'] {
+  const faction = factions.find(candidate => candidate.id === entry.faction.id);
+  return faction ? { id: faction.id, name: faction.name, color: faction.color } : entry.faction;
+}
+
+function rebindSnapshotProjectionEntry(entry: ProjectionEntry, factions: Faction[], alliances: Alliance[]): ProjectionEntry {
+  if (entry.isUnaligned) {
+    return { ...entry, faction: snapshotProjectionFaction(entry, factions), alliance: undefined };
+  }
+
+  const alliance = alliances.find(candidate => candidate.factionIds.includes(entry.faction.id));
+  return {
+    ...entry,
+    faction: snapshotProjectionFaction(entry, factions),
+    alliance: alliance ? cloneSnapshotAlliance(alliance) : undefined,
+  };
+}
+
+function snapshotProjectionOrder(entry: ProjectionEntry, factions: Faction[], alliances: Alliance[]): number {
+  const factionIndex = factions.findIndex(faction => faction.id === entry.faction.id);
+  const factionOrder = factionIndex >= 0 ? factionIndex : 9999;
+
+  if (entry.isUnaligned) return 2_000_000 + factionOrder;
+  if (!entry.alliance) return 1_000_000 + factionOrder;
+
+  const allianceIndex = alliances.findIndex(alliance => alliance.id === entry.alliance?.id);
+  const allianceOrder = allianceIndex >= 0 ? allianceIndex : 999;
+  const memberIndex = entry.alliance.factionIds.indexOf(entry.faction.id);
+  return allianceOrder * 1000 + (memberIndex >= 0 ? memberIndex : 999);
+}
+
+function mergeCurrentFactionList(snapshotFactions: Faction[], projection: ProjectionResult, liveFactions: Faction[]): Faction[] {
+  const merged = new Map<string, Faction>();
+
+  for (const faction of snapshotFactions) merged.set(faction.id, faction);
+  for (const entry of projection.entries) {
+    if (entry.isUnaligned || merged.has(entry.faction.id)) continue;
+    merged.set(entry.faction.id, {
+      id: entry.faction.id,
+      name: entry.faction.name,
+      description: '',
+      color: entry.faction.color,
+      globalModifiers: [],
+      participatesInElections: false,
+    });
+  }
+  for (const faction of liveFactions) {
+    if (!merged.has(faction.id)) merged.set(faction.id, faction);
+  }
+
+  return Array.from(merged.values());
 }
 
 export function getCurrentParliamentProjection(state: AppState): ProjectionResult {

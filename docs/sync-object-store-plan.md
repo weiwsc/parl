@@ -6,6 +6,9 @@ Move Parliament Simulator from one giant collaborative snapshot toward a product
 
 The current snapshot sync must keep working during the migration.
 
+For maintenance instructions when the frontend document/object shape changes, see
+[`docs/object-shape-change-guide.md`](./object-shape-change-guide.md).
+
 ## Current State
 
 - The backend stores one JSON document in `sync_documents`.

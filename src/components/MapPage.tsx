@@ -9,6 +9,7 @@ import { clone, useAppContext, uid } from '../store';
 import { useAuth } from '../context/AuthContext';
 import type { MapRegion, MapVertex } from '../models/types';
 import { MAP_VIEWBOX_HEIGHT, MAP_VIEWBOX_WIDTH } from '../game/map/constants';
+import { getCurrentParliamentSnapshot } from '../game/parliament/projection';
 import {
   closestPointOnSegment,
   distance,
@@ -53,6 +54,9 @@ export function MapPage() {
   const svgRef = useRef<SVGSVGElement>(null);
   const hasCenteredOnce = useRef(false);
   const regions = useMemo(() => state.map?.regions ?? [], [state.map?.regions]);
+  const currentParliament = useMemo(() => getCurrentParliamentSnapshot(state), [state]);
+  const mapFactions = currentParliament.factions;
+  const mapAlliances = currentParliament.alliances;
 
   const updateRegions = useCallback(
     (updater: (prev: MapRegion[]) => MapRegion[]) => {
@@ -449,7 +453,7 @@ export function MapPage() {
           {viewMode === 'regions' ? (
             <RegionCardList
               regions={regions}
-              factions={state.factions}
+              factions={mapFactions}
               selectedId={selectedId}
               onSelectRegion={setSelectedId}
             />
@@ -457,8 +461,8 @@ export function MapPage() {
             <>
               <MapCanvas
                 regions={regions}
-                factions={state.factions}
-                alliances={state.alliances}
+                factions={mapFactions}
+                alliances={mapAlliances}
                 viewMode={viewMode}
                 editorMode={editorMode}
                 tool={tool}
@@ -486,8 +490,8 @@ export function MapPage() {
               />
               <MapLegend
                 regions={regions}
-                factions={state.factions}
-                alliances={state.alliances}
+                factions={mapFactions}
+                alliances={mapAlliances}
                 viewMode={viewMode}
               />
               {regions.length === 0 && (
@@ -505,6 +509,8 @@ export function MapPage() {
           region={selectedRegion}
           factions={state.factions}
           alliances={state.alliances}
+          controlFactions={mapFactions}
+          controlAlliances={mapAlliances}
           strata={state.strata}
           canEdit={canEdit}
           onUpdateRegion={handleUpdateRegion}

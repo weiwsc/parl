@@ -10,12 +10,16 @@ export {
   getComputedFactionStratumSupport,
   getComputedStratumPopulation,
   getCurrentParliamentProjection,
+  getCurrentParliamentSnapshot,
+  getElectionSnapshotProjection,
   getLatestElectionEntry,
   getLatestElectionProjection,
   getParticipatingFactions,
+  getProjectionFactionIds,
   getRegionStratumPopulation,
   hasRegionalPopulationData,
   hasRegionalElectionData,
+  rebuildElectionSnapshotProjection,
 } from '../game/parliament/projection';
 export { arrangeSeats } from '../game/parliament/seating';
 

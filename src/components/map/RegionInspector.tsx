@@ -27,6 +27,8 @@ interface RegionInspectorProps {
   region: MapRegion | null;
   factions: Faction[];
   alliances: Alliance[];
+  controlFactions?: Faction[];
+  controlAlliances?: Alliance[];
   strata: Stratum[];
   canEdit: boolean;
   onUpdateRegion: (region: MapRegion) => void;
@@ -38,6 +40,8 @@ export function RegionInspector({
   region,
   factions,
   alliances,
+  controlFactions,
+  controlAlliances,
   strata,
   canEdit,
   onUpdateRegion,
@@ -63,9 +67,11 @@ export function RegionInspector({
   const totalCtrl = getRegionControlTotal(region);
   const ctrlOver  = totalCtrl > 100.5;
   const ctrlUnder = totalCtrl < 99.5 && totalCtrl > 0.5;
-  const allianceGroups = getAllianceControlGroups(region, factions, alliances);
-  const factionPie  = getFactionControlEntries(region, factions);
-  const alliancePie = getAllianceControlEntries(region, factions, alliances);
+  const currentFactions = controlFactions ?? factions;
+  const currentAlliances = controlAlliances ?? alliances;
+  const allianceGroups = getAllianceControlGroups(region, currentFactions, currentAlliances);
+  const factionPie  = getFactionControlEntries(region, currentFactions);
+  const alliancePie = getAllianceControlEntries(region, currentFactions, currentAlliances);
   const showAlliancePie = shouldShowAlliancePie(factionPie, alliancePie);
 
   const strataWeights = region.strataWeights ?? {};
