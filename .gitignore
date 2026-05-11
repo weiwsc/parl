@@ -13,8 +13,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # ── .NET build artifacts ───────────────────────────────
-backend/bin/
-backend/obj/
+**/bin/
+**/obj/
 
 # ── Runtime data (Docker volume mount in dev) ──────────
 data/
