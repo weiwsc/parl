@@ -358,6 +358,9 @@ function useServerSync() {
               && currentLocalSnapshot !== previousAckedSnapshot;
             const hasLocalChanges = needsSaveRef.current
               || (canEditRef.current && !!tokenRef.current && hasRefreshLocalChanges);
+            const mergeBase = hasRefreshLocalChanges && previousAckedSnapshot
+              ? snapshotToState(previousAckedSnapshot)
+              : localBase;
             if (hasLocalChanges) {
               needsSaveRef.current = true;
               requestSaveKick();
@@ -368,7 +371,7 @@ function useServerSync() {
             applyingRef.current = true;
             updateStateRef.current(local => (
               hasLocalChanges
-                ? mergeAppState(localBase, local, remoteNorm)
+                ? mergeAppState(mergeBase, local, remoteNorm)
                 : { ...remoteNorm, ui: local.ui }
             ));
           } else if (message.clientId === clientIdRef.current) {

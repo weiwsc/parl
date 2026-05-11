@@ -191,6 +191,8 @@ Reference integrity is intentionally separate from history/trash preservation.
 - The sync hook now queues pending object or snapshot saves with their own base revision and local snapshot. Successful acknowledgements, validation rollbacks, and server conflicts clear the queue; remote events clear and rebuild it against the updated baseline before retrying.
 - The hosted SSE subscription now keeps a stable `updateState` ref so normal state renders do not tear down and recreate the event stream.
 - Hosted mode now persists the last server-acknowledged snapshot separately from browser-local state, so a refresh with unsaved imported/edited local data can preserve and save that local work instead of being overwritten by the initial SSE snapshot.
+- Browser-local state is now persisted synchronously after committed app state changes and flushed again on page hide/unload, reducing the refresh window where a recent edit exists only in React memory.
+- Refresh recovery now uses the last server-acknowledged snapshot as its merge base, so local edits restored from browser storage are treated as real local changes when the initial server snapshot arrives after reload.
 - Added `backend.Tests`, a dependency-light console regression harness that exercises the real EF document store against in-memory SQLite.
 - Added backend regression coverage for indexing stable document objects, soft-deleting removed objects, re-indexing changed object JSON, and rejecting object deletion that would create dangling references.
 - Added admin-only object-index reindex endpoint:
@@ -254,6 +256,11 @@ Reference integrity is intentionally separate from history/trash preservation.
   - `npm run build`
   - Browser smoke: toggled a hosted-mode document field, refreshed before the normal debounced save window completed, confirmed the refreshed client still pushed the local change to the backend, then restored the field.
   - Browser smoke: wrote a remote snapshot through the backend API and confirmed the open hosted client applied the SSE update, then restored the field.
+- Frontend verification after tightening fast-refresh durability:
+  - `npm run lint`
+  - `npm run build`
+  - Browser smoke: toggled a hosted-mode document field, refreshed before the backend save completed, confirmed the refreshed client kept the local value and pushed it to the backend, then restored the field.
+  - Browser smoke: repeated the same check with an immediate reload after the click, confirmed the change survived and reached the backend, then restored the field.
 - Backend regression harness:
   - `dotnet run --project backend.Tests/ParliamentApi.Tests.csproj`
 - Backend verification after adding the reindex endpoint:

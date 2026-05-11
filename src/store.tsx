@@ -1,5 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import type {
   AppState,
   EntityType,
@@ -792,6 +793,10 @@ export function loadFromStorage(): AppState {
   return defaultState();
 }
 
+function persistToStorage(state: AppState): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
 interface ToastMessage {
   message: string;
   type: string;
@@ -812,28 +817,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadFromStorage());
   const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
   const [savedStatus, setSavedStatus] = useState(false);
+  const stateRef = useRef(state);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    stateRef.current = state;
+    try {
+      persistToStorage(state);
+      setSavedStatus(true);
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSavedStatus(false), 800);
+    } catch (e) {
+      console.error('Persist failed:', e);
+    }
+  }, [state]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const flushLatestState = () => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        setSavedStatus(true);
-        setTimeout(() => setSavedStatus(false), 800);
+        flushSync(() => {});
+        persistToStorage(stateRef.current);
       } catch (e) {
         console.error('Persist failed:', e);
       }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [state]);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushLatestState();
+    };
+
+    window.addEventListener('pagehide', flushLatestState);
+    window.addEventListener('beforeunload', flushLatestState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      flushLatestState();
+      clearTimeout(savedTimerRef.current);
+      window.removeEventListener('pagehide', flushLatestState);
+      window.removeEventListener('beforeunload', flushLatestState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', state.ui.theme);
   }, [state.ui.theme]);
 
   const updateState = (updater: Partial<AppState> | ((prev: AppState) => AppState)) => {
-    setState((prev) => {
-      const next = typeof updater === 'function' ? updater(clone(prev)) : { ...prev, ...updater };
-      return next;
+    flushSync(() => {
+      setState((prev) => {
+        const next = typeof updater === 'function' ? updater(clone(prev)) : { ...prev, ...updater };
+        return next;
+      });
     });
   };
 
