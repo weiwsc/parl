@@ -53,6 +53,7 @@ export interface HistoryEntry {
   factions: Faction[];
   alliances: Alliance[];
   projection?: ProjectionResult;
+  seatAdjustments?: Record<string, number>;
   results?: {
     factionId: string;
     name: string;

@@ -7,6 +7,7 @@ import {
   fmtFull,
   getCurrentParliamentSnapshot,
   getProjectionFactionIds,
+  getProjectionUnassignedSeats,
   rebuildElectionSnapshotProjection,
 } from '../utils/compute';
 import { useLang } from '../utils/localization';
@@ -16,17 +17,62 @@ import { Panel } from './ui/Panel';
 
 const SNAPSHOT_ALLIANCE_COLORS = ['#5f8faf', '#70b87e', '#d4a14a', '#b9616b', '#8c78c6', '#45a7a0'];
 
+function normalizedSeatDelta(value: unknown): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numeric) ? Math.trunc(numeric) : 0;
+}
+
+function baseSeatMap(entry: HistoryEntry): Map<string, number> {
+  return new Map((entry.projection?.entries ?? [])
+    .filter(projectionEntry => !projectionEntry.isUnaligned)
+    .map(projectionEntry => [projectionEntry.faction.id, projectionEntry.seats]));
+}
+
+function seatDeltaBounds(entry: HistoryEntry, factionId: string): { min: number; max: number } {
+  const baseSeats = baseSeatMap(entry);
+  const min = -Math.max(0, baseSeats.get(factionId) ?? 0);
+  let released = 0;
+  let spent = 0;
+
+  for (const [candidateId, seats] of baseSeats) {
+    if (candidateId === factionId) continue;
+    const delta = Math.max(normalizedSeatDelta(entry.seatAdjustments?.[candidateId]), -seats);
+    if (delta < 0) released += -delta;
+    if (delta > 0) spent += delta;
+  }
+
+  return { min, max: Math.max(0, released - spent) };
+}
+
 interface SnapshotFactionRowProps {
   faction: Faction;
   entry?: ProjectionEntry;
+  baseSeats: number;
+  seatDelta: number;
+  unassignedSeats: number;
+  seatDeltaMax: number;
   allianceId: string | null;
   isFirst: boolean;
   isLast: boolean;
   canEdit: boolean;
   onMove: (factionId: string, allianceId: string | null, dir: number) => void;
+  onSeatAdjustmentChange: (factionId: string, delta: number) => void;
 }
 
-function SnapshotFactionRow({ faction, entry, allianceId, isFirst, isLast, canEdit, onMove }: SnapshotFactionRowProps) {
+function SnapshotFactionRow({
+  faction,
+  entry,
+  baseSeats,
+  seatDelta,
+  unassignedSeats,
+  seatDeltaMax,
+  allianceId,
+  isFirst,
+  isLast,
+  canEdit,
+  onMove,
+  onSeatAdjustmentChange,
+}: SnapshotFactionRowProps) {
   const [editOpen, setEditOpen] = useState(false);
   const pct = entry ? entry.share * 100 : 0;
   const seats = entry ? entry.seats : 0;
@@ -68,6 +114,25 @@ function SnapshotFactionRow({ faction, entry, allianceId, isFirst, isLast, canEd
               Right →
             </button>
           </div>
+          <div className="current-parliament-seat-editor">
+            <span className="current-parliament-seat-label">Floor Seats</span>
+            <span className="current-parliament-seat-stat">Base <b>{baseSeats}</b></span>
+            <label className="current-parliament-seat-delta">
+              <span>Delta</span>
+              <input
+                type="number"
+                step="1"
+                min={-baseSeats}
+                max={seatDeltaMax}
+                value={seatDelta}
+                onChange={event => onSeatAdjustmentChange(faction.id, normalizedSeatDelta(event.target.value))}
+              />
+            </label>
+            <span className="current-parliament-seat-stat">Now <b>{seats}</b></span>
+            <span className={`current-parliament-seat-free${unassignedSeats > 0 ? ' active' : ''}`}>
+              Free <b>{unassignedSeats}</b>
+            </span>
+          </div>
         </div>
       )}
     </div>
@@ -86,6 +151,13 @@ interface SnapshotAllianceBlockProps {
   onAllianceDelete: (allianceId: string) => void;
   onFactionMove: (factionId: string, allianceId: string | null, dir: number) => void;
   onFactionAllianceChange: (factionId: string, allianceId: string | null) => void;
+  getSeatEditorState: (factionId: string) => {
+    baseSeats: number;
+    seatDelta: number;
+    seatDeltaMax: number;
+    unassignedSeats: number;
+  };
+  onSeatAdjustmentChange: (factionId: string, delta: number) => void;
 }
 
 function SnapshotAllianceBlock({
@@ -100,6 +172,8 @@ function SnapshotAllianceBlock({
   onAllianceDelete,
   onFactionMove,
   onFactionAllianceChange,
+  getSeatEditorState,
+  onSeatAdjustmentChange,
 }: SnapshotAllianceBlockProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -184,11 +258,13 @@ function SnapshotAllianceBlock({
                 key={faction.id}
                 faction={faction}
                 entry={entry}
+                {...getSeatEditorState(faction.id)}
                 allianceId={alliance.id}
                 isFirst={index === 0}
                 isLast={index === factionIds.length - 1}
                 canEdit={canEdit}
                 onMove={onFactionMove}
+                onSeatAdjustmentChange={onSeatAdjustmentChange}
               />
             );
           })}
@@ -220,6 +296,8 @@ export function CurrentParliamentPanel() {
   const factions = currentParliament.factions.filter(faction => activeFactionIds.has(faction.id));
   const unallied = factions.filter(faction => !latest.alliances.some(alliance => alliance.factionIds.includes(faction.id)));
   const entries = projection.entries.filter(entry => !entry.isUnaligned);
+  const baseSeats = baseSeatMap(latest);
+  const unassignedSeats = getProjectionUnassignedSeats(projection);
   const timestamp = new Date(latest.timestamp).toLocaleString();
 
   const updateLatestElection = (mutator: (entry: HistoryEntry) => void) => {
@@ -305,6 +383,30 @@ export function CurrentParliamentPanel() {
     });
   };
 
+  const updateSnapshotSeatAdjustment = (factionId: string, requestedDelta: number) => {
+    updateLatestElection(entry => {
+      const bounds = seatDeltaBounds(entry, factionId);
+      let nextDelta = Math.max(bounds.min, normalizedSeatDelta(requestedDelta));
+      if (nextDelta > 0) nextDelta = Math.min(nextDelta, bounds.max);
+
+      const nextAdjustments = { ...(entry.seatAdjustments ?? {}) };
+      if (nextDelta === 0) delete nextAdjustments[factionId];
+      else nextAdjustments[factionId] = nextDelta;
+
+      entry.seatAdjustments = Object.keys(nextAdjustments).length > 0 ? nextAdjustments : undefined;
+    });
+  };
+
+  const getSeatEditorState = (factionId: string) => {
+    const bounds = seatDeltaBounds(latest, factionId);
+    return {
+      baseSeats: Math.max(0, baseSeats.get(factionId) ?? 0),
+      seatDelta: normalizedSeatDelta(latest.seatAdjustments?.[factionId]),
+      seatDeltaMax: bounds.max,
+      unassignedSeats,
+    };
+  };
+
   const onDropUnallied = (event: DragEvent) => {
     if (!canEdit) return;
     event.preventDefault();
@@ -325,6 +427,9 @@ export function CurrentParliamentPanel() {
           <span>{latest.totalSeats} {t('seats')}</span>
           <span>{entries.length} {t('factions')}</span>
           <span>{latest.alliances.length} {t('alliances')}</span>
+          <span className={unassignedSeats > 0 ? 'current-parliament-unassigned active' : 'current-parliament-unassigned'}>
+            {unassignedSeats} unassigned
+          </span>
         </div>
 
         <div
@@ -348,6 +453,8 @@ export function CurrentParliamentPanel() {
               onAllianceDelete={deleteSnapshotAlliance}
               onFactionMove={moveSnapshotFaction}
               onFactionAllianceChange={setSnapshotFactionAlliance}
+              getSeatEditorState={getSeatEditorState}
+              onSeatAdjustmentChange={updateSnapshotSeatAdjustment}
             />
           ))}
           {unallied.length > 0 && (
@@ -360,11 +467,13 @@ export function CurrentParliamentPanel() {
                     key={faction.id}
                     faction={faction}
                     entry={entry}
+                    {...getSeatEditorState(faction.id)}
                     allianceId={null}
                     isFirst={index === 0}
                     isLast={index === unallied.length - 1}
                     canEdit={canEdit}
                     onMove={moveSnapshotFaction}
+                    onSeatAdjustmentChange={updateSnapshotSeatAdjustment}
                   />
                 );
               })}

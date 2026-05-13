@@ -446,16 +446,28 @@ export function getLatestElectionProjection(state: AppState): ProjectionResult |
 }
 
 export function getElectionSnapshotProjection(entry: HistoryEntry): ProjectionResult | null {
+  return getElectionSnapshotProjectionInternal(entry, { applySeatAdjustments: true });
+}
+
+function getElectionSnapshotProjectionInternal(
+  entry: HistoryEntry,
+  { applySeatAdjustments }: { applySeatAdjustments: boolean }
+): ProjectionResult | null {
   if (!entry.projection) return null;
   const alliances = entry.alliances.map(cloneSnapshotAlliance);
-  const entries = entry.projection.entries
+  let entries = entry.projection.entries
     .map(projectionEntry => rebindSnapshotProjectionEntry(projectionEntry, entry.factions, alliances))
     .sort((a, b) => snapshotProjectionOrder(a, entry.factions, alliances) - snapshotProjectionOrder(b, entry.factions, alliances));
+  const totalSeats = entry.projection.totalSeats ?? entry.totalSeats;
+
+  if (applySeatAdjustments) {
+    entries = applySnapshotSeatAdjustments(entries, entry.seatAdjustments, totalSeats);
+  }
 
   return {
     ...entry.projection,
     entries,
-    totalSeats: entry.projection.totalSeats ?? entry.totalSeats,
+    totalSeats,
     unalignedMode: entry.projection.unalignedMode ?? entry.unalignedMode,
     strataCount: entry.projection.strataCount ?? entry.strata.length,
     factionsCount: entry.projection.factionsCount ?? entry.factions.length,
@@ -464,12 +476,18 @@ export function getElectionSnapshotProjection(entry: HistoryEntry): ProjectionRe
 }
 
 export function rebuildElectionSnapshotProjection(entry: HistoryEntry): void {
-  const projection = getElectionSnapshotProjection(entry);
+  const projection = getElectionSnapshotProjectionInternal(entry, { applySeatAdjustments: false });
   if (projection) entry.projection = projection;
 }
 
 export function getProjectionFactionIds(projection: ProjectionResult): Set<string> {
   return new Set(projection.entries.filter(entry => !entry.isUnaligned).map(entry => entry.faction.id));
+}
+
+export function getProjectionUnassignedSeats(projection: ProjectionResult): number {
+  const totalSeats = projection.totalSeats ?? projection.entries.reduce((sum, entry) => sum + entry.seats, 0);
+  const assignedSeats = projection.entries.reduce((sum, entry) => sum + Math.max(0, entry.seats), 0);
+  return Math.max(0, totalSeats - assignedSeats);
 }
 
 export function getCurrentParliamentSnapshot(state: AppState): CurrentParliamentSnapshot {
@@ -526,6 +544,44 @@ function snapshotProjectionOrder(entry: ProjectionEntry, factions: Faction[], al
   const allianceOrder = allianceIndex >= 0 ? allianceIndex : 999;
   const memberIndex = entry.alliance.factionIds.indexOf(entry.faction.id);
   return allianceOrder * 1000 + (memberIndex >= 0 ? memberIndex : 999);
+}
+
+function applySnapshotSeatAdjustments(
+  entries: ProjectionEntry[],
+  seatAdjustments: Record<string, number> | undefined,
+  totalSeats: number | undefined
+): ProjectionEntry[] {
+  if (!seatAdjustments || totalSeats === undefined) return entries;
+
+  const baseEntries = entries.map(entry => ({ entry, delta: normalizedInteger(seatAdjustments[entry.faction.id]) }));
+  const releasedSeats = baseEntries.reduce((sum, { entry, delta }) => (
+    sum + Math.max(0, -Math.max(delta, -entry.seats))
+  ), 0);
+  let spentSeats = 0;
+
+  return baseEntries.map(({ entry, delta }) => {
+    const lowerBoundedDelta = Math.max(delta, -entry.seats);
+    let appliedDelta = lowerBoundedDelta;
+
+    if (lowerBoundedDelta > 0) {
+      const remaining = Math.max(0, releasedSeats - spentSeats);
+      appliedDelta = Math.min(lowerBoundedDelta, remaining);
+      spentSeats += appliedDelta;
+    }
+
+    const seats = Math.max(0, entry.seats + appliedDelta);
+    return {
+      ...entry,
+      seats,
+      share: totalSeats > 0 ? seats / totalSeats : 0,
+    };
+  });
+}
+
+function normalizedInteger(value: unknown): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.trunc(numeric);
 }
 
 function mergeCurrentFactionList(snapshotFactions: Faction[], projection: ProjectionResult, liveFactions: Faction[]): Faction[] {

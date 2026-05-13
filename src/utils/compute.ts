@@ -16,6 +16,7 @@ export {
   getLatestElectionProjection,
   getParticipatingFactions,
   getProjectionFactionIds,
+  getProjectionUnassignedSeats,
   getRegionStratumPopulation,
   hasRegionalPopulationData,
   hasRegionalElectionData,
